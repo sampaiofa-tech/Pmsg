@@ -69,8 +69,14 @@ kotlin {
             implementation(libs.ktor.serialization.kotlinx.json)
             implementation(libs.coil3.compose)
             implementation(libs.coil3.network.ktor3)
-            implementation(libs.androidx.room.runtime)
-            implementation(libs.androidx.sqlite.bundled)
+        }
+
+        val nonWebMain by creating {
+            dependsOn(commonMain.get())
+            dependencies {
+                implementation(libs.androidx.room.runtime)
+                implementation(libs.androidx.sqlite.bundled)
+            }
         }
 
         androidMain.dependencies {
@@ -97,7 +103,12 @@ kotlin {
             implementation(libs.coil.compose)
         }
 
+        sourceSets.named("androidMain") {
+            dependsOn(nonWebMain)
+        }
+
         sourceSets.named("desktopMain") {
+            dependsOn(nonWebMain)
             dependencies {
                 implementation(compose.desktop.currentOs)
                 implementation(libs.ktor.client.okhttp)
@@ -105,7 +116,7 @@ kotlin {
         }
 
         val iosMain by creating {
-            dependsOn(commonMain.get())
+            dependsOn(nonWebMain)
             dependencies {
                 implementation(libs.ktor.client.darwin)
             }
@@ -120,6 +131,15 @@ kotlin {
         commonTest.dependencies {
             implementation(kotlin("test"))
             implementation(libs.kotlinx.coroutines.test)
+        }
+
+        sourceSets.named("androidUnitTest") {
+            dependencies {
+                implementation(libs.junit)
+                implementation(libs.robolectric)
+                implementation(libs.androidx.junit)
+                implementation(libs.androidx.core)
+            }
         }
     }
 }

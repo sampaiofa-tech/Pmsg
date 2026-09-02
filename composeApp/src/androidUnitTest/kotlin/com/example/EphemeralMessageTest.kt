@@ -1,12 +1,15 @@
 package com.example
 
+import com.example.data.model.BurnerChannel
 import com.example.data.model.EphemeralMessage
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertTrue
-import org.junit.Test
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
-class ExampleUnitTest {
+class EphemeralMessageCommonTest {
 
     @Test
     fun testMessageExpirationCalculation() {
@@ -54,7 +57,7 @@ class ExampleUnitTest {
             disappearAfterReadSeconds = 10
         )
 
-        // 5 seconds after read (not yet expired)
+        // 5 seconds after read
         val after5s = now + 5000L
         assertFalse(msg.isExpired(after5s))
         assertEquals(5000L, msg.remainingMillis(after5s))
@@ -80,6 +83,42 @@ class ExampleUnitTest {
             isShredded = true
         )
 
-        assertTrue("Shredded message must immediately report expired", msg.isExpired(now))
+        assertTrue(msg.isExpired(now))
+    }
+
+    @Test
+    fun testBurnerChannelFormattedRemainingTime() {
+        val now = 1000000L
+        val channel = BurnerChannel(
+            id = "test_ch",
+            name = "Test Channel",
+            lastMessageTimestamp = now,
+            defaultTtlHours = 2f
+        )
+
+        val formatted = channel.formattedRemainingTime(now)
+        assertEquals("02h 00m", formatted)
+
+        val halfway = now + (60 * 60 * 1000L) // 1h later
+        assertEquals("01h 00m", channel.formattedRemainingTime(halfway))
+
+        val expired = now + (3 * 60 * 60 * 1000L)
+        assertEquals("00:00", channel.formattedRemainingTime(expired))
+    }
+
+    @Test
+    fun testSerializationRoundTrip() {
+        val msg = EphemeralMessage(
+            roomId = "ch_123",
+            senderId = "ME",
+            senderName = "Você",
+            content = "Mensagem ultra secreta",
+            ttlOptionHours = 1f
+        )
+
+        val json = Json.encodeToString(msg)
+        val decoded = Json.decodeFromString<EphemeralMessage>(json)
+        assertEquals(msg.roomId, decoded.roomId)
+        assertEquals(msg.content, decoded.content)
     }
 }

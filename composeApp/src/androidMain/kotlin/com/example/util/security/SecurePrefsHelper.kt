@@ -235,6 +235,10 @@ object SecurePrefsHelper {
         return verifyPinWithRateLimit(context, inputPin) is PinValidationResult.Success
     }
 
+    fun hashPinPbkdf2(pin: String, salt: String): String {
+        return "PBKDF2$" + computePbkdf2Hash(pin, salt.toByteArray(Charsets.UTF_8))
+    }
+
     private fun computePbkdf2Hash(pin: String, salt: ByteArray): String {
         return try {
             val spec = javax.crypto.spec.PBEKeySpec(pin.toCharArray(), salt, PBKDF2_ITERATIONS, PBKDF2_KEY_LENGTH)
