@@ -9,6 +9,7 @@ import com.example.data.model.BurnerChannel
 import com.example.data.model.EphemeralMessage
 import com.example.data.model.PmsgContact
 import com.example.data.repository.ChatRepository
+import com.example.data.worker.ExpiredMessageCleanupWorker
 import com.example.util.ContactsHelper
 import com.example.util.NotificationHelper
 import com.example.util.security.CryptoManager
@@ -79,6 +80,13 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _lastScreenshotDetectedTime = MutableStateFlow(0L)
     val lastScreenshotDetectedTime: StateFlow<Long> = _lastScreenshotDetectedTime.asStateFlow()
+
+    // Security PIN state flow
+    val securityPin: StateFlow<String> = MutableStateFlow("••••").asStateFlow()
+
+    // Notification on new conversation toggle
+    private val _notifyOnNewConversation = MutableStateFlow(true)
+    val notifyOnNewConversation: StateFlow<Boolean> = _notifyOnNewConversation.asStateFlow()
 
     // Read Receipts & Disappearing Effect Settings
     private val _readReceiptsEnabled = MutableStateFlow(SecurePrefsHelper.isReadReceiptsEnabled(application))
@@ -702,6 +710,20 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
 
     fun lockApp() {
         _isAppUnlocked.value = false
+    }
+
+    fun setNotifyOnNewConversation(enabled: Boolean) {
+        _notifyOnNewConversation.value = enabled
+        showFeedback(if (enabled) "Notificações de novas conversas ativadas." else "Notificações de novas conversas desativadas.")
+    }
+
+    fun onPanicWipe() {
+        panicWipeAll()
+    }
+
+    fun triggerWorkManagerCleanup() {
+        ExpiredMessageCleanupWorker.runImmediateCleanup(getApplication())
+        showFeedback("🧹 Limpeza em segundo plano disparada via WorkManager.")
     }
 
     fun showFeedback(message: String) {

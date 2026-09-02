@@ -101,6 +101,7 @@ import com.example.ui.theme.ImmersiveOutline
 import com.example.ui.theme.ImmersivePrimary
 import com.example.ui.theme.ImmersiveSurface
 import com.example.util.BiometricAuthHelper
+import com.example.util.security.SecurePrefsHelper
 
 @Composable
 fun SettingsScreen(
@@ -788,6 +789,8 @@ fun SettingsScreen(
                         }
                     }
                 }
+            }
+
             Spacer(modifier = Modifier.height(12.dp))
 
             // Duress PIN Card (Anti-Coercion Panic)

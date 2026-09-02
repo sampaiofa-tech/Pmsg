@@ -14,8 +14,16 @@ data class DeviceSecurityReport(
     val isDebuggable: Boolean,
     val isDebuggerAttached: Boolean,
     val securityLevelLabel: String,
-    val details: List<String>
-)
+    val details: List<String>,
+    val isTestKeysBuild: Boolean = false
+) {
+    val isDeviceSecure: Boolean
+        get() = !isRootDetected && !isDebuggable && !isDebuggerAttached
+    val hardwareKeyStoreSupported: Boolean
+        get() = isHardwareKeystoreActive || isStrongBoxSupported
+    val isRooted: Boolean
+        get() = isRootDetected
+}
 
 /**
  * Diagnostic utility to verify device security posture, TEE availability,
@@ -41,7 +49,8 @@ object DeviceIntegrityChecker {
         val hasStrongBox = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P &&
                 context.packageManager.hasSystemFeature(PackageManager.FEATURE_STRONGBOX_KEYSTORE)
 
-        val isRoot = checkRootBinaries() || checkTestKeys()
+        val hasTestKeys = checkTestKeys()
+        val isRoot = checkRootBinaries() || hasTestKeys
         val isDebuggable = (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
         val isDebuggerAttached = Debug.isDebuggerConnected() || Debug.waitingForDebugger()
 
@@ -80,7 +89,8 @@ object DeviceIntegrityChecker {
             isDebuggable = isDebuggable,
             isDebuggerAttached = isDebuggerAttached,
             securityLevelLabel = securityLevel,
-            details = details
+            details = details,
+            isTestKeysBuild = hasTestKeys
         )
     }
 

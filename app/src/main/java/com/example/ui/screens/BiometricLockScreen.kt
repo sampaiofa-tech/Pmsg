@@ -208,12 +208,7 @@ fun BiometricLockScreen(
                     authSuccess = true
                     authError = null
                     // Under duress coercion: silently shred all data and purge clipboard immediately
-                    kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
-                        com.example.util.security.ClipboardSanitizer.sanitizeNow(context)
-                        try {
-                            com.example.data.repository.ChatRepository(context).panicWipeAll()
-                        } catch (_: Exception) {}
-                    }
+                    com.example.util.security.ClipboardSanitizer.sanitizeNow(context)
                     onDuressTriggered?.invoke()
                     onUnlocked()
                 }

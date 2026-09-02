@@ -330,6 +330,10 @@ object SecurePrefsHelper {
     fun setClipboardAutoClearSeconds(context: Context, seconds: Int) =
         getPrefs(context).edit().putInt(KEY_CLIPBOARD_AUTO_CLEAR, seconds).apply()
 
+    fun getClipboardClearSeconds(context: Context): Int = getClipboardAutoClearSeconds(context)
+
+    fun setClipboardClearSeconds(context: Context, seconds: Int) = setClipboardAutoClearSeconds(context, seconds)
+
     fun isPrivacyCurtainEnabled(context: Context): Boolean =
         getPrefs(context).getBoolean(KEY_PRIVACY_CURTAIN, true)
 
