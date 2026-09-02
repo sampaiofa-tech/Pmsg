@@ -65,6 +65,8 @@ kotlin {
             implementation(libs.ktor.serialization.kotlinx.json)
             implementation(libs.coil3.compose)
             implementation(libs.coil3.network.ktor3)
+            implementation(libs.androidx.room.runtime)
+            implementation(libs.androidx.sqlite.bundled)
         }
 
         androidMain.dependencies {
@@ -107,7 +109,7 @@ kotlin {
 
         sourceSets.named("wasmJsMain") {
             dependencies {
-                implementation(libs.ktor.client.cio)
+                implementation(libs.ktor.client.js)
             }
         }
 

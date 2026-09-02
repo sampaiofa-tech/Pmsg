@@ -2,11 +2,12 @@ package com.example.data.model
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import java.util.concurrent.TimeUnit
+import kotlinx.serialization.Serializable
 
 /**
  * Burner communication channel / contact.
  */
+@Serializable
 @Entity(tableName = "burner_channels")
 data class BurnerChannel(
     @PrimaryKey
@@ -16,7 +17,7 @@ data class BurnerChannel(
     val securityTag: String = "E2EE Zero Trace",
     val channelCode: String = "VN-8942",
     val lastMessagePreview: String = "",
-    val lastMessageTimestamp: Long = System.currentTimeMillis(),
+    val lastMessageTimestamp: Long = 0L,
     val defaultTtlHours: Float = 24f,
     val isPinned: Boolean = false
 ) {
@@ -32,14 +33,19 @@ data class BurnerChannel(
         val remaining = remainingTime(currentTime)
         if (remaining <= 0) return "00:00"
 
-        val hours = TimeUnit.MILLISECONDS.toHours(remaining)
-        val minutes = TimeUnit.MILLISECONDS.toMinutes(remaining) % 60
-        val seconds = TimeUnit.MILLISECONDS.toSeconds(remaining) % 60
+        val totalSeconds = remaining / 1000
+        val hours = totalSeconds / 3600
+        val minutes = (totalSeconds % 3600) / 60
+        val seconds = totalSeconds % 60
+
+        val hStr = hours.toString().padStart(2, '0')
+        val mStr = minutes.toString().padStart(2, '0')
+        val sStr = seconds.toString().padStart(2, '0')
 
         return if (hours > 0) {
-            String.format("%02dh %02dm", hours, minutes)
+            "${hStr}h ${mStr}m"
         } else {
-            String.format("%02dm %02ds", minutes, seconds)
+            "${mStr}m ${sStr}s"
         }
     }
 }

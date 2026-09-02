@@ -2,6 +2,7 @@ package com.example.data.model
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import kotlinx.serialization.Serializable
 
 /**
  * Ephemeral message entity with strict TTL (Time-To-Live) expiration.
@@ -9,6 +10,7 @@ import androidx.room.PrimaryKey
  * Messages automatically expire after at most 24 hours (86,400,000 ms) or custom duration.
  * Once expired or incinerated, the record is permanently wiped with zero trace.
  */
+@Serializable
 @Entity(tableName = "ephemeral_messages")
 data class EphemeralMessage(
     @PrimaryKey(autoGenerate = true)
@@ -17,8 +19,8 @@ data class EphemeralMessage(
     val senderId: String, // "ME" or contact ID
     val senderName: String,
     val content: String,
-    val timestamp: Long = System.currentTimeMillis(),
-    val expiresAt: Long = System.currentTimeMillis() + (24 * 60 * 60 * 1000L), // Default strictly 24 hours
+    val timestamp: Long = 0L,
+    val expiresAt: Long = 0L, // Default strictly 24 hours
     val ttlOptionHours: Float = 24f, // 24f, 12f, 6f, 1f, 0.083f (5 min), 0.0083f (30 sec), etc.
     val isEncrypted: Boolean = true,
     val mediaType: String = "TEXT", // "TEXT", "IMAGE", "VIDEO", "FILE", "AUDIO", "BURNER_NOTE"
@@ -38,7 +40,7 @@ data class EphemeralMessage(
     /**
      * Milliseconds remaining until self-destruction.
      */
-    fun remainingMillis(now: Long = System.currentTimeMillis()): Long {
+    fun remainingMillis(now: Long): Long {
         if (disappearAfterReadSeconds > 0 && isRead && readAt != null) {
             val vanishAt = readAt + (disappearAfterReadSeconds * 1000L)
             return (minOf(expiresAt, vanishAt) - now).coerceAtLeast(0L)
@@ -49,7 +51,7 @@ data class EphemeralMessage(
     /**
      * Whether this message has expired.
      */
-    fun isExpired(now: Long = System.currentTimeMillis()): Boolean {
+    fun isExpired(now: Long): Boolean {
         if (isShredded) return true
         if (disappearAfterReadSeconds > 0 && isRead && readAt != null) {
             val vanishAt = readAt + (disappearAfterReadSeconds * 1000L)
@@ -61,7 +63,7 @@ data class EphemeralMessage(
     /**
      * Expiration progress between 0.0f (freshly sent) to 1.0f (fully expired / burned).
      */
-    fun expirationProgress(now: Long = System.currentTimeMillis()): Float {
+    fun expirationProgress(now: Long): Float {
         if (disappearAfterReadSeconds > 0 && isRead && readAt != null) {
             val vanishAt = readAt + (disappearAfterReadSeconds * 1000L)
             val totalDuration = (vanishAt - readAt).coerceAtLeast(1L)

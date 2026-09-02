@@ -70,14 +70,15 @@ class ExpiredMessageCleanupWorker(
                 }
             }
 
-            // 3. Purge expired, vanished, and shredded messages from Room database
-            val purgedByTtl = database.messageDao().purgeExpiredMessages(now)
-            // Explicitly purge anything older than 24 hours
-            val purgedBy24h = database.messageDao().deleteMessagesOlderThan(cutoff24Hours)
-            // Delete channels/conversations whose activity is older than 24 hours
-            val purgedChannels = database.channelDao().deleteChannelsOlderThan(cutoff24Hours)
-
-            val totalPurged = purgedByTtl + purgedBy24h
+            // 3. Delegate purge to common multiplatform scheduler
+            val scheduler = com.example.data.cleanup.ExpiredMessageCleanupScheduler(
+                messageDao = database.messageDao(),
+                channelDao = database.channelDao(),
+                onAntiForensicVacuum = { VanishDatabase.performAntiForensicVacuum() }
+            )
+            val report = scheduler.executeCleanupPass(now)
+            val totalPurged = report.purgedMessagesCount
+            val purgedChannels = report.purgedChannelsCount
 
             // 4. Save cleanup telemetry in SharedPreferences for UI status verification
             val prefs = applicationContext.getSharedPreferences("vanish_cleanup_prefs", Context.MODE_PRIVATE)
@@ -92,7 +93,7 @@ class ExpiredMessageCleanupWorker(
             Log.i(
                 TAG,
                 "ExpiredMessageCleanupWorker completed successfully. " +
-                        "Purged messages: $totalPurged (TTL/vanished: $purgedByTtl, 24h cutoff: $purgedBy24h), " +
+                        "Purged messages: $totalPurged, " +
                         "Deleted media files: $deletedMediaFilesCount, Purged channels: $purgedChannels"
             )
 
