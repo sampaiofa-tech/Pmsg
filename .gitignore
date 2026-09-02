@@ -20,3 +20,4 @@ debug.keystore
 captures/
 output.json
 .backups/
+.agents/

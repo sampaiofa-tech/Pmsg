@@ -62,7 +62,35 @@ O **Pmsg** foi desenvolvido com um objetivo claro: **garantir privacidade absolu
 
 O projeto inclui suíte de testes unitários para verificação criptográfica:
 - `CryptoManagerTest`: Testes de integridade de encriptação, fail-safe, detecção de corrupção e Crypto-Shredding.
-- `ExampleUnitTest`: Testes de cálculo de TTL, auto-desaparecimento após leitura e trituração de mensagens.
+- `EphemeralMessageCommonTest`: Testes de cálculo de TTL, auto-desaparecimento após leitura e trituração de mensagens.
+- `ExampleRobolectricTest`: Testes de integração de serviços em segundo plano e workers de limpeza.
+
+---
+
+## ⚡ Desenvolvimento & Compose Hot Reload (Antigravity IDE / Desktop)
+
+### Fluxo de Trabalho Diário
+1. No terminal integrado ou através das tarefas do VS Code (`Ctrl+Shift+P` > `Tasks: Run Task`), execute:
+   ```powershell
+   .\gradlew.bat :composeApp:hotRunDesktop --autoReload
+   ```
+2. A janela do aplicativo abrirá com `alwaysOnTop = true` e o título `Pmsg [desktop-dev]`, mantendo-se sempre visível durante o desenvolvimento.
+3. Edite o código da interface em `commonMain` ou `desktopMain` e salve (`Ctrl+S`): as alterações serão refletidas instantaneamente no aplicativo em execução, **sem reiniciar o processo**.
+
+### Servidor MCP (`compose-hot-reload`)
+O servidor Model Context Protocol integrado permite a automação e inspeção da interface via AI Agent. Ferramentas disponíveis:
+- `status`: Verifica o status atual da aplicação e do servidor de hot reload.
+- `reload`: Dispara o hot reload forçado dos componentes atualizados.
+- `await_reload`: Aguarda a finalização do ciclo de recompilação e injeção do reload.
+- `take_screenshot`: Captura a tela atual da janela do aplicativo desktop.
+- `get_semantic_tree`: Inspeciona a árvore de nós semânticos e acessibilidade da UI Compose.
+- `get_logs`: Obtém os logs de runtime do aplicativo Compose Desktop.
+- `click`: Simula cliques em elementos interativos da interface.
+- `type_text`: Simula digitação de texto em campos selecionados.
+- `scroll`: Realiza rolagem programática em listas e containers.
+- `list_windows`: Lista as janelas ativas da aplicação.
+- `get_ui_error`: Retorna eventuais exceções e erros de renderização em tempo real.
+- `restart`: Reinicia o processo da aplicação desktop quando necessário.
 
 ---
 

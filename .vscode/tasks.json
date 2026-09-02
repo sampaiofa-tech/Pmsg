@@ -2,11 +2,11 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "Build Debug APK (Gradle)",
+            "label": "desktop (hot reload)",
             "type": "shell",
-            "command": "./gradlew assembleDebug",
+            "command": ".\\gradlew.bat :composeApp:hotRunDesktop --autoReload",
             "windows": {
-                "command": ".\\gradlew.bat assembleDebug"
+                "command": ".\\gradlew.bat :composeApp:hotRunDesktop --autoReload"
             },
             "group": {
                 "kind": "build",
@@ -15,34 +15,29 @@
             "problemMatcher": []
         },
         {
-            "label": "Run Unit Tests (Gradle)",
+            "label": "web (wasm)",
             "type": "shell",
-            "command": "./gradlew test",
+            "command": ".\\gradlew.bat :composeApp:wasmJsBrowserDevelopmentRun",
             "windows": {
-                "command": ".\\gradlew.bat test"
-            },
-            "group": {
-                "kind": "test",
-                "isDefault": true
-            },
-            "problemMatcher": []
-        },
-        {
-            "label": "Install Debug APK on Device/Emulator (Gradle)",
-            "type": "shell",
-            "command": "./gradlew installDebug",
-            "windows": {
-                "command": ".\\gradlew.bat installDebug"
+                "command": ".\\gradlew.bat :composeApp:wasmJsBrowserDevelopmentRun"
             },
             "group": "build",
             "problemMatcher": []
         },
         {
-            "label": "Clean Project (Gradle)",
+            "label": "Build Debug APK (Android)",
             "type": "shell",
-            "command": "./gradlew clean",
-            "windows": {
-                "command": ".\\gradlew.bat clean"
+            "command": ".\\gradlew.bat :composeApp:assembleDebug",
+            "group": "build",
+            "problemMatcher": []
+        },
+        {
+            "label": "Run Unit Tests",
+            "type": "shell",
+            "command": ".\\gradlew.bat :composeApp:testDebugUnitTest",
+            "group": {
+                "kind": "test",
+                "isDefault": true
             },
             "problemMatcher": []
         }

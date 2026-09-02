@@ -6,7 +6,8 @@ import androidx.compose.ui.window.application
 fun main() = application {
     Window(
         onCloseRequest = ::exitApplication,
-        title = "Pmsg - Ephemeral Secure Messaging"
+        title = "Pmsg [desktop-dev]",
+        alwaysOnTop = true
     ) {
         App()
     }
