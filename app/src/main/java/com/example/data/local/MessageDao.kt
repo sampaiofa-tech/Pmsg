@@ -47,10 +47,34 @@ interface MessageDao {
     suspend fun deleteMessageById(id: Long)
 
     /**
-     * Purges and permanently erases all expired or shredded messages.
+     * Retrieves all messages that have expired or been shredded or vanished.
+     */
+    @Query("""
+        SELECT * FROM ephemeral_messages 
+        WHERE expiresAt <= :currentTime 
+           OR isShredded = 1 
+           OR (disappearAfterReadSeconds > 0 AND isRead = 1 AND readAt IS NOT NULL AND :currentTime >= (readAt + (disappearAfterReadSeconds * 1000)))
+           OR (isViewOnce = 1 AND isViewed = 1)
+    """)
+    suspend fun getExpiredMessages(currentTime: Long): List<EphemeralMessage>
+
+    /**
+     * Retrieves messages older than a given absolute cutoff timestamp.
+     */
+    @Query("SELECT * FROM ephemeral_messages WHERE timestamp <= :cutoffTime")
+    suspend fun getMessagesOlderThan(cutoffTime: Long): List<EphemeralMessage>
+
+    /**
+     * Purges and permanently erases all expired, vanished, or shredded messages.
      * Leaves zero traces behind.
      */
-    @Query("DELETE FROM ephemeral_messages WHERE expiresAt <= :currentTime OR isShredded = 1")
+    @Query("""
+        DELETE FROM ephemeral_messages 
+        WHERE expiresAt <= :currentTime 
+           OR isShredded = 1 
+           OR (disappearAfterReadSeconds > 0 AND isRead = 1 AND readAt IS NOT NULL AND :currentTime >= (readAt + (disappearAfterReadSeconds * 1000)))
+           OR (isViewOnce = 1 AND isViewed = 1)
+    """)
     suspend fun purgeExpiredMessages(currentTime: Long): Int
 
     /**

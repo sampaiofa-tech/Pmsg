@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -215,8 +216,8 @@ fun ChatScreen(
         }
     }
 
-    // Auto-scroll to bottom on new messages
-    LaunchedEffect(messages.size) {
+    // Auto-scroll to bottom on new messages or input change
+    LaunchedEffect(messages.size, textInput.isNotEmpty()) {
         if (messages.isNotEmpty()) {
             listState.animateScrollToItem(messages.size - 1)
         }
@@ -230,7 +231,13 @@ fun ChatScreen(
     }
 
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        snackbarHost = {
+            SnackbarHost(
+                hostState = snackbarHostState,
+                modifier = Modifier.navigationBarsPadding().padding(horizontal = 16.dp, vertical = 8.dp)
+            )
+        },
         containerColor = ImmersiveSurface,
         topBar = {
             // Immersive Top App Bar
@@ -509,7 +516,7 @@ fun ChatScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
+                .padding(top = innerPadding.calculateTopPadding())
                 .background(
                     Brush.verticalGradient(
                         colors = listOf(
@@ -519,7 +526,6 @@ fun ChatScreen(
                         )
                     )
                 )
-                .windowInsetsPadding(WindowInsets.ime)
         ) {
             // Expiry Info Pill & Screenshot Alert Banner
             if (isScreenshotLockdownActive) {

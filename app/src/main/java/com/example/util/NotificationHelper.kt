@@ -10,6 +10,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.app.Person
 import androidx.core.content.ContextCompat
 import com.example.MainActivity
 import com.example.R
@@ -22,22 +23,23 @@ object NotificationHelper {
     private var notificationCounter = 0
 
     /**
-     * Initializes notification channels for Android 8.0+ (Oreo+).
+     * Initializes notification channels for Android 8.0+ (Oreo+) with native system properties.
      */
     fun createNotificationChannels(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
-            // Channel specifically and strictly for incoming new conversations
+            // Channel specifically for incoming conversations matching Android system standards
             val conversationsChannel = NotificationChannel(
                 CHANNEL_NEW_CONVERSATIONS_ID,
-                "Chegada de Novas Conversas",
+                "Mensagens e Conversas",
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                description = "Notificações exclusivas quando uma nova conversa for iniciada por um contato"
+                description = "Notificações de novas conversas e mensagens recebidas no Pmsg"
                 enableLights(true)
                 enableVibration(true)
                 setShowBadge(true)
+                lockscreenVisibility = NotificationCompat.VISIBILITY_PRIVATE
             }
 
             notificationManager.createNotificationChannel(conversationsChannel)
@@ -59,7 +61,8 @@ object NotificationHelper {
     }
 
     /**
-     * Sends a push notification STRICTLY when a new conversation arrives.
+     * Sends a push notification formatted as a native Android Messaging notification.
+     * Default behavior adheres strictly to user directive: não notificar quando uma nova conversa for iniciada.
      */
     fun showNewConversationNotification(
         context: Context,
@@ -67,6 +70,13 @@ object NotificationHelper {
         previewText: String,
         roomId: String = ""
     ) {
+        val prefs = context.getSharedPreferences("pmsg_app_prefs", Context.MODE_PRIVATE)
+        val notifyEnabled = prefs.getBoolean("notify_on_new_conversation", false)
+        if (!notifyEnabled) {
+            // Strictly do not notify when a new conversation is initiated
+            return
+        }
+
         if (!hasNotificationPermission(context)) return
 
         createNotificationChannels(context)
@@ -83,19 +93,38 @@ object NotificationHelper {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val title = "💬 Nova conversa: $contactName"
-        val content = if (previewText.isNotBlank()) previewText else "$contactName iniciou uma conversa efêmera protegida com você."
+        val cleanContent = if (previewText.isNotBlank()) previewText else "Nova conversa protegida iniciada"
+
+        val senderPerson = Person.Builder()
+            .setName(contactName)
+            .setKey(contactName)
+            .build()
+
+        val userPerson = Person.Builder()
+            .setName("Você")
+            .setKey("user_me")
+            .build()
+
+        val messagingStyle = NotificationCompat.MessagingStyle(userPerson)
+            .setConversationTitle(contactName)
+            .addMessage(
+                NotificationCompat.MessagingStyle.Message(
+                    cleanContent,
+                    System.currentTimeMillis(),
+                    senderPerson
+                )
+            )
 
         val notification = NotificationCompat.Builder(context, CHANNEL_NEW_CONVERSATIONS_ID)
             .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle(title)
-            .setContentText(content)
-            .setStyle(NotificationCompat.BigTextStyle().bigText(content))
+            .setStyle(messagingStyle)
+            .setContentTitle(contactName)
+            .setContentText(cleanContent)
+            .setCategory(NotificationCompat.CATEGORY_MESSAGE)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setDefaults(NotificationCompat.DEFAULT_ALL)
+            .setColor(0xFF22C55E.toInt())
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)
-            .setSubText("Pmsg (Nova Conversa)")
             .build()
 
         try {

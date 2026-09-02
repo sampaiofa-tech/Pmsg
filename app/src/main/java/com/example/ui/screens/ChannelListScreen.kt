@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -154,7 +155,13 @@ fun ChannelListScreen(
     }
 
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        snackbarHost = {
+            SnackbarHost(
+                hostState = snackbarHostState,
+                modifier = Modifier.navigationBarsPadding().padding(horizontal = 16.dp, vertical = 8.dp)
+            )
+        },
         containerColor = ImmersiveSurface,
         floatingActionButton = {
             FloatingActionButton(
@@ -546,7 +553,7 @@ fun ChannelListScreen(
                             )
                         }
 
-                        // Test incoming new conversation notification
+                        // Test incoming new conversation simulation (silent by default)
                         OutlinedButton(
                             onClick = onSimulateIncomingNewConversation,
                             shape = RoundedCornerShape(8.dp),
@@ -554,7 +561,7 @@ fun ChannelListScreen(
                             contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
                             modifier = Modifier.height(30.dp).testTag("simulate_new_conv_button")
                         ) {
-                            Icon(Icons.Default.NotificationsActive, contentDescription = null, tint = ImmersivePrimary, modifier = Modifier.size(14.dp))
+                            Icon(Icons.Default.Forum, contentDescription = null, tint = ImmersivePrimary, modifier = Modifier.size(14.dp))
                             Spacer(modifier = Modifier.width(4.dp))
                             Text("Simular Chegada", color = ImmersivePrimary, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                         }

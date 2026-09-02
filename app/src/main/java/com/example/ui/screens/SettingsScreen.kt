@@ -14,9 +14,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -116,8 +118,10 @@ fun SettingsScreen(
     shakeRequiresConfirmation: Boolean = false,
     isHardwareBackedCrypto: Boolean = true,
     notificationsEnabled: Boolean,
+    notifyOnNewConversation: Boolean = false,
     onRequestNotificationPermission: () -> Unit,
     onTestNotification: () -> Unit,
+    onToggleNotifyOnNewConversation: (Boolean) -> Unit = {},
     onToggleScreenProtection: () -> Unit,
     onToggleScreenshotDetection: (Boolean) -> Unit = {},
     onToggleBlockSensitiveOnScreenshot: (Boolean) -> Unit = {},
@@ -133,6 +137,7 @@ fun SettingsScreen(
     onToggleShakeRequiresConfirmation: (Boolean) -> Unit = {},
     onSimulateShake: () -> Unit = {},
     onLockNow: () -> Unit = {},
+    onTriggerWorkManagerCleanup: () -> Unit = {},
     onPanicWipe: () -> Unit,
     onBack: () -> Unit
 ) {
@@ -170,6 +175,7 @@ fun SettingsScreen(
     )
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         containerColor = ImmersiveSurface,
         topBar = {
             Box(
@@ -258,7 +264,7 @@ fun SettingsScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
+                .padding(top = innerPadding.calculateTopPadding())
                 .background(
                     Brush.verticalGradient(
                         colors = listOf(
@@ -268,9 +274,10 @@ fun SettingsScreen(
                         )
                     )
                 )
+                .imePadding()
+                .navigationBarsPadding()
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp, vertical = 16.dp)
-                .navigationBarsPadding()
         ) {
             // Security Shield Header Banner
             Card(
@@ -1611,67 +1618,107 @@ fun SettingsScreen(
                 colors = CardDefaults.cardColors(containerColor = ImmersiveCard),
                 border = androidx.compose.foundation.BorderStroke(0.8.dp, ImmersiveOutline)
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+                Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
                     Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(36.dp)
-                                .clip(CircleShape)
-                                .background(if (notificationsEnabled) ImmersivePrimary.copy(alpha = 0.15f) else ImmersiveCardVariant),
-                            contentAlignment = Alignment.Center
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f)
                         ) {
-                            Icon(
-                                imageVector = if (notificationsEnabled) Icons.Default.NotificationsActive else Icons.Default.Notifications,
-                                contentDescription = null,
-                                tint = if (notificationsEnabled) ImmersivePrimary else ImmersiveMuted,
-                                modifier = Modifier.size(20.dp)
-                            )
+                            Box(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .clip(CircleShape)
+                                    .background(if (notificationsEnabled) ImmersivePrimary.copy(alpha = 0.15f) else ImmersiveCardVariant),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = if (notificationsEnabled) Icons.Default.NotificationsActive else Icons.Default.Notifications,
+                                    contentDescription = null,
+                                    tint = if (notificationsEnabled) ImmersivePrimary else ImmersiveMuted,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column {
+                                Text(
+                                    text = "Permissão de Notificações",
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = ImmersiveOnSurface
+                                )
+                                Text(
+                                    text = if (notificationsEnabled) "Autorizado no sistema Android" else "Desativadas no sistema.",
+                                    fontSize = 11.sp,
+                                    color = ImmersiveMutedLight
+                                )
+                            }
                         }
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column {
-                            Text(
-                                text = "Notificações Seguras",
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = ImmersiveOnSurface
-                            )
-                            Text(
-                                text = if (notificationsEnabled) "Avisa novas mensagens. Limpeza é 100% silenciosa." else "Desativadas.",
-                                fontSize = 11.sp,
-                                color = ImmersiveMutedLight
-                            )
+
+                        if (!notificationsEnabled) {
+                            Button(
+                                onClick = onRequestNotificationPermission,
+                                colors = ButtonDefaults.buttonColors(containerColor = ImmersivePrimary),
+                                shape = RoundedCornerShape(8.dp),
+                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                                modifier = Modifier.height(32.dp).testTag("enable_notifications_button")
+                            ) {
+                                Text("Ativar", color = ImmersiveOnPrimary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            }
+                        } else {
+                            OutlinedButton(
+                                onClick = onTestNotification,
+                                shape = RoundedCornerShape(8.dp),
+                                border = androidx.compose.foundation.BorderStroke(0.8.dp, ImmersivePrimary),
+                                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                                modifier = Modifier.height(32.dp).testTag("test_notification_button")
+                            ) {
+                                Text("Testar", color = ImmersivePrimary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            }
                         }
                     }
 
-                    if (!notificationsEnabled) {
-                        Button(
-                            onClick = onRequestNotificationPermission,
-                            colors = ButtonDefaults.buttonColors(containerColor = ImmersivePrimary),
-                            shape = RoundedCornerShape(8.dp),
-                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                            modifier = Modifier.height(32.dp).testTag("enable_notifications_button")
-                        ) {
-                            Text("Ativar", color = ImmersiveOnPrimary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.height(14.dp))
+                    HorizontalDivider(color = ImmersiveOutline, thickness = 0.6.dp)
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    // Toggle: Notificar quando uma nova conversa for iniciada (Desativado por padrão)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Notificar novas conversas iniciadas",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = ImmersiveOnSurface
+                            )
+                            Text(
+                                text = if (notifyOnNewConversation)
+                                    "Avisar na chegada de nova conversa."
+                                else
+                                    "Silencioso: Não notificar quando uma nova conversa for iniciada.",
+                                fontSize = 11.sp,
+                                color = if (notifyOnNewConversation) ImmersivePrimary else ImmersiveMutedLight
+                            )
                         }
-                    } else {
-                        OutlinedButton(
-                            onClick = onTestNotification,
-                            shape = RoundedCornerShape(8.dp),
-                            border = androidx.compose.foundation.BorderStroke(0.8.dp, ImmersivePrimary),
-                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                            modifier = Modifier.height(32.dp).testTag("test_notification_button")
-                        ) {
-                            Text("Testar", color = ImmersivePrimary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Switch(
+                            checked = notifyOnNewConversation,
+                            onCheckedChange = onToggleNotifyOnNewConversation,
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = ImmersivePrimary,
+                                checkedTrackColor = ImmersivePrimary.copy(alpha = 0.3f),
+                                uncheckedThumbColor = ImmersiveMuted,
+                                uncheckedTrackColor = ImmersiveCardVariant
+                            ),
+                            modifier = Modifier.testTag("notify_on_new_conversation_switch")
+                        )
                     }
                 }
             }
@@ -1683,9 +1730,83 @@ fun SettingsScreen(
 
             InfoProtocolCard(
                 icon = Icons.Default.AutoDelete,
-                title = "Autodestruição em 24h & Room Purge",
-                description = "O banco de dados Room e o RoomPurgeWorker expurgam automaticamente mensagens com tempo expirado."
+                title = "Autodestruição & WorkManager Purge",
+                description = "O WorkManager periódico (ciclo de 15m) e Room limpam automaticamente mensagens expiradas e mídias descartadas do banco com zero rastro."
             )
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // WorkManager Periodic Purge Controller Card
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(14.dp),
+                colors = CardDefaults.cardColors(containerColor = ImmersiveCardVariant),
+                border = androidx.compose.foundation.BorderStroke(0.8.dp, ImmersiveOutline)
+            ) {
+                Column(modifier = Modifier.fillMaxWidth().padding(14.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                            Box(
+                                modifier = Modifier
+                                    .size(32.dp)
+                                    .clip(CircleShape)
+                                    .background(ElectricCyan.copy(alpha = 0.15f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.DeleteSweep,
+                                    contentDescription = null,
+                                    tint = ElectricCyan,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column {
+                                Text(
+                                    text = "Limpeza Room (WorkManager)",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = ImmersiveOnSurface
+                                )
+                                Text(
+                                    text = "Status: Agendado e ativo em segundo plano (cada 15m)",
+                                    fontSize = 11.sp,
+                                    color = ImmersiveOnlineGreen
+                                )
+                            }
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(10.dp))
+                    OutlinedButton(
+                        onClick = onTriggerWorkManagerCleanup,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(36.dp)
+                            .testTag("trigger_workmanager_cleanup_button"),
+                        shape = RoundedCornerShape(10.dp),
+                        border = androidx.compose.foundation.BorderStroke(0.8.dp, ElectricCyan.copy(alpha = 0.8f)),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.DeleteSweep,
+                            contentDescription = null,
+                            tint = ElectricCyan,
+                            modifier = Modifier.size(15.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Executar Varredura de Limpeza Agora",
+                            color = ElectricCyan,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
 
             Spacer(modifier = Modifier.height(10.dp))
 

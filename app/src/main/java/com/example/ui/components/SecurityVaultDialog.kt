@@ -554,7 +554,7 @@ fun SecurityVaultDialog(
                                 maxLines = 1
                             )
                             Text(
-                                text = if (notificationsEnabled) "Ativo: notifica novas conversas. Destruição é 100% silenciosa." else "Toque para autorizar avisos.",
+                                text = if (notificationsEnabled) "Autorizado. Modo discreto ativo: não notifica ao iniciar conversas." else "Toque para autorizar avisos.",
                                 fontSize = 11.sp,
                                 color = ImmersiveMutedLight,
                                 lineHeight = 14.sp

@@ -90,9 +90,9 @@ class MainActivity : FragmentActivity() {
       ) { isGranted ->
         hasNotificationPermission = isGranted
         if (isGranted) {
-          viewModel.showFeedback("🔔 Notificações ativadas! (Avisos apenas de novas conversas)")
+          viewModel.showFeedback("🔔 Notificações do sistema autorizadas.")
         } else {
-          viewModel.showFeedback("⚠️ Notificações foram negadas pelo usuário.")
+          viewModel.showFeedback("⚠️ Notificações foram negadas.")
         }
       }
 
@@ -105,15 +105,6 @@ class MainActivity : FragmentActivity() {
           viewModel.showFeedback("👥 Contatos sincronizados com sucesso!")
         } else {
           viewModel.showFeedback("⚠️ Permissão de contatos negada.")
-        }
-      }
-
-      // Automatically request notification permission on Android 13+ on first launch
-      LaunchedEffect(Unit) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-          if (!hasNotificationPermission) {
-            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-          }
         }
       }
 
@@ -272,6 +263,7 @@ fun VanishApp(
   val shakeToClearEnabled by viewModel.shakeToClearEnabled.collectAsStateWithLifecycle()
   val shakeSensitivity by viewModel.shakeSensitivity.collectAsStateWithLifecycle()
   val shakeRequiresConfirmation by viewModel.shakeRequiresConfirmation.collectAsStateWithLifecycle()
+  val notifyOnNewConversation by viewModel.notifyOnNewConversation.collectAsStateWithLifecycle()
   val shakeDialogVisible by viewModel.shakeDialogVisible.collectAsStateWithLifecycle()
   val shakeWipeEventTimestamp by viewModel.shakeWipeEventTimestamp.collectAsStateWithLifecycle()
   val isAppUnlocked by viewModel.isAppUnlocked.collectAsStateWithLifecycle()
@@ -338,8 +330,10 @@ fun VanishApp(
           shakeRequiresConfirmation = shakeRequiresConfirmation,
           isHardwareBackedCrypto = viewModel.isHardwareBackedCrypto,
           notificationsEnabled = notificationsEnabled,
+          notifyOnNewConversation = notifyOnNewConversation,
           onRequestNotificationPermission = onRequestNotificationPermission,
           onTestNotification = { viewModel.triggerTestNotification() },
+          onToggleNotifyOnNewConversation = { viewModel.setNotifyOnNewConversation(it) },
           onToggleScreenProtection = { viewModel.toggleScreenProtection() },
           onToggleScreenshotDetection = { viewModel.setScreenshotDetectionEnabled(it) },
           onToggleBlockSensitiveOnScreenshot = { viewModel.setBlockSensitiveOnScreenshot(it) },
@@ -355,6 +349,7 @@ fun VanishApp(
           onToggleShakeRequiresConfirmation = { viewModel.setShakeRequiresConfirmation(it) },
           onSimulateShake = { viewModel.onDeviceShaken() },
           onLockNow = { viewModel.lockApp() },
+          onTriggerWorkManagerCleanup = { viewModel.triggerWorkManagerCleanup() },
           onPanicWipe = { viewModel.panicWipeAll() },
           onBack = { isSettingsOpen = false }
         )
