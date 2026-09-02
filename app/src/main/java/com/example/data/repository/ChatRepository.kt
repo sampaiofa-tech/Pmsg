@@ -137,10 +137,15 @@ class ChatRepository(
         messageDao.overwriteRoomMessages(roomId, noise)
         messageDao.incinerateRoomMessages(roomId)
         channelDao.updateLastMessage(roomId, "Histórico apagado • Zero Trace", System.currentTimeMillis())
+        com.example.data.local.VanishDatabase.performAntiForensicVacuum()
     }
 
     suspend fun purgeExpired(currentTime: Long): Int = withContext(Dispatchers.IO) {
-        messageDao.purgeExpiredMessages(currentTime)
+        val count = messageDao.purgeExpiredMessages(currentTime)
+        if (count > 0) {
+            com.example.data.local.VanishDatabase.performAntiForensicVacuum()
+        }
+        count
     }
 
     suspend fun incinerateRoom(roomId: String) = withContext(Dispatchers.IO) {
@@ -148,6 +153,7 @@ class ChatRepository(
         messageDao.overwriteRoomMessages(roomId, noise)
         messageDao.incinerateRoomMessages(roomId)
         channelDao.deleteChannelById(roomId)
+        com.example.data.local.VanishDatabase.performAntiForensicVacuum()
     }
 
     suspend fun deleteChannel(channelId: String) = withContext(Dispatchers.IO) {
@@ -155,6 +161,7 @@ class ChatRepository(
         messageDao.overwriteRoomMessages(channelId, noise)
         messageDao.incinerateRoomMessages(channelId)
         channelDao.deleteChannelById(channelId)
+        com.example.data.local.VanishDatabase.performAntiForensicVacuum()
     }
 
     suspend fun createBurnerChannel(
@@ -188,6 +195,9 @@ class ChatRepository(
         messageDao.overwriteAllMessages(noise)
         val deletedCount = messageDao.panicWipeAllMessages()
         channelDao.panicWipeAllChannels()
+
+        // Anti-Forensics: Force full database vacuum to truncate storage pages
+        com.example.data.local.VanishDatabase.performFullVacuum()
 
         // Hardware Crypto-Shredding: Purge master key from KeyStore so deleted blocks cannot be recovered
         CryptoManager.invalidateAndRecreateMasterKey()

@@ -180,6 +180,30 @@ class MainActivity : FragmentActivity() {
     }
   }
 
+  override fun onPause() {
+    super.onPause()
+    if (com.example.util.security.SecurePrefsHelper.isPrivacyCurtainEnabled(this)) {
+      window.setFlags(
+        WindowManager.LayoutParams.FLAG_SECURE,
+        WindowManager.LayoutParams.FLAG_SECURE
+      )
+    }
+  }
+
+  override fun onResume() {
+    super.onResume()
+    val screenProtection = viewModel.screenProtectionEnabled.value
+    val curtain = com.example.util.security.SecurePrefsHelper.isPrivacyCurtainEnabled(this)
+    if (screenProtection || curtain) {
+      window.setFlags(
+        WindowManager.LayoutParams.FLAG_SECURE,
+        WindowManager.LayoutParams.FLAG_SECURE
+      )
+    } else {
+      window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
+    }
+  }
+
   override fun onStart() {
     super.onStart()
     if (::screenshotDetector.isInitialized && viewModel.screenshotDetectionEnabled.value) {
@@ -260,6 +284,7 @@ fun VanishApp(
       onVerifyPin = { viewModel.verifySecurityPin(it) },
       biometricEnabled = biometricLockEnabled,
       autoLockTimeoutMinutes = autoLockTimeoutMinutes,
+      onDuressTriggered = { viewModel.onPanicWipe() },
       onUnlocked = { viewModel.unlockApp() }
     )
     return

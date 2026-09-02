@@ -8,21 +8,26 @@ import java.security.SecureRandom
 
 sealed class PinValidationResult {
     object Success : PinValidationResult()
+    object DuressTriggered : PinValidationResult()
     data class InvalidPin(val failedAttempts: Int, val attemptsUntilLockout: Int) : PinValidationResult()
     data class LockedOut(val remainingSeconds: Int) : PinValidationResult()
 }
 
 /**
  * Helper to securely manage user authentication credentials (PIN)
- * with individual cryptographic salt and SHA-256 hashing.
- * Prevents plaintext password / PIN leakage even upon raw device backup inspections.
- * Includes rate-limiting and progressive cooldown lockout against brute-force attacks.
+ * with individual cryptographic salt and key-stretched PBKDF2WithHmacSHA256 hashing.
+ * Prevents offline dictionary attacks and includes progressive cooldown lockout against brute-force.
+ * Also supports Duress PIN (PIN de Coação) for silent defense under threat.
  */
 object SecurePrefsHelper {
 
     private const val PREFS_NAME = "pmsg_vault_security_prefs"
-    private const val KEY_PIN_HASH = "sec_pin_hash_v2"
-    private const val KEY_PIN_SALT = "sec_pin_salt_v2"
+    private const val KEY_PIN_HASH = "sec_pin_hash_v3_pbkdf2"
+    private const val KEY_PIN_SALT = "sec_pin_salt_v3"
+    private const val KEY_PIN_HASH_LEGACY = "sec_pin_hash_v2"
+    private const val KEY_PIN_SALT_LEGACY = "sec_pin_salt_v2"
+    private const val KEY_DURESS_PIN_HASH = "sec_duress_pin_hash"
+    private const val KEY_DURESS_PIN_SALT = "sec_duress_pin_salt"
     private const val KEY_FAILED_PIN_ATTEMPTS = "sec_failed_pin_attempts"
     private const val KEY_LOCKOUT_UNTIL_TS = "sec_lockout_until_ts"
     private const val KEY_SCREEN_PROTECTION = "sec_screen_protection"
@@ -36,9 +41,12 @@ object SecurePrefsHelper {
     private const val KEY_SHAKE_TO_CLEAR = "sec_shake_to_clear"
     private const val KEY_SHAKE_SENSITIVITY = "sec_shake_sensitivity"
     private const val KEY_SHAKE_CONFIRMATION = "sec_shake_confirmation"
+    private const val KEY_CLIPBOARD_AUTO_CLEAR = "sec_clipboard_auto_clear"
+    private const val KEY_PRIVACY_CURTAIN = "sec_privacy_curtain"
 
     private const val DEFAULT_PIN = "1234"
-    private const val MAX_ATTEMPTS_BEFORE_FIRST_LOCKOUT = 5
+    private const val PBKDF2_ITERATIONS = 10000
+    private const val PBKDF2_KEY_LENGTH = 256
 
     private fun getPrefs(context: Context): SharedPreferences {
         return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -49,27 +57,74 @@ object SecurePrefsHelper {
      */
     fun ensurePinInitialized(context: Context) {
         val prefs = getPrefs(context)
-        if (!prefs.contains(KEY_PIN_HASH) || !prefs.contains(KEY_PIN_SALT)) {
+        if (!prefs.contains(KEY_PIN_HASH) && !prefs.contains(KEY_PIN_HASH_LEGACY)) {
             setPin(context, DEFAULT_PIN)
         }
     }
 
     /**
-     * Sets a new 4-digit PIN, generating a fresh cryptographically random 16-byte salt.
+     * Sets a new 4-digit PIN, generating a fresh cryptographically random 16-byte salt
+     * and deriving a PBKDF2WithHmacSHA256 key-stretched hash.
      */
     fun setPin(context: Context, newPin: String) {
         val saltBytes = ByteArray(16)
         SecureRandom().nextBytes(saltBytes)
         val saltBase64 = Base64.encodeToString(saltBytes, Base64.NO_WRAP)
-
-        val hashBase64 = computeHash(newPin, saltBytes)
+        val hashBase64 = computePbkdf2Hash(newPin, saltBytes)
 
         getPrefs(context).edit()
             .putString(KEY_PIN_SALT, saltBase64)
             .putString(KEY_PIN_HASH, hashBase64)
+            .remove(KEY_PIN_HASH_LEGACY)
+            .remove(KEY_PIN_SALT_LEGACY)
             .putInt(KEY_FAILED_PIN_ATTEMPTS, 0)
             .putLong(KEY_LOCKOUT_UNTIL_TS, 0L)
             .apply()
+    }
+
+    /**
+     * Sets or updates a Duress PIN (PIN de Coação).
+     * If entered on the lock screen under duress, the app will execute silent protection.
+     */
+    fun setDuressPin(context: Context, duressPin: String) {
+        if (duressPin.length != 4 || !duressPin.all { it.isDigit() }) return
+        val saltBytes = ByteArray(16)
+        SecureRandom().nextBytes(saltBytes)
+        val saltBase64 = Base64.encodeToString(saltBytes, Base64.NO_WRAP)
+        val hashBase64 = computePbkdf2Hash(duressPin, saltBytes)
+
+        getPrefs(context).edit()
+            .putString(KEY_DURESS_PIN_SALT, saltBase64)
+            .putString(KEY_DURESS_PIN_HASH, hashBase64)
+            .apply()
+    }
+
+    fun clearDuressPin(context: Context) {
+        getPrefs(context).edit()
+            .remove(KEY_DURESS_PIN_SALT)
+            .remove(KEY_DURESS_PIN_HASH)
+            .apply()
+    }
+
+    fun isDuressPinConfigured(context: Context): Boolean {
+        val prefs = getPrefs(context)
+        return prefs.contains(KEY_DURESS_PIN_HASH) && prefs.contains(KEY_DURESS_PIN_SALT)
+    }
+
+    private fun checkDuressPin(context: Context, inputPin: String): Boolean {
+        val prefs = getPrefs(context)
+        val saltBase64 = prefs.getString(KEY_DURESS_PIN_SALT, null) ?: return false
+        val expectedHash = prefs.getString(KEY_DURESS_PIN_HASH, null) ?: return false
+        return try {
+            val saltBytes = Base64.decode(saltBase64, Base64.NO_WRAP)
+            val computedHash = computePbkdf2Hash(inputPin, saltBytes)
+            MessageDigest.isEqual(
+                computedHash.toByteArray(Charsets.UTF_8),
+                expectedHash.toByteArray(Charsets.UTF_8)
+            )
+        } catch (_: Exception) {
+            false
+        }
     }
 
     /**
@@ -88,8 +143,10 @@ object SecurePrefsHelper {
     }
 
     /**
-     * Verifies if the provided PIN matches the salted cryptographic hash
-     * with anti-brute-force rate limiting and cooldown enforcement.
+     * Verifies if the provided PIN matches:
+     * 1. Duress PIN -> triggers DuressTriggered
+     * 2. Real PIN -> triggers Success with rate-limit counter reset
+     * 3. Mismatch -> progressive cooldown lockout
      */
     fun verifyPinWithRateLimit(context: Context, inputPin: String): PinValidationResult {
         ensurePinInitialized(context)
@@ -98,19 +155,46 @@ object SecurePrefsHelper {
             return PinValidationResult.LockedOut(remainingLockout)
         }
 
-        val prefs = getPrefs(context)
-        val saltBase64 = prefs.getString(KEY_PIN_SALT, null)
-        val expectedHash = prefs.getString(KEY_PIN_HASH, null)
+        // 1. Check Duress PIN first
+        if (checkDuressPin(context, inputPin)) {
+            return PinValidationResult.DuressTriggered
+        }
 
-        val isValid = if (saltBase64 == null || expectedHash == null) {
-            inputPin == DEFAULT_PIN
+        // 2. Check Standard PIN (PBKDF2 with SHA-256 legacy migration)
+        val prefs = getPrefs(context)
+        var isValid = false
+
+        if (prefs.contains(KEY_PIN_HASH) && prefs.contains(KEY_PIN_SALT)) {
+            val saltBase64 = prefs.getString(KEY_PIN_SALT, null)
+            val expectedHash = prefs.getString(KEY_PIN_HASH, null)
+            if (saltBase64 != null && expectedHash != null) {
+                val saltBytes = Base64.decode(saltBase64, Base64.NO_WRAP)
+                val computedHash = computePbkdf2Hash(inputPin, saltBytes)
+                isValid = MessageDigest.isEqual(
+                    computedHash.toByteArray(Charsets.UTF_8),
+                    expectedHash.toByteArray(Charsets.UTF_8)
+                )
+            }
+        } else if (prefs.contains(KEY_PIN_HASH_LEGACY) && prefs.contains(KEY_PIN_SALT_LEGACY)) {
+            val saltBase64 = prefs.getString(KEY_PIN_SALT_LEGACY, null)
+            val expectedHash = prefs.getString(KEY_PIN_HASH_LEGACY, null)
+            if (saltBase64 != null && expectedHash != null) {
+                val saltBytes = Base64.decode(saltBase64, Base64.NO_WRAP)
+                val computedLegacy = computeLegacySha256(inputPin, saltBytes)
+                isValid = MessageDigest.isEqual(
+                    computedLegacy.toByteArray(Charsets.UTF_8),
+                    expectedHash.toByteArray(Charsets.UTF_8)
+                )
+                if (isValid) {
+                    // Transparently upgrade to PBKDF2
+                    setPin(context, inputPin)
+                }
+            }
         } else {
-            val saltBytes = Base64.decode(saltBase64, Base64.NO_WRAP)
-            val computedHash = computeHash(inputPin, saltBytes)
-            MessageDigest.isEqual(
-                computedHash.toByteArray(Charsets.UTF_8),
-                expectedHash.toByteArray(Charsets.UTF_8)
-            )
+            isValid = (inputPin == DEFAULT_PIN)
+            if (isValid) {
+                setPin(context, DEFAULT_PIN)
+            }
         }
 
         return if (isValid) {
@@ -151,7 +235,19 @@ object SecurePrefsHelper {
         return verifyPinWithRateLimit(context, inputPin) is PinValidationResult.Success
     }
 
-    private fun computeHash(pin: String, salt: ByteArray): String {
+    private fun computePbkdf2Hash(pin: String, salt: ByteArray): String {
+        return try {
+            val spec = javax.crypto.spec.PBEKeySpec(pin.toCharArray(), salt, PBKDF2_ITERATIONS, PBKDF2_KEY_LENGTH)
+            val factory = javax.crypto.SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256")
+            val hash = factory.generateSecret(spec).encoded
+            Base64.encodeToString(hash, Base64.NO_WRAP)
+        } catch (_: Throwable) {
+            // Fallback to SHA-256 if PBKDF2 provider is unavailable
+            computeLegacySha256(pin, salt)
+        }
+    }
+
+    private fun computeLegacySha256(pin: String, salt: ByteArray): String {
         val digest = MessageDigest.getInstance("SHA-256")
         digest.update(salt)
         val hashBytes = digest.digest(pin.toByteArray(Charsets.UTF_8))
@@ -227,4 +323,16 @@ object SecurePrefsHelper {
 
     fun setShakeRequiresConfirmation(context: Context, requiresConfirmation: Boolean) =
         getPrefs(context).edit().putBoolean(KEY_SHAKE_CONFIRMATION, requiresConfirmation).apply()
+
+    fun getClipboardAutoClearSeconds(context: Context): Int =
+        getPrefs(context).getInt(KEY_CLIPBOARD_AUTO_CLEAR, 30)
+
+    fun setClipboardAutoClearSeconds(context: Context, seconds: Int) =
+        getPrefs(context).edit().putInt(KEY_CLIPBOARD_AUTO_CLEAR, seconds).apply()
+
+    fun isPrivacyCurtainEnabled(context: Context): Boolean =
+        getPrefs(context).getBoolean(KEY_PRIVACY_CURTAIN, true)
+
+    fun setPrivacyCurtainEnabled(context: Context, enabled: Boolean) =
+        getPrefs(context).edit().putBoolean(KEY_PRIVACY_CURTAIN, enabled).apply()
 }

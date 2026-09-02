@@ -142,6 +142,16 @@ fun SettingsScreen(
     var pinError by remember { mutableStateOf<String?>(null) }
     var showPanicConfirmDialog by remember { mutableStateOf(false) }
 
+    // Duress PIN, Clipboard Auto-Purge & Privacy Curtain
+    var isEditingDuressPin by remember { mutableStateOf(false) }
+    var duressPinInput by remember { mutableStateOf("") }
+    var duressPinError by remember { mutableStateOf<String?>(null) }
+    var hasDuressPin by remember { mutableStateOf(SecurePrefsHelper.isDuressPinConfigured(context)) }
+
+    var clipboardClearSeconds by remember { androidx.compose.runtime.mutableIntStateOf(SecurePrefsHelper.getClipboardClearSeconds(context)) }
+    var privacyCurtainEnabled by remember { mutableStateOf(SecurePrefsHelper.isPrivacyCurtainEnabled(context)) }
+
+    val securityPosture = remember(context) { com.example.util.security.DeviceIntegrityChecker.checkSecurityPosture(context) }
     val biometricStatus = remember(context) { BiometricAuthHelper.getBiometricStatusDescription(context) }
 
     val autoLockTimeoutOptions = listOf(
@@ -150,6 +160,13 @@ fun SettingsScreen(
         10 to "10 min",
         15 to "15 min",
         30 to "30 min"
+    )
+
+    val clipboardTimeoutOptions = listOf(
+        10 to "10s",
+        30 to "30s (Padrão)",
+        60 to "60s",
+        0 to "Imediato"
     )
 
     Scaffold(
@@ -258,9 +275,9 @@ fun SettingsScreen(
             // Security Shield Header Banner
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = ImmersiveCardVariant),
-                border = androidx.compose.foundation.BorderStroke(1.dp, ImmersivePrimary.copy(alpha = 0.35f))
+                shape = RoundedCornerShape(18.dp),
+                colors = CardDefaults.cardColors(containerColor = com.example.ui.theme.ObsidianCard),
+                border = androidx.compose.foundation.BorderStroke(1.dp, com.example.ui.theme.SecurityEmerald.copy(alpha = 0.4f))
             ) {
                 Row(
                     modifier = Modifier
@@ -272,33 +289,147 @@ fun SettingsScreen(
                         modifier = Modifier
                             .size(46.dp)
                             .clip(CircleShape)
-                            .background(ImmersivePrimary.copy(alpha = 0.15f)),
+                            .background(com.example.ui.theme.SecurityEmerald.copy(alpha = 0.15f)),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.Default.Shield,
                             contentDescription = null,
-                            tint = ImmersivePrimary,
+                            tint = com.example.ui.theme.SecurityEmerald,
                             modifier = Modifier.size(26.dp)
                         )
                     }
                     Spacer(modifier = Modifier.width(14.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Proteção Criptográfica Ativa (AES-256-GCM)",
-                            fontSize = 14.sp,
+                            text = "Proteção em Cascata de 512-bit (Dual-Layer)",
+                            fontSize = 14.5.sp,
                             fontWeight = FontWeight.Bold,
                             color = ImmersiveOnSurface
                         )
                         Text(
                             text = if (isHardwareBackedCrypto) {
-                                "Hardware KeyStore (TEE/StrongBox) ativo. Mensagens e mídias são criptografadas em repouso com zero rastro local."
+                                "Chaves duplas de 512 bits (2x256-bit) isoladas em silício seguro (TEE/StrongBox) com super-encriptação em cascata e destruição anti-forense em SQLite e RAM."
                             } else {
-                                "Criptografia AES-256-GCM autenticada ativa. Zero rastro em repouso e exclusão anti-forense em memória."
+                                "Criptografia em cascata de 512 bits (Dual-Layer) ativa. Zero rastro em repouso e exclusão anti-forense em memória."
                             },
                             fontSize = 11.sp,
-                            color = ImmersiveMutedLight,
+                            color = com.example.ui.theme.TitaniumMuted,
                             lineHeight = 15.sp
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // Hardware & OS Security Posture Diagnostic Card
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(18.dp),
+                colors = CardDefaults.cardColors(containerColor = com.example.ui.theme.ObsidianCardElevated),
+                border = androidx.compose.foundation.BorderStroke(1.dp, com.example.ui.theme.ObsidianBorder)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.VpnKey,
+                                contentDescription = null,
+                                tint = com.example.ui.theme.TitaniumPrimary,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Auditoria de Integridade do Dispositivo",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = ImmersiveOnSurface
+                            )
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(
+                                    if (securityPosture.isDeviceSecure) com.example.ui.theme.SecurityEmerald.copy(alpha = 0.15f)
+                                    else com.example.ui.theme.IncinerateCrimsonBg
+                                )
+                                .padding(horizontal = 7.dp, vertical = 2.dp)
+                        ) {
+                            Text(
+                                text = if (securityPosture.isDeviceSecure) "SEGURO" else "VULNERÁVEL",
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = if (securityPosture.isDeviceSecure) com.example.ui.theme.SecurityEmerald else com.example.ui.theme.IncinerateCrimson
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Item 1: Hardware Keystore
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Hardware KeyStore (TEE / StrongBox)",
+                            fontSize = 11.5.sp,
+                            color = com.example.ui.theme.TitaniumSecondary
+                        )
+                        Text(
+                            text = if (securityPosture.hardwareKeyStoreSupported) "Ativo (Silício Seguro)" else "Software Keystore",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = if (securityPosture.hardwareKeyStoreSupported) com.example.ui.theme.SecurityEmerald else com.example.ui.theme.EmberFlame
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    // Item 2: Root Detection
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Integridade do SO (Root / Magisk)",
+                            fontSize = 11.5.sp,
+                            color = com.example.ui.theme.TitaniumSecondary
+                        )
+                        Text(
+                            text = if (!securityPosture.isRooted && !securityPosture.isTestKeysBuild) "Íntegro (Sem Root)" else "Dispositivo Modificado",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = if (!securityPosture.isRooted && !securityPosture.isTestKeysBuild) com.example.ui.theme.SecurityEmerald else com.example.ui.theme.IncinerateCrimson
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    // Item 3: Anti-Debugging
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Proteção Anti-Debugging / Engenharia Reversa",
+                            fontSize = 11.5.sp,
+                            color = com.example.ui.theme.TitaniumSecondary
+                        )
+                        Text(
+                            text = if (!securityPosture.isDebuggerAttached) "Protegido" else "Depurador Anexado!",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = if (!securityPosture.isDebuggerAttached) com.example.ui.theme.SecurityEmerald else com.example.ui.theme.IncinerateCrimson
                         )
                     }
                 }
@@ -649,6 +780,336 @@ fun SettingsScreen(
                             )
                         }
                     }
+                }
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Duress PIN Card (Anti-Coercion Panic)
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(com.example.ui.theme.ObsidianCard)
+                    .border(
+                        1.dp,
+                        if (hasDuressPin) com.example.ui.theme.IncinerateCrimson.copy(alpha = 0.5f) else com.example.ui.theme.ObsidianBorder,
+                        RoundedCornerShape(16.dp)
+                    )
+                    .padding(16.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(CircleShape)
+                                .background(com.example.ui.theme.IncinerateCrimsonBg),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.VisibilityOff,
+                                contentDescription = null,
+                                tint = com.example.ui.theme.IncinerateCrimson,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = "PIN de Coerção (Duress PIN)",
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = ImmersiveOnSurface
+                                )
+                                if (hasDuressPin) {
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(4.dp))
+                                            .background(com.example.ui.theme.IncinerateCrimsonBg)
+                                            .padding(horizontal = 5.dp, vertical = 1.dp)
+                                    ) {
+                                        Text(
+                                            text = "ARMADO",
+                                            color = com.example.ui.theme.IncinerateCrimson,
+                                            fontSize = 9.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
+                            }
+                            Text(
+                                text = "Abre o app vazio e tritura todos os dados silenciosamente sob ameaça.",
+                                fontSize = 11.sp,
+                                color = com.example.ui.theme.TitaniumMuted,
+                                lineHeight = 15.sp
+                            )
+                        }
+                    }
+
+                    Button(
+                        onClick = {
+                            isEditingDuressPin = !isEditingDuressPin
+                            duressPinInput = ""
+                            duressPinError = null
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = com.example.ui.theme.ObsidianCardElevated),
+                        shape = RoundedCornerShape(8.dp),
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                        modifier = Modifier
+                            .height(30.dp)
+                            .border(0.8.dp, com.example.ui.theme.ObsidianBorder, RoundedCornerShape(8.dp))
+                    ) {
+                        Text(
+                            text = if (isEditingDuressPin) "Cancelar" else if (hasDuressPin) "Alterar" else "Configurar",
+                            color = com.example.ui.theme.TitaniumPrimary,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+
+                AnimatedVisibility(
+                    visible = isEditingDuressPin,
+                    enter = expandVertically() + fadeIn(),
+                    exit = shrinkVertically() + fadeOut()
+                ) {
+                    Column(modifier = Modifier.padding(top = 12.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            OutlinedTextField(
+                                value = duressPinInput,
+                                onValueChange = {
+                                    if (it.length <= 4 && it.all { c -> c.isDigit() }) duressPinInput = it
+                                },
+                                label = { Text("PIN de Coerção (4 dígitos)", fontSize = 11.sp) },
+                                singleLine = true,
+                                modifier = Modifier.weight(1f),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = com.example.ui.theme.IncinerateCrimson,
+                                    unfocusedBorderColor = com.example.ui.theme.ObsidianBorder,
+                                    focusedTextColor = ImmersiveOnSurface,
+                                    unfocusedTextColor = ImmersiveOnSurface
+                                )
+                            )
+
+                            Button(
+                                onClick = {
+                                    if (duressPinInput.length == 4) {
+                                        if (duressPinInput == securityPin) {
+                                            duressPinError = "O PIN de Coerção deve ser DIFERENTE do PIN normal!"
+                                        } else {
+                                            SecurePrefsHelper.setDuressPin(context, duressPinInput)
+                                            hasDuressPin = true
+                                            isEditingDuressPin = false
+                                            duressPinError = null
+                                        }
+                                    } else {
+                                        duressPinError = "O PIN deve ter 4 dígitos"
+                                    }
+                                },
+                                enabled = duressPinInput.length == 4,
+                                colors = ButtonDefaults.buttonColors(containerColor = com.example.ui.theme.IncinerateCrimson),
+                                shape = RoundedCornerShape(8.dp),
+                                modifier = Modifier.height(48.dp)
+                            ) {
+                                Text(
+                                    "Salvar",
+                                    color = Color.White,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+
+                        if (hasDuressPin) {
+                            Spacer(modifier = Modifier.height(6.dp))
+                            TextButton(
+                                onClick = {
+                                    SecurePrefsHelper.clearDuressPin(context)
+                                    hasDuressPin = false
+                                    isEditingDuressPin = false
+                                }
+                            ) {
+                                Text("Remover PIN de Coerção", color = com.example.ui.theme.IncinerateCrimson, fontSize = 11.sp)
+                            }
+                        }
+
+                        if (duressPinError != null) {
+                            Text(
+                                text = duressPinError ?: "",
+                                color = com.example.ui.theme.IncinerateCrimson,
+                                fontSize = 11.sp,
+                                modifier = Modifier.padding(top = 4.dp)
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Clipboard Auto-Purge Card
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(com.example.ui.theme.ObsidianCard)
+                    .border(1.dp, com.example.ui.theme.ObsidianBorder, RoundedCornerShape(16.dp))
+                    .padding(16.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(CircleShape)
+                            .background(com.example.ui.theme.SecurityEmerald.copy(alpha = 0.15f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.DeleteSweep,
+                            contentDescription = null,
+                            tint = com.example.ui.theme.SecurityEmerald,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            text = "Auto-Limpeza da Área de Transferência",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = ImmersiveOnSurface
+                        )
+                        Text(
+                            text = "Apaga textos copiados do clipboard do sistema para evitar espionagem por outros aplicativos.",
+                            fontSize = 11.sp,
+                            color = com.example.ui.theme.TitaniumMuted,
+                            lineHeight = 15.sp
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    clipboardTimeoutOptions.forEach { (secs, label) ->
+                        val isSelected = clipboardClearSeconds == secs
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(
+                                    if (isSelected) com.example.ui.theme.TitaniumPrimary
+                                    else com.example.ui.theme.ObsidianCardElevated
+                                )
+                                .border(
+                                    0.8.dp,
+                                    if (isSelected) com.example.ui.theme.TitaniumPrimary else com.example.ui.theme.ObsidianBorder,
+                                    RoundedCornerShape(10.dp)
+                                )
+                                .clickable {
+                                    SecurePrefsHelper.setClipboardClearSeconds(context, secs)
+                                    clipboardClearSeconds = secs
+                                }
+                                .padding(vertical = 8.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = label,
+                                fontSize = 10.sp,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                color = if (isSelected) com.example.ui.theme.ObsidianBlack else ImmersiveOnSurface,
+                                maxLines = 1
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Privacy Curtain Card (App Switcher Concealment)
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(com.example.ui.theme.ObsidianCard)
+                    .border(
+                        1.dp,
+                        if (privacyCurtainEnabled) com.example.ui.theme.SecurityEmerald.copy(alpha = 0.4f) else com.example.ui.theme.ObsidianBorder,
+                        RoundedCornerShape(16.dp)
+                    )
+                    .padding(16.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(CircleShape)
+                                .background(com.example.ui.theme.SecurityEmerald.copy(alpha = 0.15f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Shield,
+                                contentDescription = null,
+                                tint = com.example.ui.theme.SecurityEmerald,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text(
+                                text = "Cortina no Alternador de Aplicativos",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = ImmersiveOnSurface
+                            )
+                            Text(
+                                text = if (privacyCurtainEnabled) "Oculta miniatura no alternador de apps recentes." else "Miniatura visível no sistema.",
+                                fontSize = 11.sp,
+                                color = com.example.ui.theme.TitaniumMuted
+                            )
+                        }
+                    }
+                    Switch(
+                        checked = privacyCurtainEnabled,
+                        onCheckedChange = {
+                            SecurePrefsHelper.setPrivacyCurtainEnabled(context, it)
+                            privacyCurtainEnabled = it
+                        },
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = com.example.ui.theme.ObsidianBlack,
+                            checkedTrackColor = com.example.ui.theme.SecurityEmerald,
+                            uncheckedThumbColor = com.example.ui.theme.TitaniumMuted,
+                            uncheckedTrackColor = com.example.ui.theme.ObsidianCardElevated
+                        ),
+                        modifier = Modifier.testTag("privacy_curtain_switch")
+                    )
                 }
             }
 

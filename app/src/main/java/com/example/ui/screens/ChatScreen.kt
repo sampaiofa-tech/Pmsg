@@ -237,9 +237,9 @@ fun ChatScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(ImmersiveHeader)
+                    .background(com.example.ui.theme.ObsidianSurface)
                     .statusBarsPadding()
-                    .border(0.5.dp, ImmersiveOutline)
+                    .border(0.5.dp, com.example.ui.theme.ObsidianBorder)
                     .padding(horizontal = 8.dp, vertical = 6.dp)
             ) {
                 Row(
@@ -255,34 +255,41 @@ fun ChatScreen(
                             onClick = onBack,
                             modifier = Modifier
                                 .size(36.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(com.example.ui.theme.ObsidianCardElevated)
                                 .testTag("chat_back_button")
                         ) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = "Voltar",
-                                tint = ImmersiveOnSurface,
-                                modifier = Modifier.size(20.dp)
+                                tint = com.example.ui.theme.TitaniumPrimary,
+                                modifier = Modifier.size(19.dp)
                             )
                         }
 
-                        // Gradient Avatar
+                        Spacer(modifier = Modifier.width(6.dp))
+
+                        // Gradient Avatar with hardware security ring
                         Box(
                             modifier = Modifier
                                 .size(36.dp)
                                 .clip(CircleShape)
                                 .background(
                                     Brush.linearGradient(
-                                        listOf(ImmersivePrimary.copy(alpha = 0.3f), ImmersiveAvatarDeep)
+                                        listOf(
+                                            com.example.ui.theme.SecurityEmerald.copy(alpha = 0.2f),
+                                            com.example.ui.theme.ObsidianCardElevated
+                                        )
                                     )
                                 )
-                                .border(1.dp, ImmersivePrimary.copy(alpha = 0.4f), CircleShape),
+                                .border(1.dp, com.example.ui.theme.SecurityEmerald.copy(alpha = 0.6f), CircleShape),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
                                 text = channel.name.take(2).uppercase(Locale.getDefault()),
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 13.sp,
-                                color = ImmersivePrimary
+                                color = com.example.ui.theme.TitaniumPrimary
                             )
                         }
 
@@ -291,7 +298,7 @@ fun ChatScreen(
                         Column(modifier = Modifier.weight(1f, fill = false)) {
                             Text(
                                 text = channel.name,
-                                fontSize = 14.sp,
+                                fontSize = 14.5.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 color = ImmersiveOnSurface,
                                 maxLines = 1
@@ -301,14 +308,14 @@ fun ChatScreen(
                                     modifier = Modifier
                                         .size(5.dp)
                                         .clip(CircleShape)
-                                        .background(ImmersiveOnlineGreen)
+                                        .background(com.example.ui.theme.SecurityEmerald)
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text(
-                                    text = "CRIPTOGRAFADO",
+                                    text = "E2EE • HARDWARE TEE",
                                     fontSize = 9.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = ImmersivePrimary,
+                                    color = com.example.ui.theme.SecurityEmerald,
                                     letterSpacing = 0.5.sp,
                                     maxLines = 1
                                 )
@@ -752,34 +759,35 @@ fun ChatScreen(
                         IconButton(
                             onClick = { showAttachmentSheet = true },
                             modifier = Modifier
-                                .size(38.dp)
+                                .size(40.dp)
                                 .clip(CircleShape)
-                                .background(ImmersiveCardVariant)
-                                .border(0.8.dp, ImmersiveOutline, CircleShape)
+                                .background(com.example.ui.theme.ObsidianCardElevated)
+                                .border(1.dp, com.example.ui.theme.ObsidianBorder, CircleShape)
                                 .testTag("attachment_menu_button")
                         ) {
                             Icon(
                                 imageVector = Icons.Default.AttachFile,
                                 contentDescription = "Anexar Mídia",
-                                tint = ImmersivePrimary,
-                                modifier = Modifier.size(18.dp)
+                                tint = com.example.ui.theme.TitaniumPrimary,
+                                modifier = Modifier.size(19.dp)
                             )
                         }
 
                         Spacer(modifier = Modifier.width(6.dp))
 
-                        // Input box container
+                        // Floating capsule input box container
                         Box(
                             modifier = Modifier
                                 .weight(1f)
-                                .clip(RoundedCornerShape(24.dp))
-                                .background(ImmersiveCard)
+                                .clip(RoundedCornerShape(26.dp))
+                                .background(com.example.ui.theme.ObsidianCard)
                                 .border(
-                                    0.8.dp,
-                                    if (isViewOnceMessage) EmberOrange.copy(alpha = 0.6f) else ImmersiveOutline,
-                                    RoundedCornerShape(24.dp)
+                                    1.dp,
+                                    if (isViewOnceMessage || isBurnerNoteMode) com.example.ui.theme.EmberFlame.copy(alpha = 0.7f)
+                                    else com.example.ui.theme.ObsidianBorder,
+                                    RoundedCornerShape(26.dp)
                                 )
-                                .padding(horizontal = 6.dp, vertical = 1.dp)
+                                .padding(horizontal = 8.dp, vertical = 2.dp)
                         ) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
@@ -790,10 +798,10 @@ fun ChatScreen(
                                     modifier = Modifier
                                         .size(28.dp)
                                         .clip(CircleShape)
-                                        .background(if (isViewOnceMessage) EmberOrange else Color.Transparent)
+                                        .background(if (isViewOnceMessage) com.example.ui.theme.EmberFlame else Color.Transparent)
                                         .border(
                                             0.8.dp,
-                                            if (isViewOnceMessage) EmberOrange else ImmersiveOutline.copy(alpha = 0.6f),
+                                            if (isViewOnceMessage) com.example.ui.theme.EmberFlame else com.example.ui.theme.ObsidianBorder,
                                             CircleShape
                                         )
                                         .clickable { isViewOnceMessage = !isViewOnceMessage }
@@ -804,7 +812,7 @@ fun ChatScreen(
                                         text = "1x",
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.Black,
-                                        color = if (isViewOnceMessage) Color.Black else ImmersiveMutedLight
+                                        color = if (isViewOnceMessage) Color.Black else com.example.ui.theme.TitaniumMuted
                                     )
                                 }
 
@@ -816,13 +824,13 @@ fun ChatScreen(
                                     modifier = Modifier
                                         .size(28.dp)
                                         .clip(CircleShape)
-                                        .background(if (isBurnerNoteMode) EmberOrange.copy(alpha = 0.25f) else Color.Transparent)
+                                        .background(if (isBurnerNoteMode) com.example.ui.theme.EmberFlame.copy(alpha = 0.25f) else Color.Transparent)
                                         .testTag("burner_note_toggle")
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.LocalFireDepartment,
                                         contentDescription = "Nota Secreta",
-                                        tint = if (isBurnerNoteMode) EmberOrange else ImmersiveMutedLight,
+                                        tint = if (isBurnerNoteMode) com.example.ui.theme.EmberFlame else com.example.ui.theme.TitaniumMuted,
                                         modifier = Modifier.size(15.dp)
                                     )
                                 }
@@ -835,10 +843,10 @@ fun ChatScreen(
                                         Text(
                                             text = when {
                                                 isViewOnceMessage -> "1x Visualização única..."
-                                                isBurnerNoteMode -> "Nota secreta..."
+                                                isBurnerNoteMode -> "Nota secreta temporária..."
                                                 else -> "Mensagem protegida..."
                                             },
-                                            color = if (isViewOnceMessage) EmberOrange.copy(alpha = 0.7f) else ImmersiveMuted,
+                                            color = if (isViewOnceMessage) com.example.ui.theme.EmberFlame.copy(alpha = 0.8f) else com.example.ui.theme.TitaniumMuted,
                                             fontSize = 13.sp,
                                             maxLines = 1
                                         )
@@ -874,14 +882,15 @@ fun ChatScreen(
                                     .size(42.dp)
                                     .clip(CircleShape)
                                     .background(
-                                        if (isViewOnceMessage || isBurnerNoteMode) EmberOrange else ImmersivePrimary
+                                        if (isViewOnceMessage || isBurnerNoteMode) com.example.ui.theme.EmberFlame
+                                        else com.example.ui.theme.TitaniumPrimary
                                     )
                                     .testTag("send_message_button")
                             ) {
                                 Icon(
                                     imageVector = Icons.AutoMirrored.Filled.Send,
                                     contentDescription = "Enviar",
-                                    tint = if (isViewOnceMessage || isBurnerNoteMode) Color.Black else ImmersiveOnPrimary,
+                                    tint = if (isViewOnceMessage || isBurnerNoteMode) Color.Black else com.example.ui.theme.ObsidianBlack,
                                     modifier = Modifier.size(18.dp)
                                 )
                             }
@@ -891,14 +900,14 @@ fun ChatScreen(
                                 modifier = Modifier
                                     .size(42.dp)
                                     .clip(CircleShape)
-                                    .background(ImmersiveCardVariant)
-                                    .border(1.dp, ImmersivePrimary.copy(alpha = 0.5f), CircleShape)
+                                    .background(com.example.ui.theme.ObsidianCardElevated)
+                                    .border(1.dp, com.example.ui.theme.ObsidianBorder, CircleShape)
                                     .testTag("mic_record_button")
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Mic,
                                     contentDescription = "Gravar Áudio",
-                                    tint = ImmersivePrimary,
+                                    tint = com.example.ui.theme.TitaniumPrimary,
                                     modifier = Modifier.size(20.dp)
                                 )
                             }

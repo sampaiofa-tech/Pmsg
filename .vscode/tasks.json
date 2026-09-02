@@ -12,7 +12,7 @@
                 "kind": "build",
                 "isDefault": true
             },
-            "problemMatcher": ["$gradle"]
+            "problemMatcher": []
         },
         {
             "label": "Run Unit Tests (Gradle)",
@@ -25,7 +25,7 @@
                 "kind": "test",
                 "isDefault": true
             },
-            "problemMatcher": ["$gradle"]
+            "problemMatcher": []
         },
         {
             "label": "Install Debug APK on Device/Emulator (Gradle)",
@@ -35,7 +35,7 @@
                 "command": ".\\gradlew.bat installDebug"
             },
             "group": "build",
-            "problemMatcher": ["$gradle"]
+            "problemMatcher": []
         },
         {
             "label": "Clean Project (Gradle)",
@@ -44,7 +44,7 @@
             "windows": {
                 "command": ".\\gradlew.bat clean"
             },
-            "problemMatcher": ["$gradle"]
+            "problemMatcher": []
         }
     ]
 }

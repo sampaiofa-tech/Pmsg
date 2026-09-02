@@ -204,14 +204,14 @@ fun ChannelListScreen(
                     )
                 )
         ) {
-            // Immersive Top Bar with safe statusBarsPadding to prevent notification bar overlap
+            // Sleek Immersive Top Bar with statusBarsPadding
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(ImmersiveHeader)
+                    .background(com.example.ui.theme.ObsidianSurface)
                     .statusBarsPadding()
-                    .border(width = 1.dp, color = ImmersiveOutline)
-                    .padding(horizontal = 16.dp, vertical = 12.dp)
+                    .border(width = 1.dp, color = com.example.ui.theme.ObsidianBorder)
+                    .padding(horizontal = 16.dp, vertical = 10.dp)
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -222,48 +222,70 @@ fun ChannelListScreen(
                         com.example.ui.components.PmsgLogoBadge(
                             size = 38.dp,
                             iconSize = 24.dp,
-                            shapeRadius = 10.dp
+                            shapeRadius = 11.dp
                         )
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
                             com.example.ui.components.PmsgWordmark(
                                 fontSize = 18.sp
                             )
-                            Text(
-                                text = "Zero Rastros • Criptografia Total",
-                                fontSize = 11.sp,
-                                color = ImmersiveMuted
-                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(6.dp)
+                                        .clip(CircleShape)
+                                        .background(com.example.ui.theme.SecurityEmerald)
+                                )
+                                Spacer(modifier = Modifier.width(5.dp))
+                                Text(
+                                    text = "Zero Rastro • Hardware TEE",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = com.example.ui.theme.TitaniumMuted
+                                )
+                            }
                         }
                     }
 
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
                         // Settings & Security Vault Page Button
                         IconButton(
                             onClick = onOpenSettings,
-                            modifier = Modifier.testTag("security_vault_button")
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(com.example.ui.theme.ObsidianCardElevated)
+                                .testTag("security_vault_button")
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Security,
                                 contentDescription = "Configurações e Cofre",
-                                tint = ImmersivePrimary
+                                tint = com.example.ui.theme.TitaniumPrimary,
+                                modifier = Modifier.size(18.dp)
                             )
                         }
 
-                        // PANIC WIPE Button
+                        // Refined PANIC WIPE Button
                         Button(
                             onClick = { showPanicDialog = true },
-                            colors = ButtonDefaults.buttonColors(containerColor = ImmersiveExpiring),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = com.example.ui.theme.IncinerateCrimsonBg,
+                                contentColor = com.example.ui.theme.IncinerateCrimson
+                            ),
+                            border = BorderStroke(1.dp, com.example.ui.theme.IncinerateCrimson.copy(alpha = 0.5f)),
                             shape = RoundedCornerShape(10.dp),
-                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
                             modifier = Modifier
-                                .height(34.dp)
+                                .height(36.dp)
                                 .testTag("panic_wipe_button")
                         ) {
                             Icon(
                                 imageVector = Icons.Default.LocalFireDepartment,
                                 contentDescription = "Pânico",
-                                tint = Color(0xFF601410),
+                                tint = com.example.ui.theme.IncinerateCrimson,
                                 modifier = Modifier.size(15.dp)
                             )
                             Spacer(modifier = Modifier.width(4.dp))
@@ -271,73 +293,105 @@ fun ChannelListScreen(
                                 text = "INCINERAR",
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color(0xFF601410)
+                                color = com.example.ui.theme.IncinerateCrimson,
+                                letterSpacing = 0.5.sp
                             )
                         }
                     }
                 }
             }
 
-            // Tab Navigation: Conversas vs Contatos Pmsg
-            TabRow(
-                selectedTabIndex = selectedTab,
-                containerColor = ImmersiveHeader,
-                contentColor = ImmersivePrimary,
-                indicator = { tabPositions ->
-                    TabRowDefaults.SecondaryIndicator(
-                        Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
-                        color = ImmersivePrimary,
-                        height = 3.dp
-                    )
-                },
-                divider = {
-                    Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(ImmersiveOutline))
-                }
-            ) {
-                Tab(
-                    selected = selectedTab == 0,
-                    onClick = { selectedTab = 0 },
-                    text = {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Forum, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = "Conversas (${channels.size})",
-                                fontWeight = if (selectedTab == 0) FontWeight.Bold else FontWeight.Medium,
-                                fontSize = 13.sp
-                            )
-                        }
-                    },
-                    selectedContentColor = ImmersivePrimary,
-                    unselectedContentColor = ImmersiveMutedLight,
-                    modifier = Modifier.testTag("tab_conversations")
-                )
-                Tab(
-                    selected = selectedTab == 1,
-                    onClick = { selectedTab = 1 },
-                    text = {
-                        val pmsgCount = contacts.count { it.hasPmsgInstalled }
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Contacts, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = "Contatos Pmsg ($pmsgCount)",
-                                fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Medium,
-                                fontSize = 13.sp
-                            )
-                        }
-                    },
-                    selectedContentColor = ImmersivePrimary,
-                    unselectedContentColor = ImmersiveMutedLight,
-                    modifier = Modifier.testTag("tab_contacts")
-                )
-            }
-
-            // Search Bar & Filter
+            // Modern Sliding Pill Tab Selector
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .padding(horizontal = 16.dp, vertical = 10.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(com.example.ui.theme.ObsidianCard)
+                    .border(1.dp, com.example.ui.theme.ObsidianBorder, RoundedCornerShape(14.dp))
+                    .padding(3.dp)
+            ) {
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    // Conversas Tab Pill
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(11.dp))
+                            .background(
+                                if (selectedTab == 0) com.example.ui.theme.ObsidianCardElevated
+                                else Color.Transparent
+                            )
+                            .border(
+                                width = if (selectedTab == 0) 1.dp else 0.dp,
+                                color = if (selectedTab == 0) com.example.ui.theme.ObsidianBorder else Color.Transparent,
+                                shape = RoundedCornerShape(11.dp)
+                            )
+                            .clickable { selectedTab = 0 }
+                            .padding(vertical = 8.dp)
+                            .testTag("tab_conversations"),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.Forum,
+                                contentDescription = null,
+                                modifier = Modifier.size(15.dp),
+                                tint = if (selectedTab == 0) com.example.ui.theme.TitaniumPrimary else com.example.ui.theme.TitaniumMuted
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "Conversas (${channels.size})",
+                                fontWeight = if (selectedTab == 0) FontWeight.SemiBold else FontWeight.Normal,
+                                fontSize = 12.5.sp,
+                                color = if (selectedTab == 0) com.example.ui.theme.TitaniumPrimary else com.example.ui.theme.TitaniumMuted
+                            )
+                        }
+                    }
+
+                    // Contatos Tab Pill
+                    val pmsgCount = contacts.count { it.hasPmsgInstalled }
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(11.dp))
+                            .background(
+                                if (selectedTab == 1) com.example.ui.theme.ObsidianCardElevated
+                                else Color.Transparent
+                            )
+                            .border(
+                                width = if (selectedTab == 1) 1.dp else 0.dp,
+                                color = if (selectedTab == 1) com.example.ui.theme.ObsidianBorder else Color.Transparent,
+                                shape = RoundedCornerShape(11.dp)
+                            )
+                            .clickable { selectedTab = 1 }
+                            .padding(vertical = 8.dp)
+                            .testTag("tab_contacts"),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.Contacts,
+                                contentDescription = null,
+                                modifier = Modifier.size(15.dp),
+                                tint = if (selectedTab == 1) com.example.ui.theme.TitaniumPrimary else com.example.ui.theme.TitaniumMuted
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "Contatos ($pmsgCount)",
+                                fontWeight = if (selectedTab == 1) FontWeight.SemiBold else FontWeight.Normal,
+                                fontSize = 12.5.sp,
+                                color = if (selectedTab == 1) com.example.ui.theme.TitaniumPrimary else com.example.ui.theme.TitaniumMuted
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Harmonious Search Bar
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 2.dp)
             ) {
                 OutlinedTextField(
                     value = searchQuery,
@@ -345,17 +399,36 @@ fun ChannelListScreen(
                     placeholder = {
                         Text(
                             text = if (selectedTab == 0) "Buscar conversas ativas..." else "Buscar contatos com Pmsg...",
-                            fontSize = 12.sp,
-                            color = ImmersiveMuted
+                            fontSize = 12.5.sp,
+                            color = com.example.ui.theme.TitaniumMuted
                         )
                     },
                     leadingIcon = {
-                        Icon(Icons.Default.Search, contentDescription = null, tint = ImmersiveMuted, modifier = Modifier.size(18.dp))
+                        Icon(
+                            imageVector = Icons.Default.Search,
+                            contentDescription = null,
+                            tint = com.example.ui.theme.TitaniumMuted,
+                            modifier = Modifier.size(18.dp)
+                        )
                     },
                     trailingIcon = {
                         if (selectedTab == 1) {
                             IconButton(onClick = onRefreshContacts) {
-                                Icon(Icons.Default.Refresh, contentDescription = "Atualizar Contatos", tint = ImmersivePrimary, modifier = Modifier.size(18.dp))
+                                Icon(
+                                    imageVector = Icons.Default.Refresh,
+                                    contentDescription = "Atualizar Contatos",
+                                    tint = com.example.ui.theme.TitaniumPrimary,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        } else if (searchQuery.isNotEmpty()) {
+                            IconButton(onClick = { searchQuery = "" }) {
+                                Icon(
+                                    imageVector = Icons.Default.DeleteOutline,
+                                    contentDescription = "Limpar busca",
+                                    tint = com.example.ui.theme.TitaniumMuted,
+                                    modifier = Modifier.size(16.dp)
+                                )
                             }
                         }
                     },
@@ -363,13 +436,15 @@ fun ChannelListScreen(
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedTextColor = ImmersiveOnSurface,
                         unfocusedTextColor = ImmersiveOnSurface,
-                        focusedBorderColor = ImmersivePrimary,
-                        unfocusedBorderColor = ImmersiveOutline,
-                        focusedContainerColor = ImmersiveCardVariant,
-                        unfocusedContainerColor = ImmersiveCardVariant
+                        focusedBorderColor = com.example.ui.theme.TitaniumSecondary,
+                        unfocusedBorderColor = com.example.ui.theme.ObsidianBorder,
+                        focusedContainerColor = com.example.ui.theme.ObsidianCard,
+                        unfocusedContainerColor = com.example.ui.theme.ObsidianCard
                     ),
-                    shape = RoundedCornerShape(14.dp),
-                    modifier = Modifier.fillMaxWidth().height(48.dp)
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp)
                 )
             }
 
@@ -801,21 +876,22 @@ fun ContactListItem(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
                             text = contact.name,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 14.5.sp,
                             color = ImmersiveOnSurface
                         )
                         if (contact.hasPmsgInstalled) {
                             Spacer(modifier = Modifier.width(6.dp))
                             Box(
                                 modifier = Modifier
-                                    .clip(RoundedCornerShape(4.dp))
-                                    .background(ImmersivePrimary.copy(alpha = 0.2f))
-                                    .padding(horizontal = 5.dp, vertical = 1.dp)
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .background(com.example.ui.theme.SecurityEmerald.copy(alpha = 0.15f))
+                                    .border(0.5.dp, com.example.ui.theme.SecurityEmerald.copy(alpha = 0.4f), RoundedCornerShape(6.dp))
+                                    .padding(horizontal = 6.dp, vertical = 1.dp)
                             ) {
                                 Text(
                                     text = "Pmsg Ativo",
-                                    color = ImmersivePrimary,
+                                    color = com.example.ui.theme.SecurityEmerald,
                                     fontSize = 9.sp,
                                     fontWeight = FontWeight.Bold
                                 )
@@ -827,15 +903,15 @@ fun ContactListItem(
 
                     Text(
                         text = contact.phoneNumber,
-                        fontSize = 11.sp,
-                        color = ImmersiveMutedLight,
+                        fontSize = 11.5.sp,
+                        color = com.example.ui.theme.TitaniumMuted,
                         fontFamily = FontFamily.Monospace
                     )
 
                     Text(
                         text = contact.statusDescription,
-                        fontSize = 10.sp,
-                        color = if (contact.hasPmsgInstalled) ImmersiveOnlineGreen else ImmersiveMuted
+                        fontSize = 10.5.sp,
+                        color = if (contact.hasPmsgInstalled) com.example.ui.theme.SecurityEmerald else com.example.ui.theme.TitaniumMuted
                     )
                 }
             }
@@ -843,23 +919,42 @@ fun ContactListItem(
             if (contact.hasPmsgInstalled) {
                 Button(
                     onClick = onStartChat,
-                    colors = ButtonDefaults.buttonColors(containerColor = ImmersivePrimary),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = com.example.ui.theme.TitaniumPrimary,
+                        contentColor = com.example.ui.theme.ObsidianBlack
+                    ),
                     shape = RoundedCornerShape(10.dp),
-                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                    modifier = Modifier.height(32.dp).testTag("start_chat_with_${contact.id}")
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                    modifier = Modifier
+                        .height(34.dp)
+                        .testTag("start_chat_with_${contact.id}")
                 ) {
-                    Icon(Icons.Default.Lock, contentDescription = null, tint = ImmersiveOnPrimary, modifier = Modifier.size(13.dp))
+                    Icon(
+                        imageVector = Icons.Default.Lock,
+                        contentDescription = null,
+                        tint = com.example.ui.theme.ObsidianBlack,
+                        modifier = Modifier.size(13.dp)
+                    )
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("Conversar", color = ImmersiveOnPrimary, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    Text(
+                        text = "Conversar",
+                        color = com.example.ui.theme.ObsidianBlack,
+                        fontSize = 11.5.sp,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             } else {
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(8.dp))
-                        .background(ImmersiveCardVariant)
+                        .background(com.example.ui.theme.ObsidianCardElevated)
                         .padding(horizontal = 8.dp, vertical = 4.dp)
                 ) {
-                    Text("Não possui", color = ImmersiveMuted, fontSize = 10.sp)
+                    Text(
+                        text = "Não possui",
+                        color = com.example.ui.theme.TitaniumMuted,
+                        fontSize = 10.sp
+                    )
                 }
             }
         }
@@ -881,11 +976,11 @@ fun ChannelListItem(
             .fillMaxWidth()
             .clickable { onClick() }
             .testTag("channel_item_${channel.id}"),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = ImmersiveCard),
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = com.example.ui.theme.ObsidianCard),
         border = BorderStroke(
             width = 1.dp,
-            color = if (isAlmostExpired) ImmersiveExpiring.copy(alpha = 0.5f) else ImmersiveOutline
+            color = if (isAlmostExpired) com.example.ui.theme.IncinerateCrimson.copy(alpha = 0.55f) else com.example.ui.theme.ObsidianBorder
         )
     ) {
         Row(
@@ -899,28 +994,59 @@ fun ChannelListItem(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.weight(1f)
             ) {
-                // Avatar with burn status
-                Box(
-                    modifier = Modifier
-                        .size(46.dp)
-                        .clip(CircleShape)
-                        .background(
-                            Brush.linearGradient(
-                                listOf(
-                                    ImmersivePrimary.copy(alpha = 0.2f),
-                                    ImmersiveAvatarDeep
+                // Avatar with hardware security badge
+                Box(contentAlignment = Alignment.BottomEnd) {
+                    Box(
+                        modifier = Modifier
+                            .size(46.dp)
+                            .clip(CircleShape)
+                            .background(
+                                Brush.linearGradient(
+                                    listOf(
+                                        if (isAlmostExpired) com.example.ui.theme.IncinerateCrimson.copy(alpha = 0.25f)
+                                        else com.example.ui.theme.SecurityEmerald.copy(alpha = 0.18f),
+                                        com.example.ui.theme.ObsidianCardElevated
+                                    )
                                 )
                             )
+                            .border(
+                                1.5.dp,
+                                if (isAlmostExpired) com.example.ui.theme.IncinerateCrimson else com.example.ui.theme.SecurityEmerald,
+                                CircleShape
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = channel.name.take(1).uppercase(),
+                            color = if (isAlmostExpired) com.example.ui.theme.IncinerateCrimson else com.example.ui.theme.TitaniumPrimary,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 17.sp
                         )
-                        .border(1.5.dp, if (isAlmostExpired) ImmersiveExpiring else ImmersivePrimary, CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = channel.name.take(1).uppercase(),
-                        color = if (isAlmostExpired) ImmersiveExpiring else ImmersivePrimary,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 18.sp
-                    )
+                    }
+
+                    // Hardware lock dot
+                    Box(
+                        modifier = Modifier
+                            .size(14.dp)
+                            .clip(CircleShape)
+                            .background(com.example.ui.theme.ObsidianBlack)
+                            .padding(1.5.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(CircleShape)
+                                .background(if (isAlmostExpired) com.example.ui.theme.IncinerateCrimson else com.example.ui.theme.SecurityEmerald),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Lock,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(7.dp)
+                            )
+                        }
+                    }
                 }
 
                 Spacer(modifier = Modifier.width(12.dp))
@@ -929,8 +1055,8 @@ fun ChannelListItem(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
                             text = channel.name,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 15.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 14.5.sp,
                             color = ImmersiveOnSurface
                         )
                         if (channel.customCode.isNotBlank()) {
@@ -938,13 +1064,13 @@ fun ChannelListItem(
                             Box(
                                 modifier = Modifier
                                     .clip(RoundedCornerShape(4.dp))
-                                    .background(ImmersiveCardVariant)
-                                    .border(0.5.dp, ImmersiveOutline, RoundedCornerShape(4.dp))
-                                    .padding(horizontal = 4.dp, vertical = 1.dp)
+                                    .background(com.example.ui.theme.ObsidianCardElevated)
+                                    .border(0.5.dp, com.example.ui.theme.ObsidianBorder, RoundedCornerShape(4.dp))
+                                    .padding(horizontal = 5.dp, vertical = 1.dp)
                             ) {
                                 Text(
                                     text = "#${channel.customCode}",
-                                    color = ImmersiveMutedLight,
+                                    color = com.example.ui.theme.TitaniumSecondary,
                                     fontSize = 9.sp,
                                     fontFamily = FontFamily.Monospace
                                 )
@@ -957,39 +1083,54 @@ fun ChannelListItem(
                     Text(
                         text = channel.lastMessagePreview,
                         fontSize = 12.sp,
-                        color = ImmersiveMutedLight,
+                        color = com.example.ui.theme.TitaniumSecondary,
                         maxLines = 1
                     )
 
-                    Spacer(modifier = Modifier.height(3.dp))
+                    Spacer(modifier = Modifier.height(4.dp))
 
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.Timer,
-                            contentDescription = null,
-                            tint = if (isAlmostExpired) ImmersiveExpiring else ImmersivePrimary,
-                            modifier = Modifier.size(12.dp)
-                        )
-                        Spacer(modifier = Modifier.width(3.dp))
-                        Text(
-                            text = "Expira em ${channel.formattedRemainingTime(currentTime)}",
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = if (isAlmostExpired) ImmersiveExpiring else ImmersivePrimary
-                        )
+                    // Live Expiration Chip
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(
+                                if (isAlmostExpired) com.example.ui.theme.IncinerateCrimsonBg
+                                else com.example.ui.theme.ObsidianCardElevated
+                            )
+                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = if (isAlmostExpired) Icons.Default.LocalFireDepartment else Icons.Default.Timer,
+                                contentDescription = null,
+                                tint = if (isAlmostExpired) com.example.ui.theme.IncinerateCrimson else com.example.ui.theme.TitaniumSecondary,
+                                modifier = Modifier.size(11.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "Expira em ${channel.formattedRemainingTime(currentTime)}",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                fontFamily = FontFamily.Monospace,
+                                color = if (isAlmostExpired) com.example.ui.theme.IncinerateCrimson else com.example.ui.theme.TitaniumSecondary
+                            )
+                        }
                     }
                 }
             }
 
             IconButton(
                 onClick = onDelete,
-                modifier = Modifier.size(36.dp)
+                modifier = Modifier
+                    .size(34.dp)
+                    .clip(CircleShape)
+                    .background(com.example.ui.theme.ObsidianCardElevated)
             ) {
                 Icon(
                     imageVector = Icons.Default.DeleteOutline,
                     contentDescription = "Apagar Canal",
-                    tint = ImmersiveMutedLight,
-                    modifier = Modifier.size(18.dp)
+                    tint = com.example.ui.theme.TitaniumMuted,
+                    modifier = Modifier.size(16.dp)
                 )
             }
         }

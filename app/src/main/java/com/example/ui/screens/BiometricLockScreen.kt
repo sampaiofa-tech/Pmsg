@@ -88,6 +88,7 @@ fun BiometricLockScreen(
     onVerifyPin: ((String) -> Boolean)? = null,
     biometricEnabled: Boolean = true,
     autoLockTimeoutMinutes: Int = 5,
+    onDuressTriggered: (() -> Unit)? = null,
     onUnlocked: () -> Unit
 ) {
     val context = LocalContext.current
@@ -200,6 +201,20 @@ fun BiometricLockScreen(
                     triggerHapticFeedback(false)
                     authSuccess = true
                     authError = null
+                    onUnlocked()
+                }
+                is com.example.util.security.PinValidationResult.DuressTriggered -> {
+                    triggerHapticFeedback(false)
+                    authSuccess = true
+                    authError = null
+                    // Under duress coercion: silently shred all data and purge clipboard immediately
+                    kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+                        com.example.util.security.ClipboardSanitizer.sanitizeNow(context)
+                        try {
+                            com.example.data.repository.ChatRepository(context).panicWipeAll()
+                        } catch (_: Exception) {}
+                    }
+                    onDuressTriggered?.invoke()
                     onUnlocked()
                 }
                 is com.example.util.security.PinValidationResult.InvalidPin -> {

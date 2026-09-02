@@ -41,11 +41,36 @@ abstract class VanishDatabase : RoomDatabase() {
             }
         }
 
+        fun performAntiForensicVacuum() {
+            try {
+                INSTANCE?.openHelper?.writableDatabase?.execSQL("PRAGMA incremental_vacuum(50)")
+            } catch (_: Throwable) {}
+        }
+
+        fun performFullVacuum() {
+            try {
+                INSTANCE?.openHelper?.writableDatabase?.execSQL("VACUUM")
+            } catch (_: Throwable) {}
+        }
+
         private class VanishDatabaseCallback(
             private val scope: CoroutineScope
         ) : RoomDatabase.Callback() {
+            override fun onOpen(db: SupportSQLiteDatabase) {
+                super.onOpen(db)
+                try {
+                    // Anti-forensics: Instruct SQLite to overwrite deleted cell content with zeros
+                    db.execSQL("PRAGMA secure_delete = ON")
+                    db.execSQL("PRAGMA auto_vacuum = INCREMENTAL")
+                } catch (_: Throwable) {}
+            }
+
             override fun onCreate(db: SupportSQLiteDatabase) {
                 super.onCreate(db)
+                try {
+                    db.execSQL("PRAGMA secure_delete = ON")
+                    db.execSQL("PRAGMA auto_vacuum = INCREMENTAL")
+                } catch (_: Throwable) {}
                 INSTANCE?.let { database ->
                     scope.launch(Dispatchers.IO) {
                         populateInitialChannels(database)

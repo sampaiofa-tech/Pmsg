@@ -196,21 +196,21 @@ fun MessageBubble(
     val isUrgent = remainingMillis < 60_000L
 
     val bubbleShape = if (isMe) {
-        RoundedCornerShape(topStart = 18.dp, topEnd = 4.dp, bottomStart = 18.dp, bottomEnd = 18.dp)
+        RoundedCornerShape(topStart = 18.dp, topEnd = 5.dp, bottomStart = 18.dp, bottomEnd = 18.dp)
     } else {
-        RoundedCornerShape(topStart = 4.dp, topEnd = 18.dp, bottomStart = 18.dp, bottomEnd = 18.dp)
+        RoundedCornerShape(topStart = 5.dp, topEnd = 18.dp, bottomStart = 18.dp, bottomEnd = 18.dp)
     }
 
     val bubbleBgColor = when {
-        isUrgent -> ImmersiveExpiring.copy(alpha = 0.22f)
-        isMe -> ImmersivePrimaryContainer
-        else -> ImmersiveCard
+        isUrgent -> com.example.ui.theme.IncinerateCrimsonBg
+        isMe -> com.example.ui.theme.BubbleUser
+        else -> com.example.ui.theme.BubbleContact
     }
 
     val borderStrokeColor = when {
-        isUrgent -> ImmersiveExpiring.copy(alpha = 0.8f)
-        isMe -> ImmersivePrimary.copy(alpha = 0.35f)
-        else -> ImmersiveOutline.copy(alpha = 0.5f)
+        isUrgent -> com.example.ui.theme.IncinerateCrimson.copy(alpha = 0.7f)
+        isMe -> com.example.ui.theme.BubbleUserBorder
+        else -> com.example.ui.theme.BubbleContactBorder
     }
 
     // Expiry text calculation - accurately shows seconds when < 1 minute (e.g. 30s)
@@ -749,14 +749,12 @@ fun MessageBubble(
                             },
                             onClick = {
                                 showMenu = false
-                                val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                                val clip = ClipData.newPlainText("Pmsg Confidential", message.content)
-                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                                    clip.description.extras = PersistableBundle().apply {
-                                        putBoolean(ClipDescription.EXTRA_IS_SENSITIVE, true)
-                                    }
-                                }
-                                clipboard.setPrimaryClip(clip)
+                                com.example.util.security.ClipboardSanitizer.copySensitiveText(
+                                    context = context,
+                                    label = "Pmsg Segredo",
+                                    text = message.content,
+                                    autoClearSeconds = 30
+                                )
                                 onCopyMessage(message.content)
                             }
                         )
