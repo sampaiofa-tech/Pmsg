@@ -102,8 +102,8 @@ object NotificationHelper {
             val notificationManager = NotificationManagerCompat.from(context)
             notificationCounter = (notificationCounter + 1) % 50
             notificationManager.notify(NOTIFICATION_ID_BASE + notificationCounter, notification)
-        } catch (e: Throwable) {
-            // Handled safely across all OEM implementations
+        } catch (e: SecurityException) {
+            // Handled safely
         }
     }
 }

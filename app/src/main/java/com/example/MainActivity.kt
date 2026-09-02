@@ -257,7 +257,7 @@ fun VanishApp(
   // If auto-lock or biometric lock is active and app is locked, display the Lock Screen
   if (!isAppUnlocked && (biometricLockEnabled || autoLockEnabled)) {
     BiometricLockScreen(
-      onVerifyPin = { viewModel.verifySecurityPin(it) },
+      securityPin = securityPin,
       biometricEnabled = biometricLockEnabled,
       autoLockTimeoutMinutes = autoLockTimeoutMinutes,
       onUnlocked = { viewModel.unlockApp() }
@@ -305,13 +305,12 @@ fun VanishApp(
           biometricLockEnabled = biometricLockEnabled,
           autoLockEnabled = autoLockEnabled,
           autoLockTimeoutMinutes = autoLockTimeoutMinutes,
-          securityPin = "••••",
+          securityPin = securityPin,
           readReceiptsEnabled = readReceiptsEnabled,
           vanishAfterReadPresetSeconds = vanishAfterReadPresetSeconds,
           shakeToClearEnabled = shakeToClearEnabled,
           shakeSensitivity = shakeSensitivity,
           shakeRequiresConfirmation = shakeRequiresConfirmation,
-          isHardwareBackedCrypto = viewModel.isHardwareBackedCrypto,
           notificationsEnabled = notificationsEnabled,
           onRequestNotificationPermission = onRequestNotificationPermission,
           onTestNotification = { viewModel.triggerTestNotification() },

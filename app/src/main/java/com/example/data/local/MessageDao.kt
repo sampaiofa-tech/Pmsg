@@ -34,14 +34,8 @@ interface MessageDao {
     @Query("UPDATE ephemeral_messages SET isViewed = 1, viewedAt = :viewedAt WHERE id = :id")
     suspend fun markMessageViewed(id: Long, viewedAt: Long)
 
-    @Query("UPDATE ephemeral_messages SET isShredded = 1, content = :noise, mediaUri = NULL, fileName = NULL WHERE id = :id")
-    suspend fun overwriteMessageContent(id: Long, noise: String)
-
-    @Query("UPDATE ephemeral_messages SET isShredded = 1, content = :noise, mediaUri = NULL, fileName = NULL WHERE roomId = :roomId")
-    suspend fun overwriteRoomMessages(roomId: String, noise: String)
-
-    @Query("UPDATE ephemeral_messages SET isShredded = 1, content = :noise, mediaUri = NULL, fileName = NULL")
-    suspend fun overwriteAllMessages(noise: String)
+    @Query("UPDATE ephemeral_messages SET isShredded = 1, content = '*** PURGED ***' WHERE id = :id")
+    suspend fun markMessageShredded(id: Long)
 
     @Query("DELETE FROM ephemeral_messages WHERE id = :id")
     suspend fun deleteMessageById(id: Long)

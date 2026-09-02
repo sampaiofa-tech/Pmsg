@@ -1,13 +1,10 @@
 package com.example.ui.components
 
 import android.content.ClipData
-import android.content.ClipDescription
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.os.Build
-import android.os.PersistableBundle
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -750,12 +747,7 @@ fun MessageBubble(
                             onClick = {
                                 showMenu = false
                                 val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                                val clip = ClipData.newPlainText("Pmsg Confidential", message.content)
-                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                                    clip.description.extras = PersistableBundle().apply {
-                                        putBoolean(ClipDescription.EXTRA_IS_SENSITIVE, true)
-                                    }
-                                }
+                                val clip = ClipData.newPlainText("Pmsg", message.content)
                                 clipboard.setPrimaryClip(clip)
                                 onCopyMessage(message.content)
                             }

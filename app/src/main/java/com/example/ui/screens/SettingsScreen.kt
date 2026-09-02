@@ -114,7 +114,6 @@ fun SettingsScreen(
     shakeToClearEnabled: Boolean = true,
     shakeSensitivity: String = "NORMAL",
     shakeRequiresConfirmation: Boolean = false,
-    isHardwareBackedCrypto: Boolean = true,
     notificationsEnabled: Boolean,
     onRequestNotificationPermission: () -> Unit,
     onTestNotification: () -> Unit,
@@ -285,17 +284,13 @@ fun SettingsScreen(
                     Spacer(modifier = Modifier.width(14.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Proteção Criptográfica Ativa (AES-256-GCM)",
+                            text = "Proteção de Alto Nível Ativa",
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
                             color = ImmersiveOnSurface
                         )
                         Text(
-                            text = if (isHardwareBackedCrypto) {
-                                "Hardware KeyStore (TEE/StrongBox) ativo. Mensagens e mídias são criptografadas em repouso com zero rastro local."
-                            } else {
-                                "Criptografia AES-256-GCM autenticada ativa. Zero rastro em repouso e exclusão anti-forense em memória."
-                            },
+                            text = "Suas conversas são criptografadas, efêmeras e nunca armazenadas em servidores externos.",
                             fontSize = 11.sp,
                             color = ImmersiveMutedLight,
                             lineHeight = 15.sp

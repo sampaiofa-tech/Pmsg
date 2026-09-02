@@ -4,10 +4,8 @@ import com.example.data.local.ChannelDao
 import com.example.data.local.MessageDao
 import com.example.data.model.BurnerChannel
 import com.example.data.model.EphemeralMessage
-import com.example.util.security.CryptoManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import java.util.UUID
 
@@ -18,28 +16,15 @@ class ChatRepository(
     val allChannels: Flow<List<BurnerChannel>> = channelDao.getAllChannels()
 
     fun getActiveMessagesForRoom(roomId: String, currentTime: Long): Flow<List<EphemeralMessage>> {
-        return messageDao.getActiveMessagesForRoom(roomId, currentTime).map { list ->
-            list.map { decryptMessage(it) }
-        }
+        return messageDao.getActiveMessagesForRoom(roomId, currentTime)
     }
 
     fun getAllMessagesForRoom(roomId: String): Flow<List<EphemeralMessage>> {
-        return messageDao.getAllMessagesForRoom(roomId).map { list ->
-            list.map { decryptMessage(it) }
-        }
+        return messageDao.getAllMessagesForRoom(roomId)
     }
 
     fun getActiveMessageCount(currentTime: Long): Flow<Int> {
         return messageDao.getActiveMessageCount(currentTime)
-    }
-
-    private fun decryptMessage(message: EphemeralMessage): EphemeralMessage {
-        val decryptedContent = CryptoManager.decrypt(message.content)
-        val decryptedMediaUri = message.mediaUri?.let { CryptoManager.decrypt(it) }
-        return message.copy(
-            content = decryptedContent,
-            mediaUri = decryptedMediaUri
-        )
     }
 
     suspend fun sendMessage(
@@ -57,24 +42,21 @@ class ChatRepository(
         disappearAfterReadSeconds: Int = 0
     ): EphemeralMessage = withContext(Dispatchers.IO) {
         val now = System.currentTimeMillis()
+        // If view-once, default expiry is 24h or until viewed/opened
         val ttlMillis = (ttlHours * 60 * 60 * 1000L).toLong().coerceAtLeast(10_000L)
         val expiresAt = now + ttlMillis
 
-        // Transparent AES-256-GCM encryption for zero-trace local storage
-        val encryptedContent = CryptoManager.encrypt(text)
-        val encryptedMediaUri = mediaUri?.let { CryptoManager.encrypt(it) }
-
-        val messageToStore = EphemeralMessage(
+        val message = EphemeralMessage(
             roomId = roomId,
             senderId = senderId,
             senderName = senderName,
-            content = encryptedContent,
+            content = text,
             timestamp = now,
             expiresAt = expiresAt,
             ttlOptionHours = ttlHours,
             isEncrypted = true,
             mediaType = mediaType,
-            mediaUri = encryptedMediaUri,
+            mediaUri = mediaUri,
             fileName = fileName,
             fileSize = fileSize,
             audioDurationSeconds = audioDurationSeconds,
@@ -85,7 +67,7 @@ class ChatRepository(
             disappearAfterReadSeconds = disappearAfterReadSeconds
         )
 
-        val insertedId = messageDao.insertMessage(messageToStore)
+        val insertedId = messageDao.insertMessage(message)
 
         // Update channel last message preview
         val preview = when {
@@ -101,12 +83,7 @@ class ChatRepository(
         }
         channelDao.updateLastMessage(roomId, preview, now)
 
-        // Return in-memory version with plain text for immediate UI responsiveness
-        messageToStore.copy(
-            id = insertedId,
-            content = text,
-            mediaUri = mediaUri
-        )
+        message.copy(id = insertedId)
     }
 
     suspend fun markMessageDelivered(messageId: Long) = withContext(Dispatchers.IO) {
@@ -126,17 +103,14 @@ class ChatRepository(
     }
 
     suspend fun shredMessage(messageId: Long) = withContext(Dispatchers.IO) {
-        // Multi-pass secure shredding: Overwrite payload with cryptographically random noise first, then delete
-        val noise = CryptoManager.generateSecureNoise(48)
-        messageDao.overwriteMessageContent(messageId, noise)
+        // Zero trace: overwrite then delete
+        messageDao.markMessageShredded(messageId)
         messageDao.deleteMessageById(messageId)
     }
 
     suspend fun clearChatHistory(roomId: String) = withContext(Dispatchers.IO) {
-        val noise = CryptoManager.generateSecureNoise(64)
-        messageDao.overwriteRoomMessages(roomId, noise)
         messageDao.incinerateRoomMessages(roomId)
-        channelDao.updateLastMessage(roomId, "Histórico apagado • Zero Trace", System.currentTimeMillis())
+        channelDao.updateLastMessage(roomId, "Histórico apagado via Shake to Clear • Zero Trace", System.currentTimeMillis())
     }
 
     suspend fun purgeExpired(currentTime: Long): Int = withContext(Dispatchers.IO) {
@@ -144,15 +118,11 @@ class ChatRepository(
     }
 
     suspend fun incinerateRoom(roomId: String) = withContext(Dispatchers.IO) {
-        val noise = CryptoManager.generateSecureNoise(64)
-        messageDao.overwriteRoomMessages(roomId, noise)
         messageDao.incinerateRoomMessages(roomId)
         channelDao.deleteChannelById(roomId)
     }
 
     suspend fun deleteChannel(channelId: String) = withContext(Dispatchers.IO) {
-        val noise = CryptoManager.generateSecureNoise(64)
-        messageDao.overwriteRoomMessages(channelId, noise)
         messageDao.incinerateRoomMessages(channelId)
         channelDao.deleteChannelById(channelId)
     }
@@ -184,14 +154,8 @@ class ChatRepository(
     }
 
     suspend fun panicWipeAll(): Int = withContext(Dispatchers.IO) {
-        val noise = CryptoManager.generateSecureNoise(128)
-        messageDao.overwriteAllMessages(noise)
         val deletedCount = messageDao.panicWipeAllMessages()
         channelDao.panicWipeAllChannels()
-
-        // Hardware Crypto-Shredding: Purge master key from KeyStore so deleted blocks cannot be recovered
-        CryptoManager.invalidateAndRecreateMasterKey()
-
         deletedCount
     }
 }

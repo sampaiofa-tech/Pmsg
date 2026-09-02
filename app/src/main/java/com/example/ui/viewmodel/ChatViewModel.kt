@@ -11,8 +11,6 @@ import com.example.data.model.PmsgContact
 import com.example.data.repository.ChatRepository
 import com.example.util.ContactsHelper
 import com.example.util.NotificationHelper
-import com.example.util.security.CryptoManager
-import com.example.util.security.SecurePrefsHelper
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -32,9 +30,7 @@ data class TtlPreset(
 class ChatViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository: ChatRepository
-
-    // Hardware-backed cryptographic status
-    val isHardwareBackedCrypto: Boolean = CryptoManager.isHardwareBacked()
+    private val prefs = application.getSharedPreferences("pmsg_security_prefs", Context.MODE_PRIVATE)
 
     // Live continuous time ticker (updates every 500ms for smooth live countdowns)
     private val _currentTime = MutableStateFlow(System.currentTimeMillis())
@@ -68,10 +64,10 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
     val screenProtectionEnabled: StateFlow<Boolean> = _screenProtectionEnabled.asStateFlow()
 
     // Screenshot Detection & Prevention
-    private val _screenshotDetectionEnabled = MutableStateFlow(SecurePrefsHelper.isScreenshotDetectionEnabled(application))
+    private val _screenshotDetectionEnabled = MutableStateFlow(prefs.getBoolean("screenshot_detection_enabled", true))
     val screenshotDetectionEnabled: StateFlow<Boolean> = _screenshotDetectionEnabled.asStateFlow()
 
-    private val _blockSensitiveOnScreenshot = MutableStateFlow(SecurePrefsHelper.isBlockSensitiveOnScreenshotEnabled(application))
+    private val _blockSensitiveOnScreenshot = MutableStateFlow(prefs.getBoolean("block_sensitive_screenshot", true))
     val blockSensitiveOnScreenshot: StateFlow<Boolean> = _blockSensitiveOnScreenshot.asStateFlow()
 
     private val _isScreenshotLockdownActive = MutableStateFlow(false)
@@ -81,25 +77,25 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
     val lastScreenshotDetectedTime: StateFlow<Long> = _lastScreenshotDetectedTime.asStateFlow()
 
     // Read Receipts & Disappearing Effect Settings
-    private val _readReceiptsEnabled = MutableStateFlow(SecurePrefsHelper.isReadReceiptsEnabled(application))
+    private val _readReceiptsEnabled = MutableStateFlow(prefs.getBoolean("read_receipts_enabled", true))
     val readReceiptsEnabled: StateFlow<Boolean> = _readReceiptsEnabled.asStateFlow()
 
     // Vanish after read preset in seconds (0 = follow room TTL, 5, 10, 30, 60 seconds)
-    private val _vanishAfterReadPresetSeconds = MutableStateFlow(SecurePrefsHelper.getVanishAfterReadSeconds(application))
+    private val _vanishAfterReadPresetSeconds = MutableStateFlow(prefs.getInt("vanish_after_read_seconds", 0))
     val vanishAfterReadPresetSeconds: StateFlow<Int> = _vanishAfterReadPresetSeconds.asStateFlow()
 
     // Biometric / PIN App Lock
-    private val _biometricLockEnabled = MutableStateFlow(SecurePrefsHelper.isBiometricLockEnabled(application))
+    private val _biometricLockEnabled = MutableStateFlow(prefs.getBoolean("biometric_lock_enabled", false))
     val biometricLockEnabled: StateFlow<Boolean> = _biometricLockEnabled.asStateFlow()
 
     // Shake to Clear feature settings
-    private val _shakeToClearEnabled = MutableStateFlow(SecurePrefsHelper.isShakeToClearEnabled(application))
+    private val _shakeToClearEnabled = MutableStateFlow(prefs.getBoolean("shake_to_clear_enabled", true))
     val shakeToClearEnabled: StateFlow<Boolean> = _shakeToClearEnabled.asStateFlow()
 
-    private val _shakeSensitivity = MutableStateFlow(SecurePrefsHelper.getShakeSensitivity(application))
+    private val _shakeSensitivity = MutableStateFlow(prefs.getString("shake_sensitivity", "NORMAL") ?: "NORMAL")
     val shakeSensitivity: StateFlow<String> = _shakeSensitivity.asStateFlow()
 
-    private val _shakeRequiresConfirmation = MutableStateFlow(SecurePrefsHelper.isShakeRequiresConfirmation(application))
+    private val _shakeRequiresConfirmation = MutableStateFlow(prefs.getBoolean("shake_requires_confirmation", false))
     val shakeRequiresConfirmation: StateFlow<Boolean> = _shakeRequiresConfirmation.asStateFlow()
 
     private val _shakeDialogVisible = MutableStateFlow(false)
@@ -109,19 +105,23 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
     val shakeWipeEventTimestamp: StateFlow<Long> = _shakeWipeEventTimestamp.asStateFlow()
 
     // Auto-lock feature (locks automatically when time expires, default 5 minutes)
-    private val _autoLockEnabled = MutableStateFlow(SecurePrefsHelper.isAutoLockEnabled(application))
+    private val _autoLockEnabled = MutableStateFlow(prefs.getBoolean("auto_lock_enabled", true))
     val autoLockEnabled: StateFlow<Boolean> = _autoLockEnabled.asStateFlow()
 
     // Auto-lock timeout in minutes (default 5 minutes)
-    private val _autoLockTimeoutMinutes = MutableStateFlow(SecurePrefsHelper.getAutoLockTimeoutMinutes(application))
+    private val _autoLockTimeoutMinutes = MutableStateFlow(prefs.getInt("auto_lock_timeout_minutes", 5))
     val autoLockTimeoutMinutes: StateFlow<Int> = _autoLockTimeoutMinutes.asStateFlow()
+
+    // Saved PIN for security lock (default "1234")
+    private val _securityPin = MutableStateFlow(prefs.getString("security_pin", "1234") ?: "1234")
+    val securityPin: StateFlow<String> = _securityPin.asStateFlow()
 
     // Track user activity timestamp for auto-lock
     private var lastUserActivityTime = System.currentTimeMillis()
 
     // Current unlock status
     private val _isAppUnlocked = MutableStateFlow(
-        if (SecurePrefsHelper.isBiometricLockEnabled(application) || SecurePrefsHelper.isAutoLockEnabled(application)) {
+        if (prefs.getBoolean("biometric_lock_enabled", false) || prefs.getBoolean("auto_lock_enabled", true)) {
             false
         } else {
             true
@@ -286,13 +286,13 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
 
     fun setReadReceiptsEnabled(enabled: Boolean) {
         _readReceiptsEnabled.value = enabled
-        SecurePrefsHelper.setReadReceiptsEnabled(getApplication(), enabled)
+        prefs.edit().putBoolean("read_receipts_enabled", enabled).apply()
         showFeedback(if (enabled) "✓✓ Confirmação de Leitura Ativada" else "Confirmação de Leitura Desativada")
     }
 
     fun setVanishAfterReadPresetSeconds(seconds: Int) {
         _vanishAfterReadPresetSeconds.value = seconds
-        SecurePrefsHelper.setVanishAfterReadSeconds(getApplication(), seconds)
+        prefs.edit().putInt("vanish_after_read_seconds", seconds).apply()
         val desc = when (seconds) {
             0 -> "Desativado (segue TTL padrão)"
             5 -> "5 segundos após leitura"
@@ -312,13 +312,13 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
 
     fun setShakeToClearEnabled(enabled: Boolean) {
         _shakeToClearEnabled.value = enabled
-        SecurePrefsHelper.setShakeToClearEnabled(getApplication(), enabled)
+        prefs.edit().putBoolean("shake_to_clear_enabled", enabled).apply()
         showFeedback(if (enabled) "📳 Shake-to-Clear ATIVADO: chacoalhe o dispositivo para limpar o chat!" else "Shake-to-Clear Desativado")
     }
 
     fun setShakeSensitivity(sensitivity: String) {
         _shakeSensitivity.value = sensitivity
-        SecurePrefsHelper.setShakeSensitivity(getApplication(), sensitivity)
+        prefs.edit().putString("shake_sensitivity", sensitivity).apply()
         val desc = when (sensitivity) {
             "HIGH" -> "Alta (sensível)"
             "LOW" -> "Baixa (requer chacoalhada forte)"
@@ -329,7 +329,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
 
     fun setShakeRequiresConfirmation(requiresConfirmation: Boolean) {
         _shakeRequiresConfirmation.value = requiresConfirmation
-        SecurePrefsHelper.setShakeRequiresConfirmation(getApplication(), requiresConfirmation)
+        prefs.edit().putBoolean("shake_requires_confirmation", requiresConfirmation).apply()
         showFeedback(if (requiresConfirmation) "Shake-to-Clear: Pedir confirmação antes de apagar" else "Shake-to-Clear: Limpeza instantânea ativada (Zero Trace)")
     }
 
@@ -588,9 +588,8 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
     fun panicWipeAll() {
         viewModelScope.launch {
             repository.panicWipeAll()
-            SecurePrefsHelper.panicWipeAllPrefs(getApplication())
             _selectedChannel.value = null
-            showFeedback("🚨 PÂNICO EXECUTADO: Todo o banco, chaves mestras e dados foram vaporizados com Zero Rastro!")
+            showFeedback("🚨 PÂNICO EXECUTADO: Todo o banco e mensagens foram vaporizados!")
         }
     }
 
@@ -603,7 +602,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
 
     fun setBiometricLockEnabled(enabled: Boolean) {
         _biometricLockEnabled.value = enabled
-        SecurePrefsHelper.setBiometricLockEnabled(getApplication(), enabled)
+        prefs.edit().putBoolean("biometric_lock_enabled", enabled).apply()
         if (!enabled && !_autoLockEnabled.value) {
             _isAppUnlocked.value = true
         }
@@ -612,7 +611,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
 
     fun setAutoLockEnabled(enabled: Boolean) {
         _autoLockEnabled.value = enabled
-        SecurePrefsHelper.setAutoLockEnabled(getApplication(), enabled)
+        prefs.edit().putBoolean("auto_lock_enabled", enabled).apply()
         if (enabled) {
             lastUserActivityTime = System.currentTimeMillis()
             showFeedback("⏱️ Auto-bloqueio ATIVADO: app bloqueará a cada ${_autoLockTimeoutMinutes.value} min de inatividade.")
@@ -624,7 +623,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
     fun setAutoLockTimeoutMinutes(minutes: Int) {
         val validMinutes = minutes.coerceIn(1, 60)
         _autoLockTimeoutMinutes.value = validMinutes
-        SecurePrefsHelper.setAutoLockTimeoutMinutes(getApplication(), validMinutes)
+        prefs.edit().putInt("auto_lock_timeout_minutes", validMinutes).apply()
         lastUserActivityTime = System.currentTimeMillis()
         val timeLabel = when (validMinutes) {
             1 -> "1 minuto"
@@ -636,24 +635,21 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
 
     fun setSecurityPin(pin: String) {
         if (pin.length == 4 && pin.all { it.isDigit() }) {
-            SecurePrefsHelper.setPin(getApplication(), pin)
-            showFeedback("🔑 Novo PIN de 4 dígitos criptografado e salvo com sucesso!")
+            _securityPin.value = pin
+            prefs.edit().putString("security_pin", pin).apply()
+            showFeedback("🔑 Novo PIN de 4 dígitos configurado com sucesso!")
         }
-    }
-
-    fun verifySecurityPin(pin: String): Boolean {
-        return SecurePrefsHelper.verifyPin(getApplication(), pin)
     }
 
     fun setScreenshotDetectionEnabled(enabled: Boolean) {
         _screenshotDetectionEnabled.value = enabled
-        SecurePrefsHelper.setScreenshotDetectionEnabled(getApplication(), enabled)
+        prefs.edit().putBoolean("screenshot_detection_enabled", enabled).apply()
         showFeedback(if (enabled) "📸 Detecção de capturas de tela ATIVADA." else "📸 Detecção de capturas DESATIVADA.")
     }
 
     fun setBlockSensitiveOnScreenshot(enabled: Boolean) {
         _blockSensitiveOnScreenshot.value = enabled
-        SecurePrefsHelper.setBlockSensitiveOnScreenshotEnabled(getApplication(), enabled)
+        prefs.edit().putBoolean("block_sensitive_screenshot", enabled).apply()
         showFeedback(if (enabled) "🛡️ Bloqueio preventivo de conteúdo sensível ATIVADO." else "🛡️ Bloqueio preventivo DESATIVADO.")
     }
 

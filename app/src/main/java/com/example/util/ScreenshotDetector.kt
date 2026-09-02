@@ -1,6 +1,7 @@
 package com.example.util
 
 import android.app.Activity
+import android.content.Context
 import android.database.ContentObserver
 import android.net.Uri
 import android.os.Build
@@ -8,25 +9,21 @@ import android.os.Handler
 import android.os.Looper
 import android.provider.MediaStore
 import android.util.Log
-import java.lang.ref.WeakReference
 
 /**
- * Robust utility to detect screenshots on Android devices.
+ * Utility to detect screenshots on Android devices.
  * Uses Android 14+ native ScreenCaptureCallback with ContentObserver fallback.
- * Uses WeakReference to prevent Activity memory leaks.
  */
 class ScreenshotDetector(
-    activity: Activity,
+    private val activity: Activity,
     private val onScreenshotDetected: () -> Unit
 ) {
-    private val activityRef = WeakReference(activity)
     private var isListening = false
     private var screenCaptureCallback: Any? = null
     private var contentObserver: ContentObserver? = null
 
     fun startListening() {
         if (isListening) return
-        val activity = activityRef.get() ?: return
         isListening = true
 
         // 1. Android 14+ (API 34+) Official ScreenCaptureCallback
@@ -43,7 +40,7 @@ class ScreenshotDetector(
             }
         }
 
-        // 2. ContentObserver fallback on MediaStore
+        // 2. ContentObserver fallback on MediaStore for older APIs or additional coverage
         try {
             val handler = Handler(Looper.getMainLooper())
             contentObserver = object : ContentObserver(handler) {
@@ -76,9 +73,8 @@ class ScreenshotDetector(
     fun stopListening() {
         if (!isListening) return
         isListening = false
-        val activity = activityRef.get()
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE && activity != null) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             screenCaptureCallback?.let { callback ->
                 try {
                     activity.unregisterScreenCaptureCallback(callback as Activity.ScreenCaptureCallback)
@@ -89,13 +85,11 @@ class ScreenshotDetector(
             screenCaptureCallback = null
         }
 
-        if (activity != null) {
-            contentObserver?.let { observer ->
-                try {
-                    activity.contentResolver.unregisterContentObserver(observer)
-                } catch (e: Exception) {
-                    Log.e("ScreenshotDetector", "Failed to unregister ContentObserver", e)
-                }
+        contentObserver?.let { observer ->
+            try {
+                activity.contentResolver.unregisterContentObserver(observer)
+            } catch (e: Exception) {
+                Log.e("ScreenshotDetector", "Failed to unregister ContentObserver", e)
             }
         }
         contentObserver = null

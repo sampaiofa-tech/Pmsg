@@ -14,17 +14,14 @@ import kotlin.math.sqrt
 /**
  * Shake detector using Android Accelerometer sensor.
  * Detects vigorous device shaking to trigger 'Shake to Clear' instant wipe of chat history.
- * Uses applicationContext to avoid leaking Activity instances.
  */
 class ShakeDetector(
-    context: Context,
+    private val context: Context,
     private val onShakeDetected: () -> Unit
 ) : SensorEventListener {
 
-    private val appContext = context.applicationContext
-
     private val sensorManager: SensorManager? =
-        appContext.getSystemService(Context.SENSOR_SERVICE) as? SensorManager
+        context.getSystemService(Context.SENSOR_SERVICE) as? SensorManager
 
     private val accelerometer: Sensor? =
         sensorManager?.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
@@ -33,7 +30,7 @@ class ShakeDetector(
     private var isListening: Boolean = false
 
     // Sensitivity threshold in g-force (1.0 = normal gravity at rest)
-    // 2.4f = standard shake, 1.8f = sensitive, 3.2f = hard shake
+    // 2.5f = standard shake, 1.8f = sensitive, 3.2f = hard shake
     var sensitivityThreshold: Float = 2.4f
 
     fun startListening() {
@@ -87,14 +84,14 @@ class ShakeDetector(
     fun triggerHapticPulse() {
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                val vibratorManager = appContext.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? VibratorManager
+                val vibratorManager = context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as? VibratorManager
                 val vibrator = vibratorManager?.defaultVibrator
                 val pattern = longArrayOf(0, 80, 50, 120)
                 val amplitudes = intArrayOf(0, 200, 0, 255)
                 vibrator?.vibrate(VibrationEffect.createWaveform(pattern, amplitudes, -1))
             } else {
                 @Suppress("DEPRECATION")
-                val vibrator = appContext.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
+                val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                     vibrator?.vibrate(VibrationEffect.createWaveform(longArrayOf(0, 80, 50, 120), -1))
                 } else {

@@ -7,7 +7,6 @@ import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.data.model.BurnerChannel
 import com.example.data.model.EphemeralMessage
-import com.example.util.security.CryptoManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -95,13 +94,13 @@ abstract class VanishDatabase : RoomDatabase() {
 
                 database.channelDao().insertAllDefaultChannels(initialChannels)
 
-                // Populate initial ephemeral sample messages with strict 24h countdown and hardware encryption
+                // Populate initial ephemeral sample messages with strict 24h countdown
                 val sampleMessages = listOf(
                     EphemeralMessage(
                         roomId = "channel_stealth_1",
                         senderId = "ALICE",
                         senderName = "Alice",
-                        content = CryptoManager.encrypt("Olá! Este é um chat seguro com proteção de zero rastros."),
+                        content = "Olá! Este é um chat seguro com proteção de zero rastros.",
                         timestamp = now - (20 * 60 * 1000L),
                         expiresAt = now - (20 * 60 * 1000L) + ttl24h,
                         ttlOptionHours = 24f
@@ -110,7 +109,7 @@ abstract class VanishDatabase : RoomDatabase() {
                         roomId = "channel_stealth_1",
                         senderId = "ME",
                         senderName = "Você",
-                        content = CryptoManager.encrypt("Perfeito. Após 24 horas essa conversa será apagada sem deixar nenhum rastro no dispositivo ou em servidores."),
+                        content = "Perfeito. Após 24 horas essa conversa será apagada sem deixar nenhum rastro no dispositivo ou em servidores.",
                         timestamp = now - (18 * 60 * 1000L),
                         expiresAt = now - (18 * 60 * 1000L) + ttl24h,
                         ttlOptionHours = 24f
@@ -119,7 +118,7 @@ abstract class VanishDatabase : RoomDatabase() {
                         roomId = "channel_stealth_1",
                         senderId = "ALICE",
                         senderName = "Alice",
-                        content = CryptoManager.encrypt("Toda mensagem aqui é apagada em 24h sem deixar vestígios 🔒"),
+                        content = "Toda mensagem aqui é apagada em 24h sem deixar vestígios 🔒",
                         timestamp = now - (15 * 60 * 1000L),
                         expiresAt = now - (15 * 60 * 1000L) + ttl24h,
                         ttlOptionHours = 24f
@@ -128,7 +127,7 @@ abstract class VanishDatabase : RoomDatabase() {
                         roomId = "channel_stealth_2",
                         senderId = "ANON",
                         senderName = "Anônimo",
-                        content = CryptoManager.encrypt("Canal temporário iniciado. Cronômetro de 24 horas ativo."),
+                        content = "Canal temporário iniciado. Cronômetro de 24 horas ativo.",
                         timestamp = now - (2 * 60 * 60 * 1000L),
                         expiresAt = now - (2 * 60 * 60 * 1000L) + ttl24h,
                         ttlOptionHours = 24f
