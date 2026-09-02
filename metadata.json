@@ -1,0 +1,8 @@
+{
+  "name": "Pmsg",
+  "description": "Aplicativo de mensagens com expiração automática, proteção em tempo real e eliminação total de rastros.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
