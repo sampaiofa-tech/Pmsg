@@ -66,9 +66,11 @@ graph TD
    - **Garantia Criptográfica**: Uma vez que a DEK de 256 bits é destruída, o ciphertext torna-se matematicamente impossível de ser decifrado, mesmo que cópias residuais ainda aguardem o expurgo físico.
 4. **TTL Nativo do Firestore**:
    - Política de campo TTL configurada sobre `expiresAt` na coleção de mensagens para exclusão assíncrona automática de infraestrutura.
-5. **Proxy Backend de IA (`geminiProxy`)**:
-   - Chamadas dos clientes Desktop e Web para geração de notas efêmeras são autenticadas por token de sessão e intermediadas por Cloud Function HTTPS.
+5. **Proxy Backend de IA (`geminiProxy`) & Rate Limiting**:
+   - Chamadas dos clientes Desktop e Web para geração de notas efêmeras são autenticadas criptograficamente por Firebase ID Token (`verifyIdToken`) e intermediadas por Cloud Function HTTPS.
+   - **Rate Limiting por Usuário**: Implementado via transação atômica no Firestore (`userRateLimits/{uid}`) com janela deslizante de 1 minuto (limite padrão: 5 requisições/minuto), retornando HTTP 429 em caso de abuso.
    - A chave `GEMINI_API_KEY` reside exclusivamente no Google Cloud Secret Manager, eliminando qualquer risco de extração em binários ou tráfego de rede do cliente.
+   - *Roadmap Futuro*: Migração para mitigação na borda via **Google Cloud Armor** e reCAPTCHA Enterprise caso a demanda justifique a relação custo/escala.
 
 ---
 

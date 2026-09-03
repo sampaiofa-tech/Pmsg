@@ -43,6 +43,15 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // =========================================================================
+    // COLEÇÃO: userRateLimits
+    // =========================================================================
+    // ISOLAMENTO TOTAL: Contadores de rate limit gerenciados exclusivamente pelo
+    // Admin SDK nas Cloud Functions.
+    match /userRateLimits/{uid} {
+      allow read, write: if false;
+    }
+
     // Bloqueio preventivo padrão para qualquer outro documento não mapeado
     match /{document=**} {
       allow read, write: if false;

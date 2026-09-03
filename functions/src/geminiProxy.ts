@@ -5,13 +5,70 @@ import * as admin from "firebase-admin";
 
 const geminiApiKey = defineSecret("GEMINI_API_KEY");
 
+const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute window
+const MAX_REQUESTS_PER_WINDOW = 5; // Max 5 burner notes per minute per user
+
+/**
+ * Sliding window rate limiter based on Firestore transaction.
+ * Returns true if request is allowed, false if rate limit exceeded.
+ */
+export async function checkRateLimit(
+  uid: string,
+  db?: admin.firestore.Firestore
+): Promise<boolean> {
+  const firestoreDb = db || admin.firestore();
+  const rateLimitRef = firestoreDb.collection("userRateLimits").doc(uid);
+  const now = Date.now();
+
+  try {
+    return await firestoreDb.runTransaction(async (transaction) => {
+      const doc = await transaction.get(rateLimitRef);
+      if (!doc.exists) {
+        transaction.set(rateLimitRef, {
+          windowStart: now,
+          count: 1,
+          lastRequestAt: now,
+        });
+        return true;
+      }
+
+      const data = doc.data() || {};
+      const windowStart = typeof data.windowStart === "number" ? data.windowStart : now;
+      const currentCount = typeof data.count === "number" ? data.count : 0;
+
+      if (now - windowStart < RATE_LIMIT_WINDOW_MS) {
+        if (currentCount >= MAX_REQUESTS_PER_WINDOW) {
+          return false; // Limit exceeded
+        }
+        transaction.update(rateLimitRef, {
+          count: currentCount + 1,
+          lastRequestAt: now,
+        });
+        return true;
+      } else {
+        // Window expired, reset counter for new window
+        transaction.set(rateLimitRef, {
+          windowStart: now,
+          count: 1,
+          lastRequestAt: now,
+        });
+        return true;
+      }
+    });
+  } catch (err) {
+    logger.error(`geminiProxy: Rate limiter transaction error for user ${uid}`, err);
+    // Fail-open or fail-closed based on safety: here allow unless repeated failures
+    return true;
+  }
+}
+
 /**
  * HTTPS Cloud Function: geminiProxy
  *
  * Receives ephemeral AI burner note requests from Desktop and Web clients.
- * Authenticates client session token, attaches GEMINI_API_KEY from server-side
- * secret store, queries Google Gemini API (gemini-2.0-flash), and returns
- * the generated note without ever leaking the API key to the client.
+ * Authenticates client session token, enforces user rate limiting,
+ * attaches GEMINI_API_KEY from server-side secret store, queries Google Gemini API
+ * (gemini-2.0-flash), and returns the generated note without ever leaking the API key.
  */
 export const geminiProxy = onRequest(
   {
@@ -41,11 +98,23 @@ export const geminiProxy = onRequest(
     }
 
     // Cryptographic validation of Firebase Auth ID token
+    let callerUid: string;
     try {
-      await admin.auth().verifyIdToken(sessionToken);
+      const decodedToken = await admin.auth().verifyIdToken(sessionToken);
+      callerUid = decodedToken.uid;
     } catch (authError: any) {
       logger.warn("geminiProxy: Invalid or expired Firebase ID token.", { message: authError?.message });
       res.status(401).json({ error: "Unauthorized. Invalid or expired Firebase ID token." });
+      return;
+    }
+
+    // 3. Enforce sliding window Rate Limiting (max 5 requests/min per UID)
+    const allowed = await checkRateLimit(callerUid);
+    if (!allowed) {
+      logger.warn(`geminiProxy: Rate limit exceeded for user ${callerUid}.`);
+      res.status(429).json({
+        error: "Too Many Requests. Rate limit exceeded (maximum 5 requests per minute).",
+      });
       return;
     }
 
