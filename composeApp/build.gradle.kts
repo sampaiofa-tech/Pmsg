@@ -227,7 +227,7 @@ secrets {
     ignoreList.add("FIREBASE_APPCHECK_DEBUG_TOKEN")
 }
 
-googleServices { missingGoogleServicesStrategy = MissingGoogleServicesStrategy.WARN }
+googleServices { missingGoogleServicesStrategy = MissingGoogleServicesStrategy.FAIL }
 
 dependencies {
     "kspAndroid"(libs.androidx.room.compiler)
