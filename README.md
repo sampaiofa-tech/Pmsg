@@ -41,6 +41,37 @@ O **Pmsg** foi desenvolvido com um objetivo claro: **garantir privacidade absolu
 
 ---
 
+## 🌪️ Arquitetura Zero-Trace Server-Side (Expiração Autoritativa & Crypto-Shredding)
+
+Para mitigar ameaças em que clientes modificados ou offline tentam burlar o TTL local, o **Pmsg** implementa exclusão e destruição criptográfica autoritativa no servidor:
+
+```mermaid
+graph TD
+    Client[Cliente Pmsg] -->|1. Envia Mensagem Cifrada| MessagesColl[(Coleção messages)]
+    Client -->|2. DEK Isolada| KeysColl[(Coleção messageKeys)]
+    Scheduler[Cloud Scheduler - A cada 1h] -->|3. Identifica expiresAt vencido| Shredder[Crypto-Shredder Function]
+    Shredder -->|4. Hard-Delete DEK| KeysColl
+    Shredder -->|5. Hard-Delete Ciphertext| MessagesColl
+    Vanish[Vanish-After-Read / Deleção] -->|onDelete Trigger| KeysColl
+    FirestoreTTL[Firestore Native TTL] -.->|Expurgo assíncrono de resíduos| MessagesColl
+```
+
+1. **Purge Local (Client)**:
+   - Banco Room local + `WorkManager` (Android) e `ExpiredMessageCleanupScheduler` (Desktop/Web/iOS) executam sanitização contínua em memória e SQLite.
+2. **Vanish-After-Read & Trigger Reativo (`onDeleteMessage`)**:
+   - Quando o destinatário lê uma mensagem efêmera ou o usuário a apaga manualmente, a exclusão do documento em `messages` dispara um trigger `onDocumentDeleted` no Cloud Functions que destrói imediatamente a chave DEK correspondente em `messageKeys`.
+3. **Crypto-Shredding Server-Side (`scheduledMessageShredder`)**:
+   - Função agendada no Cloud Scheduler executada a cada 1 hora.
+   - Realiza varredura de documentos em `messageKeys` com `expiresAt <= now` e executa *batch delete* da chave DEK e da mensagem associada.
+   - **Garantia Criptográfica**: Uma vez que a DEK de 256 bits é destruída, o ciphertext torna-se matematicamente impossível de ser decifrado, mesmo que cópias residuais ainda aguardem o expurgo físico.
+4. **TTL Nativo do Firestore**:
+   - Política de campo TTL configurada sobre `expiresAt` na coleção de mensagens para exclusão assíncrona automática de infraestrutura.
+5. **Proxy Backend de IA (`geminiProxy`)**:
+   - Chamadas dos clientes Desktop e Web para geração de notas efêmeras são autenticadas por token de sessão e intermediadas por Cloud Function HTTPS.
+   - A chave `GEMINI_API_KEY` reside exclusivamente no Google Cloud Secret Manager, eliminando qualquer risco de extração em binários ou tráfego de rede do cliente.
+
+---
+
 ## 🛡️ Matriz Honesta de Garantias de Segurança por Plataforma
 
 | Recurso / Garantia | Android (Nativo) | Desktop Windows (JVM) | iOS (CMP) | Web (WasmJS) |
