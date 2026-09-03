@@ -1,4 +1,5 @@
 import { geminiProxy } from "../src/geminiProxy";
+import * as admin from "firebase-admin";
 
 function createMockResponse() {
   let statusCode = 200;
@@ -26,6 +27,23 @@ function createMockResponse() {
 }
 
 describe("geminiProxy Cloud Function Test Suite", () => {
+  let mockVerifyIdToken: jest.Mock;
+
+  beforeEach(() => {
+    mockVerifyIdToken = jest.fn().mockResolvedValue({
+      uid: "authenticated_desktop_user",
+      email: "user@pmsg.internal",
+    });
+
+    jest.spyOn(admin, "auth").mockReturnValue({
+      verifyIdToken: mockVerifyIdToken,
+    } as any);
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
   it("should reject non-POST requests with 405", async () => {
     const req: any = {
       method: "GET",
@@ -51,6 +69,24 @@ describe("geminiProxy Cloud Function Test Suite", () => {
 
     expect(res.getStatusCode()).toBe(401);
     expect(res.getJsonResult().error).toContain("Unauthorized");
+  });
+
+  it("CRITICAL RULE: should reject invalid or expired Firebase ID token with 401", async () => {
+    mockVerifyIdToken.mockRejectedValue(new Error("Firebase ID token has expired."));
+
+    const req: any = {
+      method: "POST",
+      headers: {
+        authorization: "Bearer expired_or_malformed_token",
+      },
+      body: { prompt: "Mensagem secreta" },
+    };
+
+    const res = createMockResponse();
+    await (geminiProxy as any)(req, res);
+
+    expect(res.getStatusCode()).toBe(401);
+    expect(res.getJsonResult().error).toContain("Invalid or expired Firebase ID token");
   });
 
   it("should reject requests with missing prompt with 400", async () => {

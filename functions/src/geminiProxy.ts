@@ -1,6 +1,7 @@
 import { onRequest } from "firebase-functions/v2/https";
 import { defineSecret } from "firebase-functions/params";
 import { logger } from "firebase-functions";
+import * as admin from "firebase-admin";
 
 const geminiApiKey = defineSecret("GEMINI_API_KEY");
 
@@ -25,17 +26,26 @@ export const geminiProxy = onRequest(
       return;
     }
 
-    // 2. Validate Authorization header (Session token check)
+    // 2. Validate Authorization header with real verifyIdToken check
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      logger.warn("geminiProxy: Unauthorized request (missing or invalid Bearer token).");
-      res.status(401).json({ error: "Unauthorized. Valid session token required." });
+      logger.warn("geminiProxy: Unauthorized request (missing or invalid Bearer header).");
+      res.status(401).json({ error: "Unauthorized. Valid Bearer session token required." });
       return;
     }
 
     const sessionToken = authHeader.substring("Bearer ".length).trim();
     if (!sessionToken) {
       res.status(401).json({ error: "Unauthorized. Empty session token." });
+      return;
+    }
+
+    // Cryptographic validation of Firebase Auth ID token
+    try {
+      await admin.auth().verifyIdToken(sessionToken);
+    } catch (authError: any) {
+      logger.warn("geminiProxy: Invalid or expired Firebase ID token.", { message: authError?.message });
+      res.status(401).json({ error: "Unauthorized. Invalid or expired Firebase ID token." });
       return;
     }
 
