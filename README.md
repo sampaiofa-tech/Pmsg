@@ -70,7 +70,15 @@ graph TD
    - Chamadas dos clientes Desktop e Web para geração de notas efêmeras são autenticadas criptograficamente por Firebase ID Token (`verifyIdToken`) e intermediadas por Cloud Function HTTPS.
    - **Rate Limiting por Usuário**: Implementado via transação atômica no Firestore (`userRateLimits/{uid}`) com janela deslizante de 1 minuto (limite padrão: 5 requisições/minuto), retornando HTTP 429 em caso de abuso.
    - A chave `GEMINI_API_KEY` reside exclusivamente no Google Cloud Secret Manager, eliminando qualquer risco de extração em binários ou tráfego de rede do cliente.
-   - *Roadmap Futuro*: Migração para mitigação na borda via **Google Cloud Armor** e reCAPTCHA Enterprise caso a demanda justifique a relação custo/escala.
+6. **Identidade Anônima por Dispositivo (Zero-Trace Device Auth)**:
+   - Em conformidade com o princípio de rastreabilidade zero, o Pmsg **não solicita PII** (sem cadastro de e-mail, telefone ou dados pessoais).
+   - O cliente Desktop autentica-se diretamente via REST API do Firebase Auth (Google Identity Toolkit), estabelecendo uma identidade criptográfica anônima (`localId`).
+   - As credenciais de sessão (`idToken`, `refreshToken`) são persistidas localmente protegidas por **Windows DPAPI** (`Crypt32Util.cryptProtectData`).
+   - O `localId` é assumido como o `senderId` das mensagens: isso garante que na chamada à função `storeMessageKey`, a validação de segurança `request.auth.uid == data.senderId` seja satisfeita sem expor a identidade real do operador.
+7. **Endpoints Multiplataforma & Política Anti-Spoofing (`AppEndpoints`)**:
+   - **Compilação de Release**: URLs e identificador de projeto são constantes imutáveis de compilação. Variáveis de ambiente são **estritamente ignoradas** para impedir que atores com acesso ao ambiente do usuário redirecionem o tráfego ou forjem endpoints (anti-spoofing / anti-MITM).
+   - **Compilação de Debug**: Suporta override via variáveis de ambiente (`PMSG_PROXY_URL`, `PMSG_STORE_KEY_URL`) e execução integrada contra a suíte local de emuladores do Firebase (Auth, Firestore e Functions).
+   - **Protocolo Callable Oficial**: O cliente `KeyStoreClient` implementa a especificação de envelopes do Firebase Functions v2 (`{"data": {...}}` e resposta `{"result": {...}}`), com header `Authorization: Bearer <idToken>`.
 
 ---
 

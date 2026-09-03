@@ -15,8 +15,8 @@ import kotlinx.serialization.json.put
 
 actual class GeminiService {
     // Cliente Web: opera sob menor garantia de segurança.
-    // Nenhuma chave no bundle JS/Wasm. As chamadas passam pelo proxy backend (geminiProxy).
-    private val proxyEndpoint: String = "https://us-central1-pmsg-prod.cloudfunctions.net/geminiProxy"
+    private val proxyEndpoint: String
+        get() = com.example.data.network.AppEndpoints.geminiProxyUrl
 
     actual suspend fun generateEphemeralBurnerNote(prompt: String): String {
         return try {

@@ -18,8 +18,8 @@ actual class GeminiService {
     // Zero-Trace Architecture: A chave GEMINI_API_KEY reside EXCLUSIVAMENTE server-side
     // no Secret Manager do Firebase / Cloud Functions.
     // O cliente Desktop autentica-se com o token de sessão e invoca o endpoint proxy seguro.
-    private val proxyEndpoint: String = System.getenv("PMSG_PROXY_URL")
-        ?: "https://us-central1-pmsg-prod.cloudfunctions.net/geminiProxy"
+    private val proxyEndpoint: String
+        get() = com.example.data.network.AppEndpoints.geminiProxyUrl
 
     actual suspend fun generateEphemeralBurnerNote(prompt: String): String {
         return try {
