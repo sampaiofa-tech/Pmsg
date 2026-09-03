@@ -50,4 +50,29 @@ object FirestoreMessageSync {
             expiresAt = expiresAt
         )
     }
+
+    /**
+     * Circuito de Leitura Autorizada:
+     * Destinatário autenticado invoca KeyStoreClient.getMessageKey para obter a DEK,
+     * e decripta o ciphertext de trânsito em memória volátil.
+     */
+    suspend fun fetchAndDecryptRemoteMessage(
+        message: FirestoreMessage,
+        idToken: String,
+        decryptPayload: (ciphertext: String, iv: String, dek: String) -> String
+    ): Result<String> {
+        val keyResult = KeyStoreClient.getMessageKey(message.id, idToken)
+        if (!keyResult.success || keyResult.dek == null) {
+            return Result.failure(
+                IllegalStateException(keyResult.errorMessage ?: "Falha ao obter DEK autorizada do servidor.")
+            )
+        }
+
+        return try {
+            val decrypted = decryptPayload(message.ciphertext, message.iv, keyResult.dek)
+            Result.success(decrypted)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }

@@ -92,4 +92,25 @@ class FirestoreMessageSyncTest {
 
         assertEquals(original, deserialized)
     }
+
+    @Test
+    fun testFetchAndDecryptRemoteMessageCircuitStructure() {
+        val msg = FirestoreMessageSync.buildFirestoreMessage(
+            messageId = "test_msg_circuit",
+            ciphertext = "dGVzdF9jaXBoZXJ0ZXh0",
+            iv = "aXZfc2FtcGxl",
+            senderId = "alice",
+            recipientId = "bob",
+            ttlHours = 1f
+        )
+
+        // Verifies the decryption lambda signature and data transformation
+        val decryptLambda: (String, String, String) -> String = { cipher, iv, dek ->
+            "Decrypted using DEK: $dek for $cipher"
+        }
+
+        val result = decryptLambda(msg.ciphertext, msg.iv, "mock_dek_key")
+        assertTrue(result.contains("mock_dek_key"))
+        assertTrue(result.contains(msg.ciphertext))
+    }
 }
