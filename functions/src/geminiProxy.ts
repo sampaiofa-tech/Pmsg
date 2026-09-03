@@ -135,7 +135,7 @@ export const geminiProxy = onRequest(
       return;
     }
 
-    const model = body?.model || "gemini-2.0-flash";
+    const model = body?.model || "gemini-3.6-flash";
 
     // 4. Retrieve GEMINI_API_KEY from Secret Manager or environment (Emulator fallback)
     const apiKey = process.env.GEMINI_API_KEY || geminiApiKey.value();

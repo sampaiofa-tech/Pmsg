@@ -160,6 +160,71 @@ O servidor Model Context Protocol integrado permite a automação e inspeção d
 
 ---
 
+## 🚀 Status de Produção (v1.0-mvp)
+
+Ambiente de produção implantado e homologado no Google Cloud Platform / Firebase sob o projeto **`gen-lang-client-0858445711`** (Região: `us-central1`).
+
+### 1. Endpoints e Recursos Ativos
+
+| Componente | Tipo | Identificador / URL | Estado |
+|---|---|---|---|
+| **`geminiProxy`** | Cloud Function v2 (HTTPS) | `https://us-central1-gen-lang-client-0858445711.cloudfunctions.net/geminiProxy` | ✅ Ativo |
+| **`storeMessageKey`** | Cloud Function v2 (Callable) | `https://us-central1-gen-lang-client-0858445711.cloudfunctions.net/storeMessageKey` | ✅ Ativo |
+| **`getMessageKey`** | Cloud Function v2 (Callable) | `https://us-central1-gen-lang-client-0858445711.cloudfunctions.net/getMessageKey` | ✅ Ativo |
+| **`onDeleteMessage`** | Eventarc Trigger (Firestore) | Trigger em `messages/{messageId}` (Vanish-After-Read) | ✅ Ativo |
+| **`scheduledMessageShredder`** | Cloud Scheduler | Job horário (`0 * * * *`) para purga de mensagens expiradas | ✅ Ativo |
+| **Cloud Firestore** | Banco NoSQL Multi-region | `(default)` em `us-central1` com regras de isolamento total | ✅ Ativo |
+| **Política TTL** | Firestore Time-To-Live | Collection group `messages`, campo `expiresAt` | ✅ Ativo |
+| **Identity Toolkit** | Firebase Auth REST | Provedor Anônimo habilitado para identidade efêmera | ✅ Ativo |
+
+### 2. Matriz de Segurança e Proteções Implementadas
+
+- **Isolamento de DEKs (`messageKeys`)**: Regras do Firestore bloqueiam leitura e escrita direta de qualquer cliente SDK (`allow read, write: if false`). Acesso restrito ao backend Admin SDK.
+- **Crypto-Shredding Reativo**: Ao ler uma mensagem, o cliente deleta o documento em `messages`; o trigger `onDeleteMessage` destrói imediatamente a chave em `messageKeys`. Qualquer chamada subsequente retorna `HTTP 404 NOT_FOUND`.
+- **Barreira de Expiração**: Mensagens com TTL vencido têm acesso à chave bloqueado pelo backend com `HTTP 400 FAILED_PRECONDITION`.
+- **Rate Limiting**: Sliding window de 1 minuto gerenciada via transação atômica em `userRateLimits/{uid}` (máximo 5 chamadas/min). A 6ª chamada retorna `HTTP 429 Too Many Requests`.
+- **Anti-Spoofing em Release**: Em compilações de release, endpoints e Project ID são constantes imutáveis de compilação; variáveis de ambiente são estritamente ignoradas.
+- **Hardware Protection no Desktop**: Credenciais de sessão anônima do Identity Toolkit são cifradas em repouso no Windows via **Windows DPAPI** (`Crypt32Util.cryptProtectData`).
+- **App Check**: Operando sem enforcement estrito no backend para manter a interoperabilidade de clientes Desktop e plataformas multiplataforma.
+
+### 3. Estimativa Mensal de Custos (Google Cloud Free Tier)
+
+| Serviço | Quota Mensal Gratuita | Consumo Previsto (Até 50k msgs/mês) | Custo Estimado |
+|---|---|---|:---:|
+| Cloud Scheduler | 3 jobs gratuitos / mês | 1 job (`scheduledMessageShredder`) | US$ 0,00 |
+| Cloud Functions v2 | 2.000.000 invocações / mês | ~100.000 invocações | US$ 0,00 |
+| Cloud Firestore | 1.5M leituras, 600k escritas / mês | ~100k leituras, ~50k escritas | US$ 0,00 |
+| Firestore TTL | Deleções TTL são isentas de cobrança | Auto-purga contínua | US$ 0,00 |
+| Secret Manager | 6 versões ativas gratuitas | 1 secret (`GEMINI_API_KEY`) | US$ 0,00 |
+| Identity Toolkit | 50.000 MAUs gratuitas | Sessões anônimas efêmeras | US$ 0,00 |
+| **TOTAL MENSAL** | — | — | **US$ 0,00 / mês** |
+
+### 4. Runbook de Rotação do Secret `GEMINI_API_KEY`
+
+Caso seja necessário rotacionar a chave de API do Gemini Studio:
+
+```bash
+# 1. Definir o novo valor no Secret Manager (interativo, seguro, sem eco em tela):
+npx firebase-tools functions:secrets:set GEMINI_API_KEY
+
+# 2. Re-implantar a Cloud Function proxy para vincular a nova versão do secret:
+npx firebase-tools deploy --only functions:geminiProxy
+
+# 3. Validar a nova versão em produção:
+npx firebase-tools functions:secrets:get GEMINI_API_KEY
+```
+
+### 5. Configuração do Arquivo `google-services.json` (Passo Manual)
+
+Por se tratar de um repositório público voltado à privacidade, o arquivo `google-services.json` está explicitamente ignorado pelo `.gitignore`.
+Para compilar o cliente Android localmente:
+1. Acesse o **Firebase Console** no projeto `gen-lang-client-0858445711`.
+2. Vá em **Configurações do Projeto > Seus aplicativos > Android** (`com.aistudio.vanishchat.zr7k`).
+3. Baixe o arquivo `google-services.json` e posicione-o no diretório `composeApp/`.
+4. O build Gradle está configurado com `MissingGoogleServicesStrategy.ERROR` para impedir compilações acidentais sem a configuração correta.
+
+---
+
 ## 📄 Licença
 
 Desenvolvido para segurança e privacidade estrita. Zero Trace.

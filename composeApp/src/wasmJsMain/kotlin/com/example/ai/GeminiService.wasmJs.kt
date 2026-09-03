@@ -22,7 +22,7 @@ actual class GeminiService {
         return try {
             val bodyPayload = buildJsonObject {
                 put("prompt", prompt)
-                put("model", "gemini-2.0-flash")
+                put("model", "gemini-3.6-flash")
             }
 
             val response = ApiClient.client.post(proxyEndpoint) {
