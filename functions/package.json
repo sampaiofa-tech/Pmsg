@@ -8,7 +8,7 @@
     "start": "npm run shell",
     "deploy": "firebase deploy --only functions",
     "logs": "firebase functions:log",
-    "test": "jest test/shredder.test.ts test/geminiProxy.test.ts test/storeMessageKey.test.ts test/getMessageKey.test.ts --runInBand",
+    "test": "jest test/shredder.test.ts test/geminiProxy.test.ts test/storeMessageKey.test.ts test/getMessageKey.test.ts test/resolveFingerprint.test.ts --runInBand",
     "test:emulator": "jest test/rules.test.ts test/e2e_shredder_emulator.test.ts --runInBand"
   },
   "engines": {

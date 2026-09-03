@@ -52,6 +52,18 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // =========================================================================
+    // COLEÇÃO: identities (Diretório Técnico de Roteamento)
+    // =========================================================================
+    // Read: NEGADO para clientes SDK (resolução restrita à callable resolveFingerprint).
+    // Create/Update: Permitido SOMENTE se autenticado e request.auth.uid == currentAuthUid.
+    // Delete: NEGADO.
+    match /identities/{fingerprint} {
+      allow read: if false;
+      allow create, update: if isAuthenticated() && request.resource.data.currentAuthUid == request.auth.uid;
+      allow delete: if false;
+    }
+
     // Bloqueio preventivo padrão para qualquer outro documento não mapeado
     match /{document=**} {
       allow read, write: if false;

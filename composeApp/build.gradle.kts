@@ -102,6 +102,7 @@ kotlin {
             implementation(libs.kotlinx.coroutines.android)
             implementation(libs.androidx.compose.material.icons.extended)
             implementation(libs.coil.compose)
+            implementation(libs.bouncycastle.bcprov)
         }
 
         sourceSets.named("androidMain") {
@@ -113,6 +114,7 @@ kotlin {
             dependencies {
                 implementation(compose.desktop.currentOs)
                 implementation(libs.ktor.client.okhttp)
+                implementation(libs.bouncycastle.bcprov)
                 implementation("net.java.dev.jna:jna:5.14.0")
                 implementation("net.java.dev.jna:jna-platform:5.14.0")
             }
