@@ -7,24 +7,28 @@ import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.data.model.BurnerChannel
 import com.example.data.model.EphemeralMessage
+import com.example.data.model.Contact
 import com.example.util.security.CryptoManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 @Database(
-    entities = [EphemeralMessage::class, BurnerChannel::class],
-    version = 4,
+    entities = [EphemeralMessage::class, BurnerChannel::class, Contact::class],
+    version = 5,
     exportSchema = false
 )
 abstract class VanishDatabase : RoomDatabase() {
 
     abstract fun messageDao(): MessageDao
     abstract fun channelDao(): ChannelDao
+    abstract fun contactDao(): ContactDao
 
     companion object {
         @Volatile
         private var INSTANCE: VanishDatabase? = null
+
+        fun getInstance(): VanishDatabase? = INSTANCE
 
         fun getDatabase(context: Context, scope: CoroutineScope): VanishDatabase {
             return INSTANCE ?: synchronized(this) {

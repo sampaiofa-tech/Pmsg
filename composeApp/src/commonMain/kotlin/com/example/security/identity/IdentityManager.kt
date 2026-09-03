@@ -55,6 +55,14 @@ object IdentityManager {
         )
     }
 
+    fun getOrGenerateIdentity(): IdentityKeyPair {
+        val existing = getIdentity()
+        if (existing != null) return existing
+        val provisioned = provisionNewIdentity()
+        confirmAndSaveIdentity(provisioned)
+        return provisioned.keyPair
+    }
+
     fun provisionNewIdentity(): ProvisionedIdentity {
         return IdentityCryptoManager.generateNewIdentity()
     }

@@ -1,96 +1,125 @@
 package com.example
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
+import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-import com.example.ai.GeminiService
-import kotlinx.coroutines.launch
+import androidx.compose.ui.graphics.Color
+import com.example.data.model.ContactItem
+import com.example.data.repository.ContactRepositoryProvider
+import com.example.ui.screens.AddContactModelAScreen
+import com.example.ui.screens.ContactChatScreen
+import com.example.ui.screens.ContactsScreen
+import com.example.ui.screens.IdentityScreen
+import com.example.ui.screens.SafetyNumberScreen
+
+sealed interface AppDestination {
+    data object Contacts : AppDestination
+    data class Chat(val contact: ContactItem) : AppDestination
+    data object Identity : AppDestination
+    data object AddModelA : AppDestination
+    data class SafetyNumber(val contact: ContactItem) : AppDestination
+}
+
+private val PmsgDarkColors = darkColorScheme(
+    primary = Color(0xFF00FFC2),
+    onPrimary = Color(0xFF0A1128),
+    surface = Color(0xFF0A0E17),
+    onSurface = Color.White,
+    background = Color(0xFF0A0E17),
+    onBackground = Color.White
+)
 
 @Composable
 fun App() {
-    val coroutineScope = rememberCoroutineScope()
-    val geminiService = remember { GeminiService() }
-    var aiResponse by remember { mutableStateOf<String?>(null) }
-    var isLoading by remember { mutableStateOf(false) }
+    val contactRepository = remember { ContactRepositoryProvider.get() }
+    var currentDestination by remember { mutableStateOf<AppDestination>(AppDestination.Contacts) }
 
-    MaterialTheme {
-        Surface(modifier = Modifier.fillMaxSize()) {
-            Box(
-                modifier = Modifier.fillMaxSize().padding(24.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(
-                        text = "🔒 Pmsg - Zero-Trace Ephemeral Messaging",
-                        style = MaterialTheme.typography.titleLarge
+    MaterialTheme(colorScheme = PmsgDarkColors) {
+        Surface(modifier = Modifier.fillMaxSize(), color = Color(0xFF0A0E17)) {
+            AnimatedContent(
+                targetState = currentDestination,
+                transitionSpec = {
+                    (slideInHorizontally { it } + fadeIn()).togetherWith(
+                        slideOutHorizontally { -it } + fadeOut()
                     )
-
-                    Spacer(modifier = Modifier.height(24.dp))
-
-                    Button(
-                        onClick = {
-                            isLoading = true
-                            coroutineScope.launch {
-                                val result = geminiService.generateEphemeralBurnerNote("Gere uma nota de seguranca militar efemera.")
-                                aiResponse = result
-                                isLoading = false
+                },
+                label = "app_navigation_transition"
+            ) { destination ->
+                when (destination) {
+                    is AppDestination.Contacts -> {
+                        ContactsScreen(
+                            contactRepository = contactRepository,
+                            onContactSelected = { contact ->
+                                currentDestination = AppDestination.Chat(contact)
+                            },
+                            onOpenIdentity = {
+                                currentDestination = AppDestination.Identity
+                            },
+                            onAddContactModelA = {
+                                currentDestination = AppDestination.AddModelA
+                            },
+                            onCompareSafetyNumber = { contact ->
+                                currentDestination = AppDestination.SafetyNumber(contact)
                             }
-                        },
-                        enabled = !isLoading
-                    ) {
-                        if (isLoading) {
-                            Text("Processando via Proxy...")
-                        } else {
-                            Text("⚡ Gerar Nota Efemera via Gemini Proxy")
-                        }
+                        )
                     }
 
-                    if (aiResponse != null) {
-                        Spacer(modifier = Modifier.height(20.dp))
-                        Card(
-                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceVariant
-                            )
-                        ) {
-                            Column(modifier = Modifier.padding(16.dp)) {
-                                Text(
-                                    text = "🤖 Resposta da IA (Producao):",
-                                    style = MaterialTheme.typography.labelLarge,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text(
-                                    text = aiResponse ?: "",
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
+                    is AppDestination.Chat -> {
+                        ContactChatScreen(
+                            contact = destination.contact,
+                            onBack = {
+                                currentDestination = AppDestination.Contacts
+                            },
+                            onCompareSafetyNumber = {
+                                currentDestination = AppDestination.SafetyNumber(destination.contact)
                             }
-                        }
+                        )
+                    }
+
+                    is AppDestination.Identity -> {
+                        IdentityScreen(
+                            onBack = {
+                                currentDestination = AppDestination.Contacts
+                            }
+                        )
+                    }
+
+                    is AppDestination.AddModelA -> {
+                        AddContactModelAScreen(
+                            contactRepository = contactRepository,
+                            onBack = {
+                                currentDestination = AppDestination.Contacts
+                            },
+                            onContactCreated = { newContact ->
+                                currentDestination = AppDestination.SafetyNumber(newContact)
+                            }
+                        )
+                    }
+
+                    is AppDestination.SafetyNumber -> {
+                        SafetyNumberScreen(
+                            contact = destination.contact,
+                            contactRepository = contactRepository,
+                            onBack = {
+                                currentDestination = AppDestination.Contacts
+                            },
+                            onVerifiedComplete = {
+                                currentDestination = AppDestination.Contacts
+                            }
+                        )
                     }
                 }
             }
