@@ -12,11 +12,11 @@ package com.example.data.network
  */
 object AppEndpoints {
 
-    // Default project configuration (to be confirmed / updated with user's project ID)
-    const val DEFAULT_PROJECT_ID: String = "pmsg-prod"
+    // Real deployed project configuration from Firebase deploy
+    const val DEFAULT_PROJECT_ID: String = "gen-lang-client-0858445711"
     const val REGION: String = "us-central1"
 
-    // Production baseline endpoints (immutable in Release)
+    // Production endpoints (immutable in Release)
     const val PROD_PROXY_URL: String = "https://$REGION-$DEFAULT_PROJECT_ID.cloudfunctions.net/geminiProxy"
     const val PROD_STORE_KEY_URL: String = "https://$REGION-$DEFAULT_PROJECT_ID.cloudfunctions.net/storeMessageKey"
     const val PROD_GET_KEY_URL: String = "https://$REGION-$DEFAULT_PROJECT_ID.cloudfunctions.net/getMessageKey"
