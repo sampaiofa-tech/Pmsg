@@ -21,3 +21,4 @@ captures/
 output.json
 .backups/
 .agents/
+kotlin-js-store/

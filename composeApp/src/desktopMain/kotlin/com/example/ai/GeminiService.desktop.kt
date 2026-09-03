@@ -1,6 +1,7 @@
 package com.example.ai
 
 import com.example.data.network.ApiClient
+import com.example.security.AppCheckVerifier
 import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
@@ -9,49 +10,38 @@ import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
-import kotlinx.serialization.json.putJsonArray
-import kotlinx.serialization.json.putJsonObject
 
 actual class GeminiService {
+    // Zero-Trace Architecture: A chave GEMINI_API_KEY reside EXCLUSIVAMENTE server-side
+    // no Secret Manager do Firebase / Cloud Functions.
+    // O cliente Desktop autentica-se com o token de sessão e invoca o endpoint proxy seguro.
+    private val proxyEndpoint: String = System.getenv("PMSG_PROXY_URL")
+        ?: "https://us-central1-pmsg-prod.cloudfunctions.net/geminiProxy"
+
     actual suspend fun generateEphemeralBurnerNote(prompt: String): String {
         return try {
-            val apiKey = System.getenv("GEMINI_API_KEY") ?: ""
-            if (apiKey.isBlank()) {
-                return "Nota efêmera local Desktop: $prompt"
-            }
-
-            val requestUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$apiKey"
+            val sessionToken = AppCheckVerifier.getAttestationToken() ?: ""
             val bodyPayload = buildJsonObject {
-                putJsonArray("contents") {
-                    add(buildJsonObject {
-                        putJsonArray("parts") {
-                            add(buildJsonObject {
-                                put("text", "Resuma como nota efêmera privada e concisa em português: $prompt")
-                            })
-                        }
-                    })
-                }
+                put("prompt", prompt)
+                put("model", "gemini-2.0-flash")
             }
 
-            val response = ApiClient.client.post(requestUrl) {
+            val response = ApiClient.client.post(proxyEndpoint) {
                 contentType(ContentType.Application.Json)
+                header("Authorization", "Bearer $sessionToken")
                 setBody(bodyPayload.toString())
             }
 
             val responseText = response.bodyAsText()
             val parsed = Json.parseToJsonElement(responseText)
-            val text = parsed.jsonObject["candidates"]?.jsonArray?.getOrNull(0)
-                ?.jsonObject?.get("content")?.jsonObject
-                ?.get("parts")?.jsonArray?.getOrNull(0)
-                ?.jsonObject?.get("text")?.jsonPrimitive?.content
+            val note = parsed.jsonObject["note"]?.jsonPrimitive?.content
 
-            text ?: "Nota efêmera processada"
+            note ?: "Nota efêmera local: $prompt"
         } catch (_: Exception) {
-            "Nota efêmera local: $prompt"
+            "Nota efêmera local Desktop: $prompt"
         }
     }
 }

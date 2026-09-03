@@ -40,6 +40,13 @@
                 "isDefault": true
             },
             "problemMatcher": []
+        },
+        {
+            "label": "Run Common Tests",
+            "type": "shell",
+            "command": ".\\gradlew.bat :composeApp:allTests",
+            "group": "test",
+            "problemMatcher": []
         }
     ]
 }

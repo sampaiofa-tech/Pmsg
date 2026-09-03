@@ -1,5 +1,8 @@
 package com.example.security
 
+import com.sun.jna.Platform
+import com.sun.jna.platform.win32.Crypt32Util
+import java.io.File
 import java.security.SecureRandom
 import java.util.Base64
 import javax.crypto.Cipher
@@ -18,17 +21,47 @@ actual object KeyVault {
     @Volatile
     private var masterKey: SecretKey? = null
 
+    private val dpapiStorageFile: File by lazy {
+        val appData = System.getenv("APPDATA") ?: System.getProperty("user.home")
+        val dir = File(appData, "Pmsg").apply { if (!exists()) mkdirs() }
+        File(dir, "master.dpapi")
+    }
+
     private fun getOrCreateKey(): SecretKey {
         return masterKey ?: synchronized(this) {
-            masterKey ?: run {
-                val keyGen = KeyGenerator.getInstance(ALGORITHM)
-                keyGen.init(256)
-                keyGen.generateKey().also { masterKey = it }
-            }
+            masterKey ?: loadOrGenerateKey().also { masterKey = it }
         }
     }
 
-    actual fun isHardwareBacked(): Boolean = false // JVM Software Provider
+    private fun loadOrGenerateKey(): SecretKey {
+        if (Platform.isWindows() && dpapiStorageFile.exists()) {
+            try {
+                val dpapiEncryptedBytes = dpapiStorageFile.readBytes()
+                val rawKeyBytes = Crypt32Util.cryptUnprotectData(dpapiEncryptedBytes)
+                return SecretKeySpec(rawKeyBytes, ALGORITHM)
+            } catch (_: Exception) {
+                // Se a chave corrompeu ou mudou de usuário, regenera protegida
+            }
+        }
+
+        // Gera nova chave de 256 bits
+        val keyGen = KeyGenerator.getInstance(ALGORITHM)
+        keyGen.init(256)
+        val newKey = keyGen.generateKey()
+
+        // Persiste em repouso protegida via Windows DPAPI (CNG/CryptoAPI)
+        if (Platform.isWindows()) {
+            try {
+                val protectedBytes = Crypt32Util.cryptProtectData(newKey.encoded)
+                dpapiStorageFile.writeBytes(protectedBytes)
+            } catch (_: Exception) {
+                // Fallback em memória caso DPAPI nativo falhe
+            }
+        }
+        return newKey
+    }
+
+    actual fun isHardwareBacked(): Boolean = false // JVM Software Provider com DPAPI em repouso
 
     actual fun encrypt(plainText: String): String {
         if (plainText.isEmpty()) return ""
@@ -65,7 +98,17 @@ actual object KeyVault {
         synchronized(this) {
             val keyGen = KeyGenerator.getInstance(ALGORITHM)
             keyGen.init(256)
-            masterKey = keyGen.generateKey()
+            val newKey = keyGen.generateKey()
+            masterKey = newKey
+
+            if (Platform.isWindows()) {
+                try {
+                    val protectedBytes = Crypt32Util.cryptProtectData(newKey.encoded)
+                    dpapiStorageFile.writeBytes(protectedBytes)
+                } catch (_: Exception) {
+                    if (dpapiStorageFile.exists()) dpapiStorageFile.delete()
+                }
+            }
         }
     }
 
