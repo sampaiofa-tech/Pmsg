@@ -119,13 +119,13 @@ kotlin {
         }
 
         val iosMain by creating {
-            dependsOn(nonWebMain)
+            dependsOn(commonMain.get())
             dependencies {
                 implementation(libs.ktor.client.darwin)
             }
         }
 
-        listOf("iosArm64Main", "iosSimulatorArm64Main").forEach { targetName ->
+        listOf("iosX64Main", "iosArm64Main", "iosSimulatorArm64Main").forEach { targetName ->
             sourceSets.findByName(targetName)?.dependsOn(iosMain)
         }
 
