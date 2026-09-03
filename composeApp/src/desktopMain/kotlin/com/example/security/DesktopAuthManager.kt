@@ -45,7 +45,7 @@ data class StoredAuthSession(
  */
 object DesktopAuthManager {
 
-    private const val DEFAULT_DEV_WEB_API_KEY = "AIzaSyDpVykwTzWXMqYQFpKGebyBW979nlcaL1Y"
+    private const val DEFAULT_DEV_WEB_API_KEY = "AIzaSyD7lMDnJo8XACDLvm88Ok_cIx2McGRtPwc"
     private val json = Json { ignoreUnknownKeys = true; isLenient = true }
     private val mutex = Mutex()
 
