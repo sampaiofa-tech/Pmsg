@@ -8,7 +8,7 @@
     "start": "npm run shell",
     "deploy": "firebase deploy --only functions",
     "logs": "firebase functions:log",
-    "test": "jest test/shredder.test.ts --runInBand",
+    "test": "jest test/shredder.test.ts test/geminiProxy.test.ts --runInBand",
     "test:rules": "jest test/rules.test.ts --runInBand"
   },
   "engines": {
