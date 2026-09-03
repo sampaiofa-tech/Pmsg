@@ -96,4 +96,75 @@ object KeyStoreClient {
             )
         }
     }
+
+    suspend fun getMessageKey(
+        messageId: String,
+        idToken: String
+    ): GetKeyResult {
+        return try {
+            val payload = buildJsonObject {
+                put("data", buildJsonObject {
+                    put("messageId", messageId)
+                })
+            }
+
+            val response = ApiClient.client.post(AppEndpoints.getMessageKeyUrl) {
+                contentType(ContentType.Application.Json)
+                header("Authorization", "Bearer $idToken")
+                setBody(payload.toString())
+            }
+
+            val responseBody = response.bodyAsText()
+
+            if (response.status.isSuccess()) {
+                val parsed = json.parseToJsonElement(responseBody).jsonObject
+                val resultObj = parsed["result"]?.jsonObject
+                val success = resultObj?.get("success")?.jsonPrimitive?.content?.toBoolean() ?: true
+                val returnedMsgId = resultObj?.get("messageId")?.jsonPrimitive?.content ?: messageId
+                val dek = resultObj?.get("dek")?.jsonPrimitive?.content
+                val returnedExpiresAt = resultObj?.get("expiresAtMillis")?.jsonPrimitive?.content?.toLongOrNull()
+
+                if (dek != null) {
+                    GetKeyResult(
+                        success = success,
+                        messageId = returnedMsgId,
+                        dek = dek,
+                        expiresAtMillis = returnedExpiresAt
+                    )
+                } else {
+                    GetKeyResult(
+                        success = false,
+                        errorMessage = "Malformed response: missing DEK payload"
+                    )
+                }
+            } else {
+                val errorMsg = try {
+                    val parsed = json.parseToJsonElement(responseBody).jsonObject
+                    parsed["error"]?.jsonObject?.get("message")?.jsonPrimitive?.content
+                        ?: "HTTP ${response.status.value}: $responseBody"
+                } catch (_: Exception) {
+                    "HTTP ${response.status.value}: $responseBody"
+                }
+
+                GetKeyResult(
+                    success = false,
+                    errorMessage = errorMsg
+                )
+            }
+        } catch (e: Exception) {
+            GetKeyResult(
+                success = false,
+                errorMessage = "Network exception: ${e.message}"
+            )
+        }
+    }
 }
+
+@Serializable
+data class GetKeyResult(
+    val success: Boolean,
+    val messageId: String? = null,
+    val dek: String? = null,
+    val expiresAtMillis: Long? = null,
+    val errorMessage: String? = null
+)

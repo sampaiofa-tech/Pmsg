@@ -75,4 +75,47 @@ describe("E2E Real Firestore Emulator - Authoritative Crypto-Shredder", () => {
     expect(activeKeyDoc.exists).toBe(true);
     expect(activeMsgDoc.exists).toBe(true);
   });
+
+  it("CRITICAL E2E: getMessageKey delivers DEK to authorized recipient and rejects unauthorized or shredded keys", async () => {
+    const { getMessageKey } = await import("../src/getMessageKey");
+    const nowMillis = Date.now();
+    const futureTimestamp = Timestamp.fromMillis(nowMillis + 3600 * 1000);
+
+    // 1. Seed Active Message Key for Alice -> Bob
+    await db.collection("messageKeys").doc("e2e_msg_delivery").set({
+      messageId: "e2e_msg_delivery",
+      senderId: "alice",
+      recipientId: "bob",
+      dek: "QXV0aG9yaXplZERlZUZvckJvYg==",
+      expiresAt: futureTimestamp,
+    });
+
+    // 2. Bob (Authorized Recipient) requests DEK -> SUCCESS
+    const bobRequest: any = {
+      auth: { uid: "bob" },
+      data: { messageId: "e2e_msg_delivery" },
+    };
+    const bobResult = await (getMessageKey as any).run(bobRequest);
+    expect(bobResult.success).toBe(true);
+    expect(bobResult.dek).toBe("QXV0aG9yaXplZERlZUZvckJvYg==");
+    expect(bobResult.messageId).toBe("e2e_msg_delivery");
+
+    // 3. Eve (Attacker / Non-participant) requests DEK -> REJECTED with permission-denied
+    const eveRequest: any = {
+      auth: { uid: "attacker_eve" },
+      data: { messageId: "e2e_msg_delivery" },
+    };
+    await expect((getMessageKey as any).run(eveRequest)).rejects.toThrow(
+      /Caller is not authorized to retrieve this encryption key/
+    );
+
+    // 4. Vanish-After-Read Simulation: doc is deleted -> key destroyed
+    await db.collection("messageKeys").doc("e2e_msg_delivery").delete();
+
+    // 5. Subsequent request for shredded/deleted key -> REJECTED with not-found
+    await expect((getMessageKey as any).run(bobRequest)).rejects.toThrow(
+      /Encryption key not found or already shredded/
+    );
+  });
 });
+

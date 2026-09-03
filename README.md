@@ -47,35 +47,46 @@ Para mitigar ameaças em que clientes modificados ou offline tentam burlar o TTL
 
 ```mermaid
 graph TD
-    Client[Cliente Pmsg] -->|1. Envia Mensagem Cifrada| MessagesColl[(Coleção messages)]
-    Client -->|2. DEK Isolada| KeysColl[(Coleção messageKeys)]
-    Scheduler[Cloud Scheduler - A cada 1h] -->|3. Identifica expiresAt vencido| Shredder[Crypto-Shredder Function]
-    Shredder -->|4. Hard-Delete DEK| KeysColl
-    Shredder -->|5. Hard-Delete Ciphertext| MessagesColl
-    Vanish[Vanish-After-Read / Deleção] -->|onDelete Trigger| KeysColl
-    FirestoreTTL[Firestore Native TTL] -.->|Expurgo assíncrono de resíduos| MessagesColl
+```mermaid
+graph TD
+    Sender[Remetente Pmsg] -->|1. Envia Mensagem Cifrada| MessagesColl[(Coleção messages)]
+    Sender -->|2. storeMessageKey| StoreKeyFn[Callable storeMessageKey]
+    StoreKeyFn -->|3. Persiste DEK isolada| KeysColl[(Coleção messageKeys)]
+    Recipient[Destinatário Pmsg] -->|4. Baixa Ciphertext| MessagesColl
+    Recipient -->|5. getMessageKey com Bearer| GetKeyFn[Callable getMessageKey]
+    GetKeyFn -->|6. Valida auth.uid == recipientId| KeysColl
+    Recipient -->|7. Decripta em RAM e deleta doc| MessagesColl
+    MessagesColl -.->|8. onDeleteMessage Trigger| KeysColl
+    Scheduler[Cloud Scheduler - A cada 1h] -->|9. expiresAt vencido| Shredder[Crypto-Shredder Function]
+    Shredder -->|10. Hard-Delete DEK| KeysColl
+    Shredder -->|11. Hard-Delete Ciphertext| MessagesColl
+    FirestoreTTL[Firestore Native TTL] -.->|Expurgo assíncrono| MessagesColl
 ```
 
-1. **Purge Local (Client)**:
+1. **Ciclo de Vida da DEK e Semântica Vanish-After-Read (`storeMessageKey` & `getMessageKey`)**:
+   - **Isolamento Total**: Clientes possuem **zero acesso direto** de leitura ou escrita à coleção `messageKeys` (`allow read, write: if false`).
+   - **Registro da DEK (`storeMessageKey`)**: O remetente autenticado registra a DEK via callable HTTPS. O backend valida `request.auth.uid == data.senderId` e aplica clamping de expiração (mínimo 10s, máximo 24h).
+   - **Entrega Autorizada (`getMessageKey`)**: O destinatário autenticado solicita a DEK via callable HTTPS. O backend valida estritamente se `request.auth.uid == keyData.recipientId` (ou senderId) e rejeita chaves vencidas.
+   - **Semântica Vanish-After-Read**: A DEK sobrevive no Firestore exclusivamente até que a mensagem seja confirmada como lida **OU** até que seu TTL expire. Ao ler, o cliente deleta o documento da mensagem em `messages`, disparando o trigger `onDeleteMessage` que destrói imediatamente a DEK.
+   - **Garantia Criptográfica**: Uma vez destruída a DEK, qualquer tentativa de chamada a `getMessageKey` falha com `404 Not Found`, tornando o ciphertext matematicamente irrecuperável mesmo que persistam réplicas residuais.
+2. **Purge Local (Client)**:
    - Banco Room local + `WorkManager` (Android) e `ExpiredMessageCleanupScheduler` (Desktop/Web/iOS) executam sanitização contínua em memória e SQLite.
-2. **Vanish-After-Read & Trigger Reativo (`onDeleteMessage`)**:
-   - Quando o destinatário lê uma mensagem efêmera ou o usuário a apaga manualmente, a exclusão do documento em `messages` dispara um trigger `onDocumentDeleted` no Cloud Functions que destrói imediatamente a chave DEK correspondente em `messageKeys`.
-3. **Crypto-Shredding Server-Side (`scheduledMessageShredder`)**:
-   - Função agendada no Cloud Scheduler executada a cada 1 hora.
-   - Realiza varredura de documentos em `messageKeys` com `expiresAt <= now` e executa *batch delete* da chave DEK e da mensagem associada.
-   - **Garantia Criptográfica**: Uma vez que a DEK de 256 bits é destruída, o ciphertext torna-se matematicamente impossível de ser decifrado, mesmo que cópias residuais ainda aguardem o expurgo físico.
-4. **TTL Nativo do Firestore**:
-   - Política de campo TTL configurada sobre `expiresAt` na coleção de mensagens para exclusão assíncrona automática de infraestrutura.
-5. **Proxy Backend de IA (`geminiProxy`) & Rate Limiting**:
+3. **Trigger Reativo de Deleção (`onDeleteMessage`)**:
+   - Disparado imediatamente quando qualquer documento em `messages` é excluído (leitura confirmada ou exclusão manual), incinerando a DEK vinculada em `messageKeys`.
+4. **Crypto-Shredding Server-Side (`scheduledMessageShredder`)**:
+   - Função agendada no Cloud Scheduler a cada 1 hora para varredura e hard-delete atômico em lote de chaves e mensagens expiradas que não foram lidas a tempo.
+5. **TTL Nativo do Firestore**:
+   - Política de infraestrutura sobre `expiresAt` na coleção `messages` como linha de defesa secundária assíncrona.
+6. **Proxy Backend de IA (`geminiProxy`) & Rate Limiting**:
    - Chamadas dos clientes Desktop e Web para geração de notas efêmeras são autenticadas criptograficamente por Firebase ID Token (`verifyIdToken`) e intermediadas por Cloud Function HTTPS.
    - **Rate Limiting por Usuário**: Implementado via transação atômica no Firestore (`userRateLimits/{uid}`) com janela deslizante de 1 minuto (limite padrão: 5 requisições/minuto), retornando HTTP 429 em caso de abuso.
    - A chave `GEMINI_API_KEY` reside exclusivamente no Google Cloud Secret Manager, eliminando qualquer risco de extração em binários ou tráfego de rede do cliente.
-6. **Identidade Anônima por Dispositivo (Zero-Trace Device Auth)**:
+7. **Identidade Anônima por Dispositivo (Zero-Trace Device Auth)**:
    - Em conformidade com o princípio de rastreabilidade zero, o Pmsg **não solicita PII** (sem cadastro de e-mail, telefone ou dados pessoais).
    - O cliente Desktop autentica-se diretamente via REST API do Firebase Auth (Google Identity Toolkit), estabelecendo uma identidade criptográfica anônima (`localId`).
    - As credenciais de sessão (`idToken`, `refreshToken`) são persistidas localmente protegidas por **Windows DPAPI** (`Crypt32Util.cryptProtectData`).
    - O `localId` é assumido como o `senderId` das mensagens: isso garante que na chamada à função `storeMessageKey`, a validação de segurança `request.auth.uid == data.senderId` seja satisfeita sem expor a identidade real do operador.
-7. **Endpoints Multiplataforma & Política Anti-Spoofing (`AppEndpoints`)**:
+8. **Endpoints Multiplataforma & Política Anti-Spoofing (`AppEndpoints`)**:
    - **Compilação de Release**: URLs e identificador de projeto são constantes imutáveis de compilação. Variáveis de ambiente são **estritamente ignoradas** para impedir que atores com acesso ao ambiente do usuário redirecionem o tráfego ou forjem endpoints (anti-spoofing / anti-MITM).
    - **Compilação de Debug**: Suporta override via variáveis de ambiente (`PMSG_PROXY_URL`, `PMSG_STORE_KEY_URL`) e execução integrada contra a suíte local de emuladores do Firebase (Auth, Firestore e Functions).
    - **Protocolo Callable Oficial**: O cliente `KeyStoreClient` implementa a especificação de envelopes do Firebase Functions v2 (`{"data": {...}}` e resposta `{"result": {...}}`), com header `Authorization: Bearer <idToken>`.

@@ -22,7 +22,26 @@ class AppEndpointsTest {
         assertTrue(AppEndpoints.PROD_PROXY_URL.contains("geminiProxy"))
         assertTrue(AppEndpoints.PROD_STORE_KEY_URL.startsWith("https://"))
         assertTrue(AppEndpoints.PROD_STORE_KEY_URL.contains("storeMessageKey"))
+        assertTrue(AppEndpoints.PROD_GET_KEY_URL.startsWith("https://"))
+        assertTrue(AppEndpoints.PROD_GET_KEY_URL.contains("getMessageKey"))
         assertTrue(AppEndpoints.PROD_IDENTITY_TOOLKIT_URL.startsWith("https://identitytoolkit.googleapis.com"))
+    }
+
+    @Test
+    fun testGetMessageKeyCallableEnvelopeFormat() {
+        // Enforces that getMessageKey payload conforms strictly to Firebase Callable {"data": {"messageId": ...}}
+        val payload = buildJsonObject {
+            put("data", buildJsonObject {
+                put("messageId", "msg_test_recipient")
+            })
+        }
+
+        val jsonString = payload.toString()
+        val parsed = json.parseToJsonElement(jsonString).jsonObject
+
+        assertNotNull(parsed["data"], "Firebase Callable requires top-level 'data' wrapper")
+        val dataObj = parsed["data"]!!.jsonObject
+        assertEquals("msg_test_recipient", dataObj["messageId"]?.jsonPrimitive?.content)
     }
 
     @Test

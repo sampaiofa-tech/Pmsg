@@ -19,6 +19,7 @@ object AppEndpoints {
     // Production baseline endpoints (immutable in Release)
     const val PROD_PROXY_URL: String = "https://$REGION-$DEFAULT_PROJECT_ID.cloudfunctions.net/geminiProxy"
     const val PROD_STORE_KEY_URL: String = "https://$REGION-$DEFAULT_PROJECT_ID.cloudfunctions.net/storeMessageKey"
+    const val PROD_GET_KEY_URL: String = "https://$REGION-$DEFAULT_PROJECT_ID.cloudfunctions.net/getMessageKey"
     const val PROD_IDENTITY_TOOLKIT_URL: String = "https://identitytoolkit.googleapis.com/v1"
 
     val isDebug: Boolean
@@ -54,6 +55,17 @@ object AppEndpoints {
             }
         } else {
             PROD_STORE_KEY_URL
+        }
+
+    val getMessageKeyUrl: String
+        get() = if (isDebug) {
+            PlatformEnvironment.getEnv("PMSG_GET_KEY_URL") ?: if (isEmulator) {
+                "http://127.0.0.1:5001/$projectId/$REGION/getMessageKey"
+            } else {
+                PROD_GET_KEY_URL
+            }
+        } else {
+            PROD_GET_KEY_URL
         }
 
     val identityToolkitBaseUrl: String
