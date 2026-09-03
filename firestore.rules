@@ -1,0 +1,51 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper: Verifica se o cliente está autenticado
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Helper: Verifica se o solicitante é participante (remetente ou destinatário)
+    function isParticipant(senderId, recipientId) {
+      return isAuthenticated() && (request.auth.uid == senderId || request.auth.uid == recipientId);
+    }
+
+    // =========================================================================
+    // COLEÇÃO: messages
+    // =========================================================================
+    // Read: Restrito a participantes da conversa.
+    // Create: Exige expiresAt obrigatório (tipo timestamp e superior a request.time).
+    // Update: TERMINANTEMENTE NEGADO (mensagens são imutáveis após gravação).
+    // Delete: Permitido apenas a participantes (vanish-after-read e deleção voluntária).
+    // NOTA DE DESIGN: Não exige request.app != null para manter interoperabilidade
+    // com clientes desktop (cuja proteção provém da autenticação via proxy).
+    match /messages/{messageId} {
+      allow read: if isParticipant(resource.data.senderId, resource.data.recipientId);
+
+      allow create: if isParticipant(request.resource.data.senderId, request.resource.data.recipientId)
+                    && request.resource.data.expiresAt is timestamp
+                    && request.resource.data.expiresAt > request.time;
+
+      allow update: if false;
+
+      allow delete: if isParticipant(resource.data.senderId, resource.data.recipientId);
+    }
+
+    // =========================================================================
+    // COLEÇÃO: messageKeys (DEK - Data Encryption Keys)
+    // =========================================================================
+    // ISOLAMENTO TOTAL: Leitura e escrita NEGADAS para todos os clientes SDK.
+    // Somente o Firebase Admin SDK (Cloud Functions backend) possui privilégio
+    // de acesso para geração e destruição programática das chaves (Crypto-Shredding).
+    match /messageKeys/{messageId} {
+      allow read, write: if false;
+    }
+
+    // Bloqueio preventivo padrão para qualquer outro documento não mapeado
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
