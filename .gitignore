@@ -25,3 +25,5 @@ kotlin-js-store/
 node_modules/
 functions/node_modules/
 functions/lib/
+*-debug.log
+firestore-debug.log
