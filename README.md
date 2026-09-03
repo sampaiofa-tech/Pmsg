@@ -223,21 +223,23 @@ Para compilar o cliente Android localmente:
 3. Baixe o arquivo `google-services.json` e posicione-o no diretório `composeApp/`.
 4. O build Gradle está configurado com `MissingGoogleServicesStrategy.ERROR` para impedir compilações acidentais sem a configuração correta.
 
-### 6. Operação: Monitoramento em Produção & Políticas de Alerta (Free Tier)
+### 6. Operação: Monitoramento em Produção & Políticas de Alerta (ATIVO — Free Tier)
 
-O monitoramento contínuo da infraestrutura em produção (`gen-lang-client-0858445711`) é baseado nos serviços nativos do **Google Cloud Monitoring** e **Cloud Logging**, operando com custo **US$ 0,00 / mês** no Free Tier.
+O monitoramento contínuo da infraestrutura em produção (`gen-lang-client-0858445711`) está **ATIVO** e operacional no **Google Cloud Monitoring** e **Cloud Logging**, funcionando integralmente com custo **US$ 0,00 / mês** no Free Tier.
 
-#### 6.1 Canal de Notificação
-- **Destino**: Notificação por e-mail configurada no Cloud Monitoring (**Alerting > Edit Notification Channels > Email**).
+#### 6.1 Canal de Notificação e Gestão Operacional
+- **Canal Ativo**: `Pmsg-Ops-Alerts` (E-mail do operador verificado com notificação de teste recebida e validada).
+- **Gestão Operacional**: Manutenção e edição centralizadas manualmente via **Google Cloud Console > Monitoring > Alerting / Uptime checks**. Nenhuma dependência do `gcloud CLI` local na máquina de desenvolvimento, preservando o princípio de menor privilégio e isolamento de credenciais.
 
-#### 6.2 Matriz de Alertas de Produção
+#### 6.2 Políticas de Alerta e Uptime Checks Ativos em Produção
 
-| Identificador | Tipo | Severidade | Condição de Disparo | Ação / Justificativa |
-|---|---|:---:|---|---|
-| **1. Falha do Shredder** | Baseado em Logs / Métrica | **CRÍTICO (P0)** | `severity>=ERROR` no serviço `scheduledMessageShredder` OU ausência de execução por `> 2 horas`. | Purga de segurança: impede que mensagens expiradas continuem no banco sem descarte. |
-| **2. Erros 5xx nas Functions** | Taxa de Erro | **ALTO (P1)** | Erros 5xx / status de falha > 1% em 5 min nos serviços `geminiProxy`, `storeMessageKey`, `getMessageKey` e `onDeleteMessage`. | Diagnóstico rápido de falhas internas, quebras de contrato ou timeouts. |
-| **3. Uptime Check (geminiProxy)** | Uptime Check HTTPS | **ALTO (P1)** | Ping a cada 1 min em `https://us-central1-gen-lang-client-0858445711.cloudfunctions.net/geminiProxy`. Esperar status `< 500` (resposta `401` valida funcionamento correto). | Garante alta disponibilidade da Cloud Function v2 e do proxy de IA. |
-| **4. Integridade do Secret Manager** | Audit Log | **CRÍTICO (P0)** | Audit log `protoPayload.methodName` correspondente a `DestroySecretVersion`, `DisableSecretVersion` ou `DeleteSecret` no secret `GEMINI_API_KEY`. | Evita paralisação da IA por desabilitação acidental do secret em produção. |
+| Política / Recurso | Tipo | Severidade | Condição de Disparo | Status em Produção | Ação / Justificativa |
+|---|---|:---:|---|:---:|---|
+| **`[PMSG-P0] Falha na Execução do Shredder`** | Log-based Alert | **CRÍTICO (P0)** | `severity>=ERROR` no log da Cloud Function / Cloud Run `scheduledMessageShredder`. | ✅ **ATIVO** | Purga de segurança: alerta imediato de falha no expurgo de mensagens expiradas. |
+| **`[PMSG-P0] Ausência do Shredder >2h`** | Métrica (Ausência) | **CRÍTICO (P0)** | Ausência de sinal de execução (`shredder_heartbeat`) por janela superior a 120 min (o job roda a cada 1h: `0 * * * *`). | ✅ **ATIVO** | Detecta interrupção silenciosa ou suspensão do Cloud Scheduler. |
+| **`[PMSG-P1] Erros 5xx nas Cloud Functions`** | Métrica de Erro | **ALTO (P1)** | `response_code_class="5xx"` (ou status de erro) nas functions `geminiProxy`, `storeMessageKey`, `getMessageKey` e `onDeleteMessage`. | ✅ **ATIVO** | Notifica falhas internas de execução, quebras de contrato ou timeouts de backend. |
+| **`[PMSG-P0] Alteração no Secret GEMINI_API_KEY`** | Cloud Audit Log | **CRÍTICO (P0)** | Chamadas de auditoria `DestroySecretVersion`, `DisableSecretVersion` ou `DeleteSecret` no secret `GEMINI_API_KEY`. | ✅ **ATIVO** | Previne e notifica alterações indevidas ou deleção da chave da IA no Secret Manager. |
+| **`[PMSG] geminiProxy online`** | Uptime Check HTTPS | **ALTO (P1)** | Sondagem HTTPS a cada 1 min no endpoint `geminiProxy`. Validação de status code: resposta `401 Unauthorized` tratada como sucesso. | ✅ **ATIVO** | Comprova disponibilidade contínua do endpoint e validação da barreira de autenticação. |
 
 ---
 
