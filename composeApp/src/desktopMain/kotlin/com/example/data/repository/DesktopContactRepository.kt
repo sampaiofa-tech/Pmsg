@@ -12,7 +12,28 @@ import java.io.File
 
 class DesktopContactRepository : ContactRepository {
 
-    private val contactsFlow = MutableStateFlow<Map<String, ContactItem>>(emptyMap())
+    private val defaultSeed = listOf(
+        ContactItem(
+            fingerprint = "d6a7b83a2be2d050105bb3a34edc428977925e9d7b9222f78a9c2e3b238776d4",
+            pubKey = "UWECg4c68X5+JbA4sLRCsCH3of2/Q4LNiu6ErnP5zyw=",
+            currentAuthUid = "uid_alice_77",
+            displayName = "Alice (Engenharia)",
+            securityNumber = "34981 83294 02934 98123 48102 39182 49102 39182 49102 39182 49102 39182",
+            verified = true,
+            addedAt = 1725391000000L
+        ),
+        ContactItem(
+            fingerprint = "e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7",
+            pubKey = "YW5vdGhlci1wdWJsaWMta2V5LTMyeHh4eHh4eHh4eHh4",
+            currentAuthUid = "uid_bob_88",
+            displayName = "Bob (Diretoria)",
+            securityNumber = "98123 48102 39182 34981 83294 02934 39182 49102 39182 49102 39182 49102",
+            verified = false,
+            addedAt = 1725390000000L
+        )
+    )
+
+    private val contactsFlow = MutableStateFlow<Map<String, ContactItem>>(defaultSeed.associateBy { it.fingerprint })
     private val storageFile: File by lazy {
         val appData = System.getenv("APPDATA") ?: System.getProperty("user.home")
         val dir = File(appData, "Pmsg")
@@ -36,8 +57,32 @@ class DesktopContactRepository : ContactRepository {
                 if (content.isNotBlank()) {
                     val list = json.decodeFromString<List<ContactItem>>(content)
                     contactsFlow.value = list.associateBy { it.fingerprint }
+                    return
                 }
             }
+            // Seed initial contacts for desktop experience
+            val initial = listOf(
+                ContactItem(
+                    fingerprint = "d6a7b83a2be2d050105bb3a34edc428977925e9d7b9222f78a9c2e3b238776d4",
+                    pubKey = "UWECg4c68X5+JbA4sLRCsCH3of2/Q4LNiu6ErnP5zyw=",
+                    currentAuthUid = "uid_alice_77",
+                    displayName = "Alice (Engenharia)",
+                    securityNumber = "34981 83294 02934 98123 48102 39182 49102 39182 49102 39182 49102 39182",
+                    verified = true,
+                    addedAt = System.currentTimeMillis()
+                ),
+                ContactItem(
+                    fingerprint = "e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7",
+                    pubKey = "YW5vdGhlci1wdWJsaWMta2V5LTMyeHh4eHh4eHh4eHh4",
+                    currentAuthUid = "uid_bob_88",
+                    displayName = "Bob (Diretoria)",
+                    securityNumber = "98123 48102 39182 34981 83294 02934 39182 49102 39182 49102 39182 49102",
+                    verified = false,
+                    addedAt = System.currentTimeMillis() - 3600_000L
+                )
+            )
+            contactsFlow.value = initial.associateBy { it.fingerprint }
+            saveToDisk()
         } catch (_: Throwable) {}
     }
 
@@ -50,6 +95,9 @@ class DesktopContactRepository : ContactRepository {
     }
 
     override fun getContacts(): Flow<List<ContactItem>> {
+        if (contactsFlow.value.isEmpty()) {
+            loadFromDisk()
+        }
         return contactsFlow.map { it.values.sortedByDescending { c -> c.addedAt } }
     }
 
