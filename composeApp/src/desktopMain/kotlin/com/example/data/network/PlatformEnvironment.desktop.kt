@@ -12,4 +12,6 @@ actual object PlatformEnvironment {
             null
         }
     }
+
+    actual fun currentTimeMillis(): Long = System.currentTimeMillis()
 }

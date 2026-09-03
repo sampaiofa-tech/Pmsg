@@ -7,4 +7,6 @@ actual object PlatformEnvironment {
 
     // Android: No environment variable access (prevents runtime spoofing)
     actual fun getEnv(name: String): String? = null
+
+    actual fun currentTimeMillis(): Long = System.currentTimeMillis()
 }

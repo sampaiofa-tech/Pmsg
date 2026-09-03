@@ -125,6 +125,10 @@ kotlin {
             }
         }
 
+        listOf("iosArm64Main", "iosSimulatorArm64Main").forEach { targetName ->
+            sourceSets.findByName(targetName)?.dependsOn(iosMain)
+        }
+
         sourceSets.named("wasmJsMain") {
             dependencies {
                 implementation(libs.ktor.client.js)

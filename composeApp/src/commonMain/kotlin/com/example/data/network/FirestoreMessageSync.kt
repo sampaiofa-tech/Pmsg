@@ -23,7 +23,7 @@ object FirestoreMessageSync {
         senderId: String,
         recipientId: String,
         ttlHours: Float = 24f,
-        now: Long = System.currentTimeMillis()
+        now: Long = PlatformEnvironment.currentTimeMillis()
     ): FirestoreMessage {
         val ttlMillis = (ttlHours * 60 * 60 * 1000L).toLong()
             .coerceIn(MIN_TTL_MILLIS, MAX_TTL_MILLIS)
