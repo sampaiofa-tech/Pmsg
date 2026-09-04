@@ -153,23 +153,47 @@ O Pmsg **rejeitou expressamente** a implementação de um diretório centralizad
 
 ### 5. Restauração & Recuperação de Identidade com Prova de Posse Ed25519 (Fase 5 & F0 Fix)
 - **Restauração em Novo Dispositivo**: O operador insere seu mnemônico BIP-39 de 12 palavras em português em um novo dispositivo.
+- **Constantes Imutáveis de Protocolo (Argon2id — RFC 9106)**:
+  Para garantir interoperabilidade matemática absoluta entre todas as plataformas suportadas (Android, Desktop, iOS, Web), os parâmetros do Argon2id são fixados como **constantes de protocolo imutáveis**:
+  | Parâmetro | Valor de Protocolo | Justificativa |
+  |---|:---:|---|
+  | **Modo** | `Argon2id` | Resistência combinada contra ataques baseados em canal lateral (Argon2i) e aceleração por GPU/ASIC (Argon2d). |
+  | **Iterações ($t$)** | `3` | Custo computacional adequado para mitigar ataques de dicionário sem degradar a UX mobile. |
+  | **Memória ($m$)** | `32.768 KiB` (32 MB) | Impõe barreira severa de hardware contra ataques de força bruta paralela. |
+  | **Paralelismo ($p$)** | `1` | Consistência de execução determinística monothread em runtimes mobile/Wasm. |
+  | **Tag Length** | `32 bytes` (256 bits) | Tamanho exato para semente privada de curvas elípticas Curve25519 / Ed25519. |
+  | **Domain Salt (X25519)** | `"pmsg-v1-identity-seed"` | Isolamento criptográfico estrito do par de cifragem Diffie-Hellman. |
+  | **Domain Salt (Ed25519)** | `"pmsg-v1-identity-signing"` | Isolamento criptográfico estrito do par de assinatura digital de prova de posse. |
+
 - **Regeneração Determinística Dupla**:
-  1. Par X25519 de cifragem: derivado via Argon2id com salt `"pmsg-v1-identity-seed"`, gerando o mesmo par e o mesmo fingerprint imutável ($\text{SHA-256}(\text{pubKey})$).
-  2. Par Ed25519 de assinatura: derivado via Argon2id com salt `"pmsg-v1-identity-signing"`, gerando a chave de assinatura vinculada à identidade.
+  1. **Par X25519 de cifragem**: derivado via Argon2id com salt `"pmsg-v1-identity-seed"`, gerando o mesmo par e o mesmo fingerprint imutável ($\text{SHA-256}(\text{pubKey})$).
+  2. **Par Ed25519 de assinatura**: derivado via Argon2id com salt `"pmsg-v1-identity-signing"`, gerando a chave de assinatura vinculada deterministicamente à identidade.
+  - *Provedores Criptográficos por Plataforma*:
+    - **Android & Desktop (JVM)**: Bouncy Castle RFC 8032 (`org.bouncycastle.math.ec.rfc8032.Ed25519`).
+    - **iOS (CMP) & Web (WasmJS)**: Engine Multiplataforma Kotlin puro (com implementação nativa de SHA-512).
+    - **Backend (Node.js 20)**: Módulo nativo `crypto.verify` com reconstituição de prefixo SPKI RFC 8410 (`302a300506032b6570032100`) para a chave pública crua de 32 bytes (zero dependências externas de npm).
+
 - **Vulnerabilidade Corrigida (F0 Security Fix)**:
-  - *Problema Identificado*: Validar apenas $\text{SHA-256}(\text{pubKey}) == \text{fingerprint}$ não prova posse da chave privada — qualquer contato (Eve) conhece a `pubKey` pública de Bob e poderia sequestrar o roteamento técnico (`identities/{fingerprint}`) para receber mensagens destinadas a ele.
+  - *Problema Identificado*: Validar apenas $\text{SHA-256}(\text{pubKey}) == \text{fingerprint}$ não prova posse da chave privada — qualquer contato (Eve) conhece a `pubKey` pública de Bob e poderia sequestrar o roteamento técnico (`identities/{fingerprint}`) para receber mensagens e DEKs destinadas a ele.
   - *Princípio Adotado*: **"Roteamento exige prova de posse Ed25519; hash de consistência não é autenticação."**
   - *Solução Criptográfica Implementada*:
     - Na criação da identidade ou convite, a chave pública de assinatura Ed25519 (`signingPubKey`) é registrada de forma imutável em `identities/{fingerprint}`.
     - A callable `updateIdentityRouting` exige assinatura digital Ed25519 válida sobre o payload canônico `"pmsg-routing-v1|<fingerprint>|<newAuthUid>|<timestamp>"`.
     - Janela anti-replay estrita: timestamps com desvio superior a 5 minutos ($|\text{now} - \text{timestamp}| > 300.000\text{ ms}$) são sumariamente rejeitados.
     - A assinatura é verificada contra o `signingPubKey` registrado no documento. Chamadas sem assinatura válida ou originadas por contatos atacantes são rejeitadas com `permission-denied`.
-    - No `firestore.rules`, updates diretos à coleção `identities` por clientes SDK são terminantemente bloqueados (`allow update: if false;`), garantindo que o roteamento só possa ser alterado mediante verificação criptográfica no backend.
+    - No `firestore.rules`, updates diretos à coleção `identities` por clientes SDK são terminantemente bloqueados (`allow update, delete: if false;`), garantindo que o roteamento só possa ser alterado mediante verificação criptográfica no backend.
+
+- **Janela TOFU de Criação de Identidades & Mitigação Futura (v1.2)**:
+  - *Mecanismo Atual de Criação*: Atualmente, o documento `identities/{fingerprint}` pode ser criado diretamente pelo cliente SDK autenticado (onde `firestore.rules` exige `request.auth != null`, `!exists(...)`, `currentAuthUid == request.auth.uid` e presença de todas as chaves obrigatórias) OU indiretamente via Admin SDK ao invocar `createInvite`.
+  - *Janela TOFU (Trust On First Use)*: Como o `create` é liberado para novos documentos, se um atacante obtiver antecipadamente o fingerprint público de um usuário antes que este registre seu documento ou emita seu primeiro convite, o atacante poderia tentar pré-criar o registro vinculando sua própria `signingPubKey`.
+  - *Avaliação de Risco Atual*: Risco residual nulo/baixo no estágio atual, uma vez que não existem diretórios públicos de enumeração e a base ainda não possui usuários reais.
+  - *Mitigação Futura Planejada (v1.2)*: Bloqueio total de criação direta por clientes em `firestore.rules` (`allow create: if false;`), transferindo a inicialização da identidade exclusivamente para uma Cloud Function Callable que exigirá prova de posse cruzada (assinatura Ed25519 sobre o binding criptográfico canônico `x25519pub || ed25519pub`), impedindo que qualquer entidade pré-registre chaves que não possui.
+
 - **Mensagens Anteriores Perdidas por Design**: Mensagens recebidas no antigo dispositivo $\le 24$h antes da recuperação são perdidas por design. O Pmsg **não mantém histórico de conversas nem backlogs persistentes em servidores**, garantindo imunidade contra apreensão física retrospectiva.
 
 ### 6. Rate Limiting em Firestore (`userRateLimits`)
 Para impedir ataques de força bruta, colheita e negação de serviço, todas as Cloud Functions críticas implementam janelas deslizantes atômicas gravadas na coleção `userRateLimits/{uid}` (inacessível a clientes SDK):
-- **`resolveFingerprint`**: 10 consultas / 1 minuto.
+- **`resolveFingerprint`**: 30 requisições / 1 minuto.
 - **`createInvite`**: 10 convites / 10 minutos.
 - **`acceptInvite`**: 15 tentativas / 1 minuto.
 - **`updateIdentityRouting`**: 5 atualizações / 10 minutos.
@@ -326,7 +350,7 @@ O monitoramento contínuo da infraestrutura em produção (`gen-lang-client-0858
 |---|---|:---:|---|:---:|---|
 | **`[PMSG-P0] Falha na Execução do Shredder`** | Log-based Alert | **CRÍTICO (P0)** | `severity>=ERROR` no log da Cloud Function / Cloud Run `scheduledMessageShredder`. | ✅ **ATIVO** | Purga de segurança: alerta imediato de falha no expurgo de mensagens expiradas. |
 | **`[PMSG-P0] Ausência do Shredder >2h`** | Métrica (Ausência) | **CRÍTICO (P0)** | Ausência de sinal de execução (`shredder_heartbeat`) por janela superior a 120 min (o job roda a cada 1h: `0 * * * *`). | ✅ **ATIVO** | Detecta interrupção silenciosa ou suspensão do Cloud Scheduler. |
-| **`[PMSG-P1] Erros 5xx nas Cloud Functions`** | Métrica de Erro | **ALTO (P1)** | `response_code_class="5xx"` (ou status de erro) nas functions `geminiProxy`, `storeMessageKey`, `getMessageKey` e `onDeleteMessage`. | ✅ **ATIVO** | Notifica falhas internas de execução, quebras de contrato ou timeouts de backend. |
+| **`[PMSG-P1] Erros 5xx nas Cloud Functions`** | Métrica de Erro | **ALTO (P1)** | `response_code_class="5xx"` (ou status de erro) nas 9 Cloud Functions v2 do projeto: `geminiProxy`, `storeMessageKey`, `getMessageKey`, `onDeleteMessage`, `scheduledMessageShredder`, `resolveFingerprint`, `createInvite`, `acceptInvite` e `updateIdentityRouting`. | ✅ **ATIVO** | Notifica falhas internas de execução, quebras de contrato ou timeouts de backend em toda a infraestrutura serverless. |
 | **`[PMSG-P0] Alteração no Secret GEMINI_API_KEY`** | Cloud Audit Log | **CRÍTICO (P0)** | Chamadas de auditoria `DestroySecretVersion`, `DisableSecretVersion` ou `DeleteSecret` no secret `GEMINI_API_KEY`. | ✅ **ATIVO** | Previne e notifica alterações indevidas ou deleção da chave da IA no Secret Manager. |
 | **`[PMSG] geminiProxy online`** | Uptime Check HTTPS | **ALTO (P1)** | Sondagem HTTPS a cada 1 min no endpoint `geminiProxy`. Validação de status code: resposta `401 Unauthorized` tratada como sucesso. | ✅ **ATIVO** | Comprova disponibilidade contínua do endpoint e validação da barreira de autenticação. |
 
