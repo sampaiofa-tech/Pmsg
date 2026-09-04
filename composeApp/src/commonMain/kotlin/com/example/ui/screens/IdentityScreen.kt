@@ -18,13 +18,16 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.QrCode
 import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.filled.Warning
@@ -82,7 +85,8 @@ import kotlin.random.Random
 fun IdentityScreen(
     currentAuthUid: String = "anonymous_uid",
     onBack: () -> Unit = {},
-    onProvisioned: () -> Unit = {}
+    onProvisioned: () -> Unit = {},
+    onOpenDataPrivacy: () -> Unit = {}
 ) {
     val coroutineScope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -124,6 +128,15 @@ fun IdentityScreen(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar")
+                    }
+                },
+                actions = {
+                    IconButton(onClick = onOpenDataPrivacy) {
+                        Icon(
+                            imageVector = Icons.Default.Shield,
+                            contentDescription = "Sobre seus dados (LGPD)",
+                            tint = Color(0xFF00FFC2)
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -435,6 +448,47 @@ fun IdentityScreen(
                             Text("Criar Minha Identidade")
                         }
                     }
+                }
+            }
+
+            // Seção de Transparência e Dados (LGPD)
+            Card(
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF111827)),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(1.dp, Color(0xFF1F2937), RoundedCornerShape(12.dp))
+                    .clickable { onOpenDataPrivacy() }
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Shield,
+                        contentDescription = null,
+                        tint = Color(0xFF00FFC2),
+                        modifier = Modifier.size(26.dp)
+                    )
+                    Spacer(modifier = Modifier.width(14.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Sobre seus dados",
+                            style = MaterialTheme.typography.titleSmall,
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "Inventário em linguagem simples, conformidade LGPD e canal do Encarregado",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color(0xFF9CA3AF)
+                        )
+                    }
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                        contentDescription = null,
+                        tint = Color(0xFF00FFC2),
+                        modifier = Modifier.size(18.dp)
+                    )
                 }
             }
         }

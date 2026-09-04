@@ -22,6 +22,7 @@ import com.example.data.repository.ContactRepositoryProvider
 import com.example.ui.screens.AddContactModelAScreen
 import com.example.ui.screens.ContactChatScreen
 import com.example.ui.screens.ContactsScreen
+import com.example.ui.screens.DataPrivacyScreen
 import com.example.ui.screens.IdentityScreen
 import com.example.ui.screens.SafetyNumberScreen
 
@@ -29,6 +30,7 @@ sealed interface AppDestination {
     data object Contacts : AppDestination
     data class Chat(val contact: ContactItem) : AppDestination
     data object Identity : AppDestination
+    data object DataPrivacy : AppDestination
     data object AddModelA : AppDestination
     data class SafetyNumber(val contact: ContactItem) : AppDestination
 }
@@ -68,6 +70,9 @@ fun App() {
                             onOpenIdentity = {
                                 currentDestination = AppDestination.Identity
                             },
+                            onOpenDataPrivacy = {
+                                currentDestination = AppDestination.DataPrivacy
+                            },
                             onAddContactModelA = {
                                 currentDestination = AppDestination.AddModelA
                             },
@@ -95,6 +100,17 @@ fun App() {
                                 currentDestination = AppDestination.Contacts
                             },
                             onProvisioned = {
+                                currentDestination = AppDestination.Contacts
+                            },
+                            onOpenDataPrivacy = {
+                                currentDestination = AppDestination.DataPrivacy
+                            }
+                        )
+                    }
+
+                    is AppDestination.DataPrivacy -> {
+                        DataPrivacyScreen(
+                            onBack = {
                                 currentDestination = AppDestination.Contacts
                             }
                         )

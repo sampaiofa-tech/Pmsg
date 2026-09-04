@@ -72,6 +72,7 @@ fun ContactsScreen(
     contactRepository: ContactRepository,
     onContactSelected: (ContactItem) -> Unit,
     onOpenIdentity: () -> Unit,
+    onOpenDataPrivacy: () -> Unit = {},
     onAddContactModelA: () -> Unit,
     onCompareSafetyNumber: (ContactItem) -> Unit
 ) {
@@ -107,6 +108,13 @@ fun ContactsScreen(
                     }
                 },
                 actions = {
+                    IconButton(onClick = onOpenDataPrivacy) {
+                        Icon(
+                            imageVector = Icons.Default.Shield,
+                            contentDescription = "Sobre seus dados (LGPD)",
+                            tint = Color(0xFF00FFC2)
+                        )
+                    }
                     IconButton(onClick = onOpenIdentity) {
                         Icon(
                             imageVector = Icons.Default.Fingerprint,
