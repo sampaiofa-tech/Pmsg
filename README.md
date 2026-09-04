@@ -398,5 +398,17 @@ O monitoramento contínuo da infraestrutura em produção (`gen-lang-client-0858
 
 ## 📄 Licença
 
-Desenvolvido para segurança e privacidade estrita. Zero Trace.
+Este projeto é disponibilizado sob o modelo de **duplo licenciamento**:
+
+1. **Core Open Source (AGPL-3.0)**:
+   - Distribuído sob os termos da licença **GNU Affero General Public License v3.0 (AGPL-3.0)** — veja o arquivo [`LICENSE`](LICENSE).
+   - O código que você audita é exatamente o código que executa: transparência, auditabilidade pública e garantia de que modificações disponibilizadas como serviço de rede permaneçam com código aberto para a comunidade.
+2. **Edição Comercial (Escritório / Private)**:
+   - Licenciamento proprietário voltado a empresas e escritórios que demandam isenção das obrigações da AGPL-3.0, customizações de governança corporativa, implantação on-premises / nuvem privada e suporte técnico com SLA.
+   - Para detalhes e solicitação de propostas comerciais, consulte [`LICENSE-COMMERCIAL.md`](LICENSE-COMMERCIAL.md).
+3. **Contribuições de Código**:
+   - Todas as contribuições externas ao repositório são regidas pelo Acordo de Contribuição Individual — consulte [`CLA.md`](CLA.md).
+
+> [!IMPORTANT]
+> **Nota sobre a Marca e Denominação do Produto**: O nome "Pmsg" adotado neste repositório e na documentação técnica é **estritamente provisório**. O registro de marca permanece **indefinido** perante os órgãos competentes (como o INPI) até a deliberação e homologação da denominação comercial definitiva do produto.
 
