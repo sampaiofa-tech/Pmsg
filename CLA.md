@@ -16,3 +16,6 @@ Para viabilizar a sustentabilidade do projeto sob o modelo de **licenciamento du
 4. **Sem Garantias Adicionais**: Salvo declaração expressa em contrário, suas contribuições são fornecidas no estado em que se encontram ("AS IS"), sem garantias explícitas ou implícitas de qualquer natureza.
 
 Ao enviar um Pull Request ou contribuir com patches para este projeto, você manifesta sua concordância plena com este termo.
+
+> [!NOTE]
+> Este acordo entra em operação com a primeira contribuição externa.
