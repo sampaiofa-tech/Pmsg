@@ -40,25 +40,15 @@ export const reportAbuse = onCall(async (request) => {
     throw new HttpsError("invalid-argument", "Payload da requisição inválido.");
   }
 
-  // 2. Strict ZERO-KNOWLEDGE enforcement: reject any payload attempting to send message content
-  const forbiddenContentFields = [
-    "text",
-    "message",
-    "content",
-    "body",
-    "plaintext",
-    "cipher",
-    "ciphertext",
-    "payload",
-    "encryptedMessage",
-  ];
-
-  for (const field of forbiddenContentFields) {
-    if (field in data && data[field] !== undefined && data[field] !== null) {
-      logger.warn(`reportAbuse: Rejected attempt to submit message content via field '${field}'.`);
+  // 2. Strict ALLOW-LIST enforcement: exclusively accept reportedFingerprint, abuseType, and inviteId
+  const ALLOWED_FIELDS = new Set(["reportedFingerprint", "abuseType", "inviteId"]);
+  const payloadKeys = Object.keys(data);
+  for (const key of payloadKeys) {
+    if (!ALLOWED_FIELDS.has(key)) {
+      logger.warn(`reportAbuse: Rejected unauthorized field '${key}' in payload.`);
       throw new HttpsError(
         "invalid-argument",
-        "Violação de privacidade: o servidor é cego. Denúncias são estritamente comportamentais e não aceitam conteúdo de mensagens."
+        `Campo não permitido: '${key}'. Denúncias aceitam exclusivamente 'reportedFingerprint', 'abuseType' e 'inviteId'.`
       );
     }
   }

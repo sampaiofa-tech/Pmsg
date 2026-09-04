@@ -93,7 +93,22 @@ describe("v1.3: reportAbuse Cloud Function Test Suite", () => {
     );
   });
 
-  it("CRITICAL ZERO-KNOWLEDGE RULE: should reject any payload attempting to include message content", async () => {
+  it("CRITICAL ALLOW-LIST RULE: should reject payload with unauthorized extra field 'nota'", async () => {
+    const request: any = {
+      auth: { uid: "reporter_alice" },
+      data: {
+        reportedFingerprint: validFingerprint,
+        abuseType: "SPAM",
+        nota: "usuário suspeito",
+      },
+    };
+
+    await expect((reportAbuse as any).run(request)).rejects.toThrow(
+      /Campo não permitido: 'nota'/
+    );
+  });
+
+  it("CRITICAL ZERO-KNOWLEDGE RULE: should reject any payload attempting to include message content via allow-list enforcement", async () => {
     const contentPayloads = [
       { text: "Ele me enviou uma mensagem feia" },
       { message: "conteúdo da conversa" },
@@ -114,7 +129,7 @@ describe("v1.3: reportAbuse Cloud Function Test Suite", () => {
       };
 
       await expect((reportAbuse as any).run(request)).rejects.toThrow(
-        /Violação de privacidade: o servidor é cego/
+        /Campo não permitido/
       );
     }
   });
