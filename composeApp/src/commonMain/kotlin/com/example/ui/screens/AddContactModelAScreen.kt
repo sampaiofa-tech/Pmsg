@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.QrCode
@@ -32,6 +33,8 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -70,6 +73,9 @@ import com.example.data.repository.ContactRepository
 import com.example.security.ClipboardSensivel
 import com.example.security.identity.IdentityCryptoManager
 import com.example.security.identity.IdentityManager
+import com.example.ui.components.QrCodeView
+import com.example.ui.components.QrScannerView
+import com.example.ui.components.isQrScannerSupported
 import kotlinx.coroutines.launch
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
@@ -90,11 +96,13 @@ fun AddContactModelAScreen(
     var myUri by remember { mutableStateOf("") }
     var myFingerprint by remember { mutableStateOf("") }
     var copyFeedback by remember { mutableStateOf<String?>(null) }
+    var showQrCodeMyTab by remember { mutableStateOf(true) }
 
     // Input fields for pasting code
     var inputName by remember { mutableStateOf("") }
     var inputUri by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    var isScanningCameraTab1 by remember { mutableStateOf(false) }
 
     // State for Modelo C Remote Invites
     val clipboardSensivel = remember { ClipboardSensivel() }
@@ -105,6 +113,8 @@ fun AddContactModelAScreen(
     var inputRemoteName by remember { mutableStateOf("") }
     var remoteInviteError by remember { mutableStateOf<String?>(null) }
     var remoteInviteSuccess by remember { mutableStateOf<String?>(null) }
+    var showQrInviteTab2 by remember { mutableStateOf(true) }
+    var isScanningCameraTab2 by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         val identity = IdentityManager.getOrGenerateIdentity()
@@ -218,56 +228,138 @@ fun AddContactModelAScreen(
                         textAlign = TextAlign.Center
                     )
 
-                    Spacer(modifier = Modifier.height(20.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
 
-                    // URI Code Card
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFF131B2A))
+                    // Toggle: QR Code vs String URI
+                    Row(
+                        horizontalArrangement = Arrangement.Center,
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text(
-                                text = "STRING-CÓDIGO (MODELO A):",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = Color(0xFF00FFC2),
-                                fontWeight = FontWeight.Bold
+                        FilterChip(
+                            selected = showQrCodeMyTab,
+                            onClick = { showQrCodeMyTab = true },
+                            label = { Text("QR Code Presencial", fontWeight = FontWeight.Bold) },
+                            leadingIcon = {
+                                Icon(Icons.Default.QrCode, contentDescription = null, modifier = Modifier.size(16.dp))
+                            },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = Color(0xFF00FFC2),
+                                selectedLabelColor = Color(0xFF0A1128),
+                                containerColor = Color(0xFF131B2A),
+                                labelColor = Color(0xFFB0BEC5)
                             )
-
-                            Spacer(modifier = Modifier.height(8.dp))
-
-                            Text(
-                                text = myUri,
-                                fontFamily = FontFamily.Monospace,
-                                fontSize = 12.sp,
-                                color = Color(0xFFE0E0E0),
-                                lineHeight = 16.sp
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        FilterChip(
+                            selected = !showQrCodeMyTab,
+                            onClick = { showQrCodeMyTab = false },
+                            label = { Text("String URI", fontWeight = FontWeight.Bold) },
+                            leadingIcon = {
+                                Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(16.dp))
+                            },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = Color(0xFF00FFC2),
+                                selectedLabelColor = Color(0xFF0A1128),
+                                containerColor = Color(0xFF131B2A),
+                                labelColor = Color(0xFFB0BEC5)
                             )
+                        )
+                    }
 
-                            Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
 
-                            Button(
-                                onClick = {
-                                    clipboardManager.setText(AnnotatedString(myUri))
-                                    copyFeedback = "Código copiado para a área de transferência!"
-                                },
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(10.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00FFC2))
-                            ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(
-                                        imageVector = Icons.Default.ContentCopy,
-                                        contentDescription = null,
-                                        tint = Color(0xFF0A1128),
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(
-                                        text = "Copiar Código",
-                                        color = Color(0xFF0A1128),
-                                        fontWeight = FontWeight.Bold
-                                    )
+                    if (showQrCodeMyTab && myUri.isNotBlank()) {
+                        QrCodeView(
+                            data = myUri,
+                            size = 230.dp,
+                            modifier = Modifier.padding(vertical = 4.dp)
+                        )
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        Text(
+                            text = "Aponte a câmera do seu celular para este QR Code para adicionar o contato presencialmente.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color(0xFFB0BEC5),
+                            textAlign = TextAlign.Center
+                        )
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        Button(
+                            onClick = {
+                                clipboardManager.setText(AnnotatedString(myUri))
+                                copyFeedback = "Código copiado para a área de transferência!"
+                            },
+                            shape = RoundedCornerShape(10.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1B2A3A))
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.ContentCopy,
+                                    contentDescription = null,
+                                    tint = Color(0xFF00FFC2),
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "Copiar Código URI",
+                                    color = Color(0xFF00FFC2),
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 12.sp
+                                )
+                            }
+                        }
+                    } else {
+                        // URI Code Card
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFF131B2A))
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Text(
+                                    text = "STRING-CÓDIGO (MODELO A):",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = Color(0xFF00FFC2),
+                                    fontWeight = FontWeight.Bold
+                                )
+
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                Text(
+                                    text = myUri,
+                                    fontFamily = FontFamily.Monospace,
+                                    fontSize = 12.sp,
+                                    color = Color(0xFFE0E0E0),
+                                    lineHeight = 16.sp
+                                )
+
+                                Spacer(modifier = Modifier.height(12.dp))
+
+                                Button(
+                                    onClick = {
+                                        clipboardManager.setText(AnnotatedString(myUri))
+                                        copyFeedback = "Código copiado para a área de transferência!"
+                                    },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(10.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00FFC2))
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(
+                                            imageVector = Icons.Default.ContentCopy,
+                                            contentDescription = null,
+                                            tint = Color(0xFF0A1128),
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(
+                                            text = "Copiar Código",
+                                            color = Color(0xFF0A1128),
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -320,7 +412,53 @@ fun AddContactModelAScreen(
                         textAlign = TextAlign.Center
                     )
 
-                    Spacer(modifier = Modifier.height(20.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    if (!isScanningCameraTab1) {
+                        Button(
+                            onClick = { isScanningCameraTab1 = true },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1B2A3A))
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.CameraAlt,
+                                    contentDescription = null,
+                                    tint = Color(0xFF00FFC2),
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "Escanear QR Code com a Câmera",
+                                    color = Color(0xFF00FFC2),
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+                    } else {
+                        QrScannerView(
+                            onQrCodeScanned = { scanned ->
+                                isScanningCameraTab1 = false
+                                inputUri = scanned.trim()
+                                errorMessage = null
+                                val parseResult = IdentityManager.parseContactUri(scanned.trim())
+                                if (parseResult.isSuccess) {
+                                    val contactData = parseResult.getOrThrow()
+                                    if (inputName.isBlank()) {
+                                        inputName = "Contato_${contactData.fingerprintHex.take(6)}"
+                                    }
+                                } else {
+                                    errorMessage = parseResult.exceptionOrNull()?.message
+                                        ?: "QR code escaneado não contém um link pmsg://contact válido."
+                                }
+                            },
+                            onDismiss = { isScanningCameraTab1 = false },
+                            modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
+                        )
+                    }
 
                     // Name Input
                     OutlinedTextField(
@@ -544,6 +682,57 @@ fun AddContactModelAScreen(
                             if (inviteLink != null) {
                                 Spacer(modifier = Modifier.height(12.dp))
 
+                                Row(
+                                    horizontalArrangement = Arrangement.Center,
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    FilterChip(
+                                        selected = showQrInviteTab2,
+                                        onClick = { showQrInviteTab2 = true },
+                                        label = { Text("QR Code Presencial", fontWeight = FontWeight.Bold, fontSize = 11.sp) },
+                                        leadingIcon = {
+                                            Icon(Icons.Default.QrCode, contentDescription = null, modifier = Modifier.size(14.dp))
+                                        },
+                                        colors = FilterChipDefaults.filterChipColors(
+                                            selectedContainerColor = Color(0xFF00FFC2),
+                                            selectedLabelColor = Color(0xFF0A1128),
+                                            containerColor = Color(0xFF131B2A),
+                                            labelColor = Color(0xFFB0BEC5)
+                                        )
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    FilterChip(
+                                        selected = !showQrInviteTab2,
+                                        onClick = { showQrInviteTab2 = false },
+                                        label = { Text("Link Texto", fontWeight = FontWeight.Bold, fontSize = 11.sp) },
+                                        leadingIcon = {
+                                            Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(14.dp))
+                                        },
+                                        colors = FilterChipDefaults.filterChipColors(
+                                            selectedContainerColor = Color(0xFF00FFC2),
+                                            selectedLabelColor = Color(0xFF0A1128),
+                                            containerColor = Color(0xFF131B2A),
+                                            labelColor = Color(0xFFB0BEC5)
+                                        )
+                                    )
+                                }
+
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                if (showQrInviteTab2) {
+                                    Box(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        QrCodeView(
+                                            data = inviteLink ?: "",
+                                            size = 180.dp,
+                                            modifier = Modifier.padding(vertical = 4.dp)
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                }
+
                                 Card(
                                     modifier = Modifier.fillMaxWidth(),
                                     shape = RoundedCornerShape(8.dp),
@@ -617,12 +806,47 @@ fun AddContactModelAScreen(
                             Spacer(modifier = Modifier.height(8.dp))
 
                             Text(
-                                text = "Cole o link 'pmsg://invite?token=...' que você recebeu para estabelecer o contato.",
+                                text = "Cole o link 'pmsg://invite?token=...' que você recebeu ou escaneie o QR code.",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = Color(0xFFB0BEC5)
                             )
 
                             Spacer(modifier = Modifier.height(12.dp))
+
+                            if (!isScanningCameraTab2) {
+                                Button(
+                                    onClick = { isScanningCameraTab2 = true },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(10.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1B2A3A))
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(
+                                            imageVector = Icons.Default.CameraAlt,
+                                            contentDescription = null,
+                                            tint = Color(0xFF00FFC2),
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(
+                                            text = "Escanear QR de Convite com a Câmera",
+                                            color = Color(0xFF00FFC2),
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 12.sp
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.height(10.dp))
+                            } else {
+                                QrScannerView(
+                                    onQrCodeScanned = { scanned ->
+                                        isScanningCameraTab2 = false
+                                        inputInviteLink = scanned.trim()
+                                    },
+                                    onDismiss = { isScanningCameraTab2 = false },
+                                    modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
+                                )
+                            }
 
                             OutlinedTextField(
                                 value = inputRemoteName,

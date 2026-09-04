@@ -70,6 +70,7 @@ kotlin {
             implementation(libs.ktor.serialization.kotlinx.json)
             implementation(libs.coil3.compose)
             implementation(libs.coil3.network.ktor3)
+            implementation(libs.qrose)
         }
 
         val nonWebMain by creating {
@@ -103,6 +104,11 @@ kotlin {
             implementation(libs.androidx.compose.material.icons.extended)
             implementation(libs.coil.compose)
             implementation(libs.bouncycastle.bcprov)
+            implementation(libs.mlkit.barcode.scanning)
+            implementation(libs.androidx.camera.core)
+            implementation(libs.androidx.camera.camera2)
+            implementation(libs.androidx.camera.lifecycle)
+            implementation(libs.androidx.camera.view)
         }
 
         sourceSets.named("androidMain") {
