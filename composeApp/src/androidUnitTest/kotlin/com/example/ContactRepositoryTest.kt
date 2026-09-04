@@ -33,7 +33,7 @@ class ContactRepositoryTest {
         db = Room.inMemoryDatabaseBuilder(context, VanishDatabase::class.java)
             .allowMainThreadQueries()
             .build()
-        repository = AndroidContactRepository(db.contactDao())
+        repository = AndroidContactRepository(db.contactDao(), db.blockedContactDao())
     }
 
     @After
@@ -141,5 +141,43 @@ class ContactRepositoryTest {
         val wiped = repository.panicWipe()
         assertTrue(wiped >= 1)
         assertEquals(0, repository.getContacts().first().size)
+    }
+
+    @Test
+    fun testRoomBlockAndUnblockContact() = runTest {
+        val fp = "9999999999999999999999999999999999999999999999999999999999999999"
+
+        assertFalse(repository.isContactBlocked(fp))
+        assertEquals(0, repository.getBlockedContacts().first().size)
+
+        // Block
+        repository.blockContact(fp)
+        assertTrue(repository.isContactBlocked(fp))
+        assertTrue(db.blockedContactDao().isBlocked(fp))
+        val blockedList = repository.getBlockedContacts().first()
+        assertEquals(1, blockedList.size)
+        assertEquals(fp, blockedList[0].fingerprint)
+
+        // Unblock
+        repository.unblockContact(fp)
+        assertFalse(repository.isContactBlocked(fp))
+        assertFalse(db.blockedContactDao().isBlocked(fp))
+        assertEquals(0, repository.getBlockedContacts().first().size)
+    }
+
+    @Test
+    fun testRoomPanicWipeClearsBlocklist() = runTest {
+        val fp1 = "1111111111111111111111111111111111111111111111111111111111111111"
+        val fp2 = "2222222222222222222222222222222222222222222222222222222222222222"
+
+        repository.blockContact(fp1)
+        repository.blockContact(fp2)
+        assertEquals(2, repository.getBlockedContacts().first().size)
+
+        repository.panicWipe()
+
+        assertEquals(0, repository.getBlockedContacts().first().size)
+        assertFalse(repository.isContactBlocked(fp1))
+        assertFalse(repository.isContactBlocked(fp2))
     }
 }

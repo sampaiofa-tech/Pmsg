@@ -8,14 +8,15 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.data.model.BurnerChannel
 import com.example.data.model.EphemeralMessage
 import com.example.data.model.Contact
+import com.example.data.model.BlockedContactEntity
 import com.example.util.security.CryptoManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 @Database(
-    entities = [EphemeralMessage::class, BurnerChannel::class, Contact::class],
-    version = 5,
+    entities = [EphemeralMessage::class, BurnerChannel::class, Contact::class, BlockedContactEntity::class],
+    version = 6,
     exportSchema = false
 )
 abstract class VanishDatabase : RoomDatabase() {
@@ -23,6 +24,7 @@ abstract class VanishDatabase : RoomDatabase() {
     abstract fun messageDao(): MessageDao
     abstract fun channelDao(): ChannelDao
     abstract fun contactDao(): ContactDao
+    abstract fun blockedContactDao(): BlockedContactDao
 
     companion object {
         @Volatile

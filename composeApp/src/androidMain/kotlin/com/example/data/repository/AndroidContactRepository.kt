@@ -1,17 +1,25 @@
 package com.example.data.repository
 
+import com.example.data.local.BlockedContactDao
 import com.example.data.local.ContactDao
+import com.example.data.model.BlockedContact
+import com.example.data.model.BlockedContactEntity
 import com.example.data.model.Contact
 import com.example.data.model.ContactItem
 import com.example.util.security.CryptoManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 
 class AndroidContactRepository(
-    private val contactDao: ContactDao
+    private val contactDao: ContactDao,
+    private val blockedContactDao: BlockedContactDao? = null
 ) : ContactRepository {
+
+    private val blockedPurgeCountFlow = MutableStateFlow(0)
 
     override fun getContacts(): Flow<List<ContactItem>> {
         return contactDao.getAllContacts().map { list ->
@@ -63,6 +71,40 @@ class AndroidContactRepository(
     }
 
     override suspend fun panicWipe(): Int = withContext(Dispatchers.IO) {
-        contactDao.panicWipeAllContacts()
+        val count = contactDao.panicWipeAllContacts()
+        blockedContactDao?.panicWipeAllBlockedContacts()
+        blockedPurgeCountFlow.value = 0
+        count
     }
+
+    override fun getBlockedContacts(): Flow<List<BlockedContact>> {
+        return blockedContactDao?.getAllBlockedContacts()?.map { list ->
+            list.map { it.toDomain() }
+        } ?: flowOf(emptyList())
+    }
+
+    override suspend fun blockContact(fingerprint: String) = withContext(Dispatchers.IO) {
+        blockedContactDao?.insertBlockedContact(
+            BlockedContactEntity(
+                fingerprint = fingerprint,
+                blockedAt = System.currentTimeMillis()
+            )
+        )
+        Unit
+    }
+
+    override suspend fun unblockContact(fingerprint: String) = withContext(Dispatchers.IO) {
+        blockedContactDao?.deleteBlockedContact(fingerprint)
+        Unit
+    }
+
+    override suspend fun isContactBlocked(fingerprint: String): Boolean = withContext(Dispatchers.IO) {
+        blockedContactDao?.isBlocked(fingerprint) ?: false
+    }
+
+    override suspend fun recordBlockedPurge(fingerprint: String) {
+        blockedPurgeCountFlow.value += 1
+    }
+
+    override fun getBlockedPurgeCount(): Flow<Int> = blockedPurgeCountFlow
 }

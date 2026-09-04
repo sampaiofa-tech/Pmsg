@@ -1,5 +1,6 @@
 package com.example.data.repository
 
+import com.example.data.model.BlockedContact
 import com.example.data.model.ContactItem
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -7,6 +8,8 @@ import kotlinx.coroutines.flow.map
 
 actual object ContactRepositoryProvider {
     private val contactsFlow = MutableStateFlow<Map<String, ContactItem>>(emptyMap())
+    private val blockedFlow = MutableStateFlow<Map<String, BlockedContact>>(emptyMap())
+    private val purgeCountFlow = MutableStateFlow(0)
 
     private val repository = object : ContactRepository {
         override fun getContacts(): Flow<List<ContactItem>> =
@@ -44,8 +47,36 @@ actual object ContactRepositoryProvider {
         override suspend fun panicWipe(): Int {
             val count = contactsFlow.value.size
             contactsFlow.value = emptyMap()
+            blockedFlow.value = emptyMap()
+            purgeCountFlow.value = 0
             return count
         }
+
+        override fun getBlockedContacts(): Flow<List<BlockedContact>> {
+            return blockedFlow.map { it.values.sortedByDescending { b -> b.blockedAt } }
+        }
+
+        override suspend fun blockContact(fingerprint: String) {
+            val current = blockedFlow.value.toMutableMap()
+            current[fingerprint] = BlockedContact(fingerprint, 0L)
+            blockedFlow.value = current
+        }
+
+        override suspend fun unblockContact(fingerprint: String) {
+            val current = blockedFlow.value.toMutableMap()
+            current.remove(fingerprint)
+            blockedFlow.value = current
+        }
+
+        override suspend fun isContactBlocked(fingerprint: String): Boolean {
+            return blockedFlow.value.containsKey(fingerprint)
+        }
+
+        override suspend fun recordBlockedPurge(fingerprint: String) {
+            purgeCountFlow.value += 1
+        }
+
+        override fun getBlockedPurgeCount(): Flow<Int> = purgeCountFlow
     }
 
     actual fun get(): ContactRepository = repository

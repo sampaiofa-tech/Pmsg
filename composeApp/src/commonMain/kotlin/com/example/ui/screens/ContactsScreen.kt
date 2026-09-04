@@ -62,6 +62,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.material.icons.filled.Block
 import com.example.data.model.ContactItem
 import com.example.data.repository.ContactRepository
 import kotlinx.coroutines.launch
@@ -73,12 +74,14 @@ fun ContactsScreen(
     onContactSelected: (ContactItem) -> Unit,
     onOpenIdentity: () -> Unit,
     onOpenDataPrivacy: () -> Unit = {},
+    onOpenBlockedContacts: () -> Unit = {},
     onAddContactModelA: () -> Unit,
     onCompareSafetyNumber: (ContactItem) -> Unit
 ) {
     val coroutineScope = rememberCoroutineScope()
     val contacts by contactRepository.getContacts().collectAsState(initial = emptyList())
     var contactToDelete by remember { mutableStateOf<ContactItem?>(null) }
+    var contactToBlock by remember { mutableStateOf<ContactItem?>(null) }
     var showPanicDialog by remember { mutableStateOf(false) }
 
     Scaffold(
@@ -108,6 +111,13 @@ fun ContactsScreen(
                     }
                 },
                 actions = {
+                    IconButton(onClick = onOpenBlockedContacts) {
+                        Icon(
+                            imageVector = Icons.Default.Block,
+                            contentDescription = "Contatos Bloqueados",
+                            tint = Color(0xFFFF8080)
+                        )
+                    }
                     IconButton(onClick = onOpenDataPrivacy) {
                         Icon(
                             imageVector = Icons.Default.Shield,
@@ -172,6 +182,7 @@ fun ContactsScreen(
                             contact = contact,
                             onClick = { onContactSelected(contact) },
                             onVerifyClick = { onCompareSafetyNumber(contact) },
+                            onBlockClick = { contactToBlock = contact },
                             onDeleteClick = { contactToDelete = contact }
                         )
                     }
@@ -182,6 +193,34 @@ fun ContactsScreen(
                 }
             }
         }
+    }
+
+    // Block Contact Dialog
+    contactToBlock?.let { contact ->
+        AlertDialog(
+            onDismissRequest = { contactToBlock = null },
+            title = { Text("Bloquear Contato?") },
+            text = {
+                Text("O contato \"${contact.displayName}\" será bloqueado localmente no dispositivo.\n\nNovas mensagens recebidas deste contato serão descartadas imediatamente sem serem exibidas.\n\nO servidor não tem acesso à sua lista de bloqueados.")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        coroutineScope.launch {
+                            contactRepository.blockContact(contact.fingerprint)
+                            contactToBlock = null
+                        }
+                    }
+                ) {
+                    Text("Bloquear", color = Color(0xFFFF5252), fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { contactToBlock = null }) {
+                    Text("Cancelar")
+                }
+            }
+        )
     }
 
     // Delete Single Contact Dialog
@@ -288,6 +327,7 @@ fun ContactRowItem(
     contact: ContactItem,
     onClick: () -> Unit,
     onVerifyClick: () -> Unit,
+    onBlockClick: () -> Unit,
     onDeleteClick: () -> Unit
 ) {
     ElevatedCard(
@@ -398,6 +438,16 @@ fun ContactRowItem(
                     style = MaterialTheme.typography.labelSmall,
                     color = Color(0xFF78909C),
                     fontFamily = FontFamily.Monospace
+                )
+            }
+
+            // Block Action
+            IconButton(onClick = onBlockClick) {
+                Icon(
+                    imageVector = Icons.Default.Block,
+                    contentDescription = "Bloquear",
+                    tint = Color(0xFFFF5252),
+                    modifier = Modifier.size(20.dp)
                 )
             }
 

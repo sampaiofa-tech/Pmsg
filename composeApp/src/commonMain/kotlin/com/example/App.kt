@@ -22,6 +22,7 @@ import com.example.data.repository.ContactRepositoryProvider
 import com.example.security.consent.LegalConsentManager
 import com.example.ui.screens.AddContactModelAScreen
 import com.example.ui.screens.AgeGateScreen
+import com.example.ui.screens.BlockedContactsScreen
 import com.example.ui.screens.ContactChatScreen
 import com.example.ui.screens.ContactsScreen
 import com.example.ui.screens.DataPrivacyScreen
@@ -31,6 +32,7 @@ import com.example.ui.screens.SafetyNumberScreen
 sealed interface AppDestination {
     data object AgeGate : AppDestination
     data object Contacts : AppDestination
+    data object BlockedContacts : AppDestination
     data class Chat(val contact: ContactItem) : AppDestination
     data object Identity : AppDestination
     data object DataPrivacy : AppDestination
@@ -89,11 +91,23 @@ fun App() {
                             onOpenDataPrivacy = {
                                 currentDestination = AppDestination.DataPrivacy
                             },
+                            onOpenBlockedContacts = {
+                                currentDestination = AppDestination.BlockedContacts
+                            },
                             onAddContactModelA = {
                                 currentDestination = AppDestination.AddModelA
                             },
                             onCompareSafetyNumber = { contact ->
                                 currentDestination = AppDestination.SafetyNumber(contact)
+                            }
+                        )
+                    }
+
+                    is AppDestination.BlockedContacts -> {
+                        BlockedContactsScreen(
+                            contactRepository = contactRepository,
+                            onBack = {
+                                currentDestination = AppDestination.Contacts
                             }
                         )
                     }

@@ -412,6 +412,26 @@ O repositório é PÚBLICO por decisão de arquitetura (AGPL-3.0): todo o códig
 
 ---
 
+## 🛡️ Segurança de Usuários & Conformidade Google Play (v1.3)
+
+O ciclo **v1.3** implementa os requisitos técnicos mandatórios da Google Play Store (Políticas de Dados do Usuário e Conteúdo Gerado pelo Usuário - UGC) para mensageria anônima:
+
+### 1. Age-Gate 18+ & Aceite Legal Versionado
+- **Barreira Bloqueante de Primeira Execução**: O aplicativo não avança para nenhuma tela operacional sem que o usuário confirme explicitamente ter 18 anos ou mais e assinale o aceite formal da [Política de Privacidade](https://sampaiofa-tech.github.io/Pmsg/privacidade.html) e dos [Termos de Uso](https://sampaiofa-tech.github.io/Pmsg/termos.html).
+- **Armazenamento Seguro de Consentimento**: Registrado localmente em cofre isolado com carimbo de data/hora e versão canônica do documento (ex: `1.0`).
+- **Invalidação por Atualização de Versão**: Caso uma nova versão dos termos ou política seja publicada, o aplicativo invalida o consentimento anterior e exige novo aceite imediato antes de liberar o acesso.
+
+### 2. Bloqueio de Contatos Client-Side & Auto-Purge de Mensagens
+- **Armazenamento Criptografado Local**: Blocklist mantida localmente no banco Room (`blocked_contacts`: `{fingerprint, blockedAt}`) no Android e em arquivos de configuração locais protegidos no Desktop.
+- **Interface de Gestão de Bloqueio**: Opção "Bloquear Contato" acessível tanto na lista de contatos quanto na tela de chat efêmero e diretamente em cada mensagem recebida, além de tela dedicada para visualização e desbloqueio.
+- **Enforçamento no Fetch (Auto-Purge)**: Mensagens originadas de fingerprints bloqueados são descartadas e incineradas sumariamente no momento do recebimento, sem decifração em memória nem renderização visual na UI, mantendo registro local do total de mensagens expurgadas.
+- **Limitação Técnica Honesta (Client-Enforced)**:
+  > [!NOTE]
+  > O servidor Pmsg opera sob a premissa fundamental de **Zero-Knowledge** e não armazena nem tem visibilidade sobre a lista de contatos bloqueados pelos usuários. Portanto, o bloqueio é **estritamente client-enforced** (executado no dispositivo do destinatário).
+  > O remetente bloqueado ainda pode gerar tráfego efêmero e custo de escrita transitório no Firestore até que a mensagem seja purgada na chegada pelo destinatário ou destruída pelo TTL máximo de 24 horas. Esse custo é estritamente contido pelos rate limits por UID e autenticação do Firebase.
+
+---
+
 ## 📄 Licença
 
 Este projeto é disponibilizado sob o modelo de **duplo licenciamento**:

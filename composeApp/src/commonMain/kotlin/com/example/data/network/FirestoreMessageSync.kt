@@ -106,4 +106,25 @@ object FirestoreMessageSync {
             Result.failure(e)
         }
     }
+
+    /**
+     * Enforçamento Client-Side da Blocklist no fetch de mensagens:
+     * Mensagens de remetentes bloqueados são descartadas SEM decifração nem exibição (auto-purge),
+     * com contagem local para auditoria.
+     */
+    suspend fun filterBlockedMessages(
+        incomingMessages: List<FirestoreMessage>,
+        isBlocked: suspend (senderId: String) -> Boolean,
+        onMessagePurged: (suspend (senderId: String) -> Unit)? = null
+    ): List<FirestoreMessage> {
+        val result = mutableListOf<FirestoreMessage>()
+        for (msg in incomingMessages) {
+            if (isBlocked(msg.senderId)) {
+                onMessagePurged?.invoke(msg.senderId)
+            } else {
+                result.add(msg)
+            }
+        }
+        return result
+    }
 }

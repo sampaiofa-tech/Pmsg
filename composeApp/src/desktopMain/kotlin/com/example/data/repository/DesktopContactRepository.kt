@@ -1,5 +1,6 @@
 package com.example.data.repository
 
+import com.example.data.model.BlockedContact
 import com.example.data.model.ContactItem
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -34,11 +35,22 @@ class DesktopContactRepository : ContactRepository {
     )
 
     private val contactsFlow = MutableStateFlow<Map<String, ContactItem>>(defaultSeed.associateBy { it.fingerprint })
-    private val storageFile: File by lazy {
+    private val blockedFlow = MutableStateFlow<Map<String, BlockedContact>>(emptyMap())
+    private val blockedPurgeCountFlow = MutableStateFlow(0)
+
+    private val baseDir: File by lazy {
         val appData = System.getenv("APPDATA") ?: System.getProperty("user.home")
         val dir = File(appData, "Pmsg")
         if (!dir.exists()) dir.mkdirs()
-        File(dir, "contacts.json")
+        dir
+    }
+
+    private val storageFile: File by lazy {
+        File(baseDir, "contacts.json")
+    }
+
+    private val blockedFile: File by lazy {
+        File(baseDir, "blocked_contacts.json")
     }
 
     private val json = Json {
@@ -48,6 +60,7 @@ class DesktopContactRepository : ContactRepository {
 
     init {
         loadFromDisk()
+        loadBlockedFromDisk()
     }
 
     private fun loadFromDisk() {
@@ -91,6 +104,26 @@ class DesktopContactRepository : ContactRepository {
             val list = contactsFlow.value.values.toList()
             val text = json.encodeToString(list)
             storageFile.writeText(text)
+        } catch (_: Throwable) {}
+    }
+
+    private fun loadBlockedFromDisk() {
+        try {
+            if (blockedFile.exists()) {
+                val content = blockedFile.readText()
+                if (content.isNotBlank()) {
+                    val list = json.decodeFromString<List<BlockedContact>>(content)
+                    blockedFlow.value = list.associateBy { it.fingerprint }
+                }
+            }
+        } catch (_: Throwable) {}
+    }
+
+    private fun saveBlockedToDisk() {
+        try {
+            val list = blockedFlow.value.values.toList()
+            val text = json.encodeToString(list)
+            blockedFile.writeText(text)
         } catch (_: Throwable) {}
     }
 
@@ -139,13 +172,47 @@ class DesktopContactRepository : ContactRepository {
     override suspend fun panicWipe(): Int = withContext(Dispatchers.IO) {
         val count = contactsFlow.value.size
         contactsFlow.value = emptyMap()
+        blockedFlow.value = emptyMap()
+        blockedPurgeCountFlow.value = 0
         try {
             if (storageFile.exists()) {
                 // Anti-forensic zeroization before delete
                 storageFile.writeBytes(ByteArray(storageFile.length().toInt().coerceAtLeast(1)))
                 storageFile.delete()
             }
+            if (blockedFile.exists()) {
+                blockedFile.writeBytes(ByteArray(blockedFile.length().toInt().coerceAtLeast(1)))
+                blockedFile.delete()
+            }
         } catch (_: Throwable) {}
         count
     }
+
+    override fun getBlockedContacts(): Flow<List<BlockedContact>> {
+        return blockedFlow.map { it.values.sortedByDescending { b -> b.blockedAt } }
+    }
+
+    override suspend fun blockContact(fingerprint: String) = withContext(Dispatchers.IO) {
+        val current = blockedFlow.value.toMutableMap()
+        current[fingerprint] = BlockedContact(fingerprint = fingerprint, blockedAt = System.currentTimeMillis())
+        blockedFlow.value = current
+        saveBlockedToDisk()
+    }
+
+    override suspend fun unblockContact(fingerprint: String) = withContext(Dispatchers.IO) {
+        val current = blockedFlow.value.toMutableMap()
+        current.remove(fingerprint)
+        blockedFlow.value = current
+        saveBlockedToDisk()
+    }
+
+    override suspend fun isContactBlocked(fingerprint: String): Boolean = withContext(Dispatchers.IO) {
+        blockedFlow.value.containsKey(fingerprint)
+    }
+
+    override suspend fun recordBlockedPurge(fingerprint: String) {
+        blockedPurgeCountFlow.value += 1
+    }
+
+    override fun getBlockedPurgeCount(): Flow<Int> = blockedPurgeCountFlow
 }

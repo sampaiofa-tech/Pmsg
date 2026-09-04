@@ -70,6 +70,10 @@ import com.example.data.model.ContactItem
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
+import androidx.compose.material.icons.filled.Block
+import com.example.data.repository.ContactRepository
+import com.example.data.repository.ContactRepositoryProvider
+
 data class EphemeralUiMessage(
     val id: String,
     val senderId: String,
@@ -88,15 +92,24 @@ fun ContactChatScreen(
     contact: ContactItem,
     onBack: () -> Unit,
     onCompareSafetyNumber: () -> Unit,
-    onSimulateIncomingReply: Boolean = true
+    onSimulateIncomingReply: Boolean = true,
+    contactRepository: ContactRepository = remember { ContactRepositoryProvider.get() },
+    onReportContact: ((ContactItem) -> Unit)? = null
 ) {
     val coroutineScope = rememberCoroutineScope()
     var inputText by remember { mutableStateOf("") }
     var selectedTtlSeconds by remember { mutableStateOf(60L) } // Default 1 min
     var currentTime by remember { mutableStateOf(0L) }
     var showUnverifiedWarningDialog by remember { mutableStateOf(false) }
+    var showBlockConfirmationDialog by remember { mutableStateOf(false) }
+    var isBlocked by remember { mutableStateOf(false) }
     var pendingMessageToSend by remember { mutableStateOf<String?>(null) }
     val listState = rememberLazyListState()
+
+    // Query blocklist state client-side
+    LaunchedEffect(contact.fingerprint) {
+        isBlocked = contactRepository.isContactBlocked(contact.fingerprint)
+    }
 
     // In-memory ephemeral message queue for this contact session
     val messages = remember {
@@ -117,7 +130,11 @@ fun ContactChatScreen(
     // Active real-time countdown timer tick (1 second loop)
     LaunchedEffect(Unit) {
         val startEpoch = PlatformEnvironment.currentTimeMillis()
-        if (messages.isNotEmpty() && messages[0].timestamp == 0L) {
+        if (contactRepository.isContactBlocked(contact.fingerprint)) {
+            // Auto-purge initial incoming welcome message if contact is blocked
+            contactRepository.recordBlockedPurge(contact.fingerprint)
+            messages.removeAll { !it.isMe && it.senderId == contact.fingerprint }
+        } else if (messages.isNotEmpty() && messages[0].timestamp == 0L) {
             messages[0] = messages[0].copy(
                 timestamp = startEpoch,
                 expiresAt = startEpoch + messages[0].ttlMillis
@@ -206,6 +223,15 @@ fun ContactChatScreen(
                 },
                 actions = {
                     IconButton(
+                        onClick = { showBlockConfirmationDialog = true }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Block,
+                            contentDescription = if (isBlocked) "Contato Bloqueado" else "Bloquear Contato",
+                            tint = if (isBlocked) Color(0xFFFF5252) else Color(0xFFFF8A80)
+                        )
+                    }
+                    IconButton(
                         onClick = { messages.clear() }
                     ) {
                         Icon(
@@ -227,8 +253,9 @@ fun ContactChatScreen(
                 onTextChanged = { inputText = it },
                 selectedTtlSeconds = selectedTtlSeconds,
                 onSelectTtlSeconds = { selectedTtlSeconds = it },
+                isBlocked = isBlocked,
                 onSend = {
-                    if (inputText.isNotBlank()) {
+                    if (inputText.isNotBlank() && !isBlocked) {
                         val textToSend = inputText.trim()
                         inputText = ""
                         if (!contact.verified) {
@@ -254,19 +281,24 @@ fun ContactChatScreen(
                                 if (onSimulateIncomingReply) {
                                     delay(2500)
                                     val replyNow = PlatformEnvironment.currentTimeMillis()
-                                    messages.add(
-                                        EphemeralUiMessage(
-                                            id = "reply_${replyNow}",
-                                            senderId = contact.fingerprint,
-                                            senderName = contact.displayName,
-                                            isMe = false,
-                                            text = "Resposta segura de ${contact.displayName}: mensagem recebida e chave destruída após decifração.",
-                                            timestamp = replyNow,
-                                            ttlMillis = ttlMs,
-                                            expiresAt = replyNow + ttlMs
+                                    if (contactRepository.isContactBlocked(contact.fingerprint)) {
+                                        // Auto-purge enforcement on incoming message fetch/receive
+                                        contactRepository.recordBlockedPurge(contact.fingerprint)
+                                    } else {
+                                        messages.add(
+                                            EphemeralUiMessage(
+                                                id = "reply_${replyNow}",
+                                                senderId = contact.fingerprint,
+                                                senderName = contact.displayName,
+                                                isMe = false,
+                                                text = "Resposta segura de ${contact.displayName}: mensagem recebida e chave destruída após decifração.",
+                                                timestamp = replyNow,
+                                                ttlMillis = ttlMs,
+                                                expiresAt = replyNow + ttlMs
+                                            )
                                         )
-                                    )
-                                    listState.animateScrollToItem(messages.size)
+                                        listState.animateScrollToItem(messages.size)
+                                    }
                                 }
                             }
                         }
@@ -281,8 +313,55 @@ fun ContactChatScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
+            // Blocked Contact Banner
+            if (isBlocked) {
+                Surface(
+                    color = Color(0xFF3B1E1E),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                            Icon(
+                                imageVector = Icons.Default.Block,
+                                contentDescription = null,
+                                tint = Color(0xFFFF5252),
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Column {
+                                Text(
+                                    text = "Contato Bloqueado (Client-Side)",
+                                    color = Color(0xFFFF8080),
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 12.sp
+                                )
+                                Text(
+                                    text = "Mensagens recebidas são descartadas e não serão exibidas.",
+                                    color = Color(0xFFFFCDD2),
+                                    fontSize = 11.sp
+                                )
+                            }
+                        }
+                        TextButton(
+                            onClick = {
+                                coroutineScope.launch {
+                                    contactRepository.unblockContact(contact.fingerprint)
+                                    isBlocked = false
+                                }
+                            }
+                        ) {
+                            Text("Desbloquear", color = Color(0xFF00FFC2), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            }
+
             // Unverified banner warning
-            if (!contact.verified) {
+            if (!contact.verified && !isBlocked) {
                 Surface(
                     color = Color(0xFF332A00),
                     modifier = Modifier
@@ -330,11 +409,60 @@ fun ContactChatScreen(
                     EphemeralMessageBubble(
                         message = msg,
                         currentTime = currentTime,
-                        onIncinerate = { messages.remove(msg) }
+                        onIncinerate = { messages.remove(msg) },
+                        onBlockSender = { showBlockConfirmationDialog = true }
                     )
                 }
             }
         }
+    }
+
+    // Block Confirmation Dialog
+    if (showBlockConfirmationDialog) {
+        AlertDialog(
+            onDismissRequest = { showBlockConfirmationDialog = false },
+            title = {
+                Text(if (isBlocked) "Desbloquear Contato?" else "Bloquear Contato?")
+            },
+            text = {
+                Text(
+                    if (isBlocked) {
+                        "Deseja desbloquear ${contact.displayName}? Você voltará a receber mensagens criptografadas desta pessoa."
+                    } else {
+                        "Deseja bloquear ${contact.displayName}?\n\nNovas mensagens deste contato serão automaticamente descartadas no recebimento (auto-purge).\n\nO servidor não tem acesso à sua lista de contatos bloqueados."
+                    }
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        coroutineScope.launch {
+                            if (isBlocked) {
+                                contactRepository.unblockContact(contact.fingerprint)
+                                isBlocked = false
+                            } else {
+                                contactRepository.blockContact(contact.fingerprint)
+                                isBlocked = true
+                                // Auto-purge currently visible messages from this contact
+                                messages.removeAll { !it.isMe && it.senderId == contact.fingerprint }
+                            }
+                            showBlockConfirmationDialog = false
+                        }
+                    }
+                ) {
+                    Text(
+                        if (isBlocked) "Desbloquear" else "Bloquear",
+                        color = if (isBlocked) Color(0xFF00FFC2) else Color(0xFFFF5252),
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showBlockConfirmationDialog = false }) {
+                    Text("Cancelar")
+                }
+            }
+        )
     }
 
     // Unverified warning dialog on send
@@ -409,7 +537,8 @@ fun ContactChatScreen(
 fun EphemeralMessageBubble(
     message: EphemeralUiMessage,
     currentTime: Long,
-    onIncinerate: () -> Unit
+    onIncinerate: () -> Unit,
+    onBlockSender: (() -> Unit)? = null
 ) {
     val remainingMs = (message.expiresAt - currentTime).coerceAtLeast(0L)
     val remainingSec = remainingMs / 1000L
@@ -446,18 +575,30 @@ fun EphemeralMessageBubble(
             modifier = Modifier.fillMaxWidth(0.85f)
         ) {
             Column(modifier = Modifier.padding(12.dp)) {
-                // Sender label
+                // Sender label + block sender action for received message
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = if (message.isMe) "Você" else message.senderName,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = accentColor,
-                        fontWeight = FontWeight.Bold
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = if (message.isMe) "Você" else message.senderName,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = accentColor,
+                            fontWeight = FontWeight.Bold
+                        )
+                        if (!message.isMe && onBlockSender != null) {
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "• Bloquear",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color(0xFFFF8080),
+                                fontSize = 10.sp,
+                                modifier = Modifier.clickable { onBlockSender() }
+                            )
+                        }
+                    }
 
                     // Vanish Countdown Badge
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -510,6 +651,7 @@ fun ChatBottomInputBar(
     onTextChanged: (String) -> Unit,
     selectedTtlSeconds: Long,
     onSelectTtlSeconds: (Long) -> Unit,
+    isBlocked: Boolean = false,
     onSend: () -> Unit
 ) {
     Surface(
@@ -517,83 +659,109 @@ fun ChatBottomInputBar(
         shadowElevation = 8.dp
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
-            // TTL Preset Selector Chips: [10s, 1m, 5m, 1h, 24h]
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "TTL:",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Color(0xFF80CBC4),
-                    fontWeight = FontWeight.Bold
-                )
-
-                val ttlOptions = listOf(
-                    10L to "10s",
-                    60L to "1m",
-                    300L to "5m",
-                    3600L to "1h",
-                    86400L to "24h"
-                )
-
-                ttlOptions.forEach { (seconds, label) ->
-                    val isSelected = selectedTtlSeconds == seconds
-                    FilterChip(
-                        selected = isSelected,
-                        onClick = { onSelectTtlSeconds(seconds) },
-                        label = { Text(label, fontSize = 11.sp) },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = Color(0xFF00FFC2),
-                            selectedLabelColor = Color(0xFF0A1128),
-                            containerColor = Color(0xFF1E293B),
-                            labelColor = Color.White
-                        )
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Text input + send button
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                OutlinedTextField(
-                    value = text,
-                    onValueChange = onTextChanged,
-                    placeholder = { Text("Mensagem efêmera cifrada...", fontSize = 14.sp) },
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(24.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
-                        focusedBorderColor = Color(0xFF00FFC2),
-                        unfocusedBorderColor = Color(0xFF2E3D52),
-                        focusedContainerColor = Color(0xFF131B2A),
-                        unfocusedContainerColor = Color(0xFF131B2A)
-                    ),
-                    maxLines = 3
-                )
-
-                Spacer(modifier = Modifier.width(8.dp))
-
-                Box(
-                    modifier = Modifier
-                        .size(48.dp)
-                        .clip(CircleShape)
-                        .background(if (text.isNotBlank()) Color(0xFF00FFC2) else Color(0xFF263238))
-                        .clickable(enabled = text.isNotBlank()) { onSend() },
-                    contentAlignment = Alignment.Center
+            if (isBlocked) {
+                Surface(
+                    color = Color(0xFF261818),
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Send,
-                        contentDescription = "Enviar",
-                        tint = if (text.isNotBlank()) Color(0xFF0A1128) else Color(0xFF546E7A),
-                        modifier = Modifier.size(22.dp)
+                    Row(
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Block,
+                            contentDescription = null,
+                            tint = Color(0xFFFF5252),
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Contato bloqueado. Desbloqueie acima para voltar a conversar.",
+                            color = Color(0xFFFFCDD2),
+                            fontSize = 12.sp
+                        )
+                    }
+                }
+            } else {
+                // TTL Preset Selector Chips: [10s, 1m, 5m, 1h, 24h]
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "TTL:",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color(0xFF80CBC4),
+                        fontWeight = FontWeight.Bold
                     )
+
+                    val ttlOptions = listOf(
+                        10L to "10s",
+                        60L to "1m",
+                        300L to "5m",
+                        3600L to "1h",
+                        86400L to "24h"
+                    )
+
+                    ttlOptions.forEach { (seconds, label) ->
+                        val isSelected = selectedTtlSeconds == seconds
+                        FilterChip(
+                            selected = isSelected,
+                            onClick = { onSelectTtlSeconds(seconds) },
+                            label = { Text(label, fontSize = 11.sp) },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = Color(0xFF00FFC2),
+                                selectedLabelColor = Color(0xFF0A1128),
+                                containerColor = Color(0xFF1E293B),
+                                labelColor = Color.White
+                            )
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Text input + send button
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    OutlinedTextField(
+                        value = text,
+                        onValueChange = onTextChanged,
+                        placeholder = { Text("Mensagem efêmera cifrada...", fontSize = 14.sp) },
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(24.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White,
+                            focusedBorderColor = Color(0xFF00FFC2),
+                            unfocusedBorderColor = Color(0xFF2E3D52),
+                            focusedContainerColor = Color(0xFF131B2A),
+                            unfocusedContainerColor = Color(0xFF131B2A)
+                        ),
+                        maxLines = 3
+                    )
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    Box(
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clip(CircleShape)
+                            .background(if (text.isNotBlank()) Color(0xFF00FFC2) else Color(0xFF263238))
+                            .clickable(enabled = text.isNotBlank()) { onSend() },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Send,
+                            contentDescription = "Enviar",
+                            tint = if (text.isNotBlank()) Color(0xFF0A1128) else Color(0xFF546E7A),
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
                 }
             }
         }
