@@ -34,6 +34,8 @@ actual object IdentityStorage {
             .putString("safetyNumber", identity.safetyNumber)
             .putString("encryptedPrivateKey", identity.encryptedPrivateKey)
             .putString("encryptedEntropy", identity.encryptedEntropy)
+            .putString("signingPublicKeyBase64", identity.signingPublicKeyBase64)
+            .putString("encryptedSigningPrivateKey", identity.encryptedSigningPrivateKey)
             .apply()
     }
 
@@ -45,7 +47,9 @@ actual object IdentityStorage {
         val sn = prefs.getString("safetyNumber", null) ?: return null
         val epk = prefs.getString("encryptedPrivateKey", null) ?: return null
         val ee = prefs.getString("encryptedEntropy", null) ?: return null
-        return StoredIdentity(pk, fp, sn, epk, ee).also { inMemoryCache = it }
+        val spk = prefs.getString("signingPublicKeyBase64", "") ?: ""
+        val espk = prefs.getString("encryptedSigningPrivateKey", "") ?: ""
+        return StoredIdentity(pk, fp, sn, epk, ee, spk, espk).also { inMemoryCache = it }
     }
 
     actual fun clearIdentity() {

@@ -512,10 +512,12 @@ fun AddContactModelAScreen(
                                     coroutineScope.launch {
                                         val identity = IdentityManager.getOrGenerateIdentity()
                                         val pubKeyB64 = Base64.encode(identity.publicKey)
+                                        val signingPubKeyB64 = Base64.encode(identity.signingPublicKey)
                                         val result = IdentityNetworkClient.createInvite(
                                             creatorFingerprint = identity.fingerprintHex,
                                             creatorPubKey = pubKeyB64,
-                                            idToken = "anonymous_token"
+                                            idToken = "anonymous_token",
+                                            creatorSigningPubKey = signingPubKeyB64
                                         )
                                         isCreatingInvite = false
                                         if (result.isSuccess) {

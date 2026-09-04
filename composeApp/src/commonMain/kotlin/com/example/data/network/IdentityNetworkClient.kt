@@ -73,13 +73,17 @@ object IdentityNetworkClient {
     suspend fun createInvite(
         creatorFingerprint: String,
         creatorPubKey: String,
-        idToken: String
+        idToken: String,
+        creatorSigningPubKey: String? = null
     ): Result<CreateInviteResult> {
         return try {
             val payload = buildJsonObject {
                 put("data", buildJsonObject {
                     put("creatorFingerprint", creatorFingerprint)
                     put("creatorPubKey", creatorPubKey)
+                    if (creatorSigningPubKey != null) {
+                        put("creatorSigningPubKey", creatorSigningPubKey)
+                    }
                 })
             }
 
@@ -196,13 +200,21 @@ object IdentityNetworkClient {
     suspend fun updateIdentityRouting(
         fingerprint: String,
         pubKey: String,
-        idToken: String
+        signature: String,
+        timestamp: Long,
+        idToken: String,
+        signingPubKey: String? = null
     ): Result<Boolean> {
         return try {
             val payload = buildJsonObject {
                 put("data", buildJsonObject {
                     put("fingerprint", fingerprint)
                     put("pubKey", pubKey)
+                    put("signature", signature)
+                    put("timestamp", timestamp)
+                    if (signingPubKey != null) {
+                        put("signingPubKey", signingPubKey)
+                    }
                 })
             }
 

@@ -66,4 +66,69 @@ class IdentityCryptoTest {
             assertTrue(b.all { it.isDigit() })
         }
     }
+
+    @Test
+    fun testDeterministicSigningKeyDerivation() {
+        val fixedEntropy = ByteArray(16) { (it * 7).toByte() }
+        val id1 = IdentityCryptoManager.generateNewIdentity(fixedEntropy)
+        val id2 = IdentityCryptoManager.generateNewIdentity(fixedEntropy)
+
+        assertEquals(id1.mnemonic, id2.mnemonic)
+        assertEquals(32, id1.keyPair.signingPrivateKey.size)
+        assertEquals(32, id1.keyPair.signingPublicKey.size)
+        assertTrue(id1.keyPair.signingPrivateKey.contentEquals(id2.keyPair.signingPrivateKey))
+        assertTrue(id1.keyPair.signingPublicKey.contentEquals(id2.keyPair.signingPublicKey))
+
+        // Restoration produces identical signing keys
+        val restored = IdentityCryptoManager.restoreFromMnemonic(id1.mnemonic).getOrThrow()
+        assertTrue(id1.keyPair.signingPrivateKey.contentEquals(restored.signingPrivateKey))
+        assertTrue(id1.keyPair.signingPublicKey.contentEquals(restored.signingPublicKey))
+    }
+
+    @Test
+    fun testRoutingSignatureProofOfPossession() {
+        val alice = IdentityCryptoManager.generateNewIdentity()
+        val timestamp = 1725400000000L
+        val newAuthUid = "firebase_auth_uid_alice_device_2"
+
+        // 1. Legitimate owner signs routing payload
+        val sig = IdentityCryptoManager.signRoutingUpdate(
+            signingPrivKeySeed = alice.keyPair.signingPrivateKey,
+            fingerprint = alice.keyPair.fingerprintHex,
+            newAuthUid = newAuthUid,
+            timestamp = timestamp
+        )
+        assertEquals(64, sig.size)
+
+        // 2. Verification with Alice's signing public key succeeds
+        val valid = IdentityCryptoManager.verifyRoutingUpdate(
+            signingPubKey = alice.keyPair.signingPublicKey,
+            fingerprint = alice.keyPair.fingerprintHex,
+            newAuthUid = newAuthUid,
+            timestamp = timestamp,
+            signature = sig
+        )
+        assertTrue(valid)
+
+        // 3. Eve tries to use Bob's key or tampered UID -> fails
+        val bob = IdentityCryptoManager.generateNewIdentity()
+        val invalidKey = IdentityCryptoManager.verifyRoutingUpdate(
+            signingPubKey = bob.keyPair.signingPublicKey,
+            fingerprint = alice.keyPair.fingerprintHex,
+            newAuthUid = newAuthUid,
+            timestamp = timestamp,
+            signature = sig
+        )
+        kotlin.test.assertFalse(invalidKey)
+
+        // 4. Tampered timestamp -> fails
+        val tamperedTimestamp = IdentityCryptoManager.verifyRoutingUpdate(
+            signingPubKey = alice.keyPair.signingPublicKey,
+            fingerprint = alice.keyPair.fingerprintHex,
+            newAuthUid = newAuthUid,
+            timestamp = timestamp + 1000L,
+            signature = sig
+        )
+        kotlin.test.assertFalse(tamperedTimestamp)
+    }
 }

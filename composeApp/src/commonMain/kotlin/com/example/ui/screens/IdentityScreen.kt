@@ -65,8 +65,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.network.IdentityNetworkClient
+import com.example.data.network.PlatformEnvironment
 import com.example.security.BiometricAuth
 import com.example.security.ClipboardSensivel
+import com.example.security.identity.IdentityCryptoManager
 import com.example.security.identity.IdentityKeyPair
 import com.example.security.identity.IdentityManager
 import com.example.security.identity.ProvisionedIdentity
@@ -698,13 +700,32 @@ fun IdentityScreen(
                             val keyPair = result.getOrThrow()
                             identity = keyPair
 
-                            // Call updateIdentityRouting Cloud Function
+                            // Call updateIdentityRouting Cloud Function with Ed25519 Proof-of-Possession (F0)
                             val pubKeyB64 = Base64.encode(keyPair.publicKey)
-                            IdentityNetworkClient.updateIdentityRouting(
+                            val signingPubKeyB64 = Base64.encode(keyPair.signingPublicKey)
+                            val timestamp = PlatformEnvironment.currentTimeMillis()
+                            val signatureBytes = IdentityCryptoManager.signRoutingUpdate(
+                                signingPrivKeySeed = keyPair.signingPrivateKey,
+                                fingerprint = keyPair.fingerprintHex,
+                                newAuthUid = currentAuthUid,
+                                timestamp = timestamp
+                            )
+                            val signatureB64 = Base64.encode(signatureBytes)
+
+                            val updateResult = IdentityNetworkClient.updateIdentityRouting(
                                 fingerprint = keyPair.fingerprintHex,
                                 pubKey = pubKeyB64,
-                                idToken = "anonymous_token"
+                                signature = signatureB64,
+                                timestamp = timestamp,
+                                idToken = "anonymous_token",
+                                signingPubKey = signingPubKeyB64
                             )
+
+                            if (updateResult.isFailure) {
+                                isRestoring = false
+                                restoreError = "Falha ao vincular roteamento (prova de posse): ${updateResult.exceptionOrNull()?.message}"
+                                return@launch
+                            }
 
                             isRestoring = false
                             showRestoreDialog = false

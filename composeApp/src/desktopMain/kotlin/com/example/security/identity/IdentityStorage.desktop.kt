@@ -28,6 +28,8 @@ actual object IdentityStorage {
             props.setProperty("safetyNumber", identity.safetyNumber)
             props.setProperty("encryptedPrivateKey", identity.encryptedPrivateKey)
             props.setProperty("encryptedEntropy", identity.encryptedEntropy)
+            props.setProperty("signingPublicKeyBase64", identity.signingPublicKeyBase64)
+            props.setProperty("encryptedSigningPrivateKey", identity.encryptedSigningPrivateKey)
             storageFile.outputStream().use { props.store(it, "Pmsg Encrypted Identity") }
         } catch (_: Exception) {
             // Em caso de falha de I/O, permanece em cache volátil
@@ -45,7 +47,9 @@ actual object IdentityStorage {
             val sn = props.getProperty("safetyNumber") ?: return null
             val epk = props.getProperty("encryptedPrivateKey") ?: return null
             val ee = props.getProperty("encryptedEntropy") ?: return null
-            StoredIdentity(pk, fp, sn, epk, ee).also { inMemoryCache = it }
+            val spk = props.getProperty("signingPublicKeyBase64") ?: ""
+            val espk = props.getProperty("encryptedSigningPrivateKey") ?: ""
+            StoredIdentity(pk, fp, sn, epk, ee, spk, espk).also { inMemoryCache = it }
         } catch (_: Exception) {
             null
         }

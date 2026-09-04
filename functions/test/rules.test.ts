@@ -190,6 +190,34 @@ describe("Firestore Security Rules Verification", () => {
         })
       );
     });
+
+    it("CRITICAL RULE: MUST FAIL when any client attempts to update an existing identity doc directly", async () => {
+      // Existing identity created
+      await testEnv.withSecurityRulesDisabled(async (context) => {
+        await context.firestore().collection("identities").doc("fp_alice").set({
+          currentAuthUid: "alice",
+          pubKey: "alice_pubkey",
+          signingPubKey: "alice_signing_pubkey",
+        });
+      });
+
+      // Alice tries to update her own document directly from client SDK -> MUST FAIL (must use updateIdentityRouting)
+      const aliceDb = testEnv.authenticatedContext("alice").firestore();
+      await assertFails(
+        aliceDb.collection("identities").doc("fp_alice").update({
+          currentAuthUid: "alice_new_device",
+        })
+      );
+
+      // Eve tries to hijack Alice's document directly -> MUST FAIL
+      const eveDb = testEnv.authenticatedContext("eve").firestore();
+      await assertFails(
+        eveDb.collection("identities").doc("fp_alice").set({
+          currentAuthUid: "eve",
+          pubKey: "alice_pubkey",
+        })
+      );
+    });
   });
 });
 

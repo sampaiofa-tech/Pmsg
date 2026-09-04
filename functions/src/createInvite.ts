@@ -29,7 +29,7 @@ export const createInvite = onCall(async (request) => {
   }
 
   const callerUid = request.auth.uid;
-  const data = request.data as { creatorFingerprint?: string; creatorPubKey?: string };
+  const data = request.data as { creatorFingerprint?: string; creatorPubKey?: string; creatorSigningPubKey?: string };
 
   // 2. Validate payload
   if (!data || !data.creatorFingerprint || !data.creatorPubKey) {
@@ -101,7 +101,7 @@ export const createInvite = onCall(async (request) => {
   const expiresAtMillis = now + INVITE_TTL_MS;
 
   const inviteRef = db.collection("invites").doc(token);
-  await inviteRef.set({
+  const inviteData: Record<string, any> = {
     creatorUid: callerUid,
     creatorFingerprint: fingerprint,
     creatorPubKey: pubKey,
@@ -109,7 +109,20 @@ export const createInvite = onCall(async (request) => {
     expiresAtMillis,
     used: false,
     acceptedByUid: null,
-  });
+  };
+  if (data.creatorSigningPubKey && typeof data.creatorSigningPubKey === "string") {
+    inviteData.creatorSigningPubKey = data.creatorSigningPubKey.trim();
+    // Register identity directory doc if not already existing
+    const identityRef = db.collection("identities").doc(fingerprint);
+    await identityRef.set({
+      currentAuthUid: callerUid,
+      pubKey,
+      signingPubKey: data.creatorSigningPubKey.trim(),
+      updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true });
+  }
+
+  await inviteRef.set(inviteData);
 
   logger.info(`createInvite: Invite created by ${callerUid} with 24h TTL.`);
 

@@ -7,7 +7,9 @@ data class IdentityKeyPair(
     val privateKey: ByteArray,
     val publicKey: ByteArray,
     val fingerprintHex: String,
-    val safetyNumber: String // 60 decimal digits (12 blocks of 5)
+    val safetyNumber: String, // 60 decimal digits (12 blocks of 5)
+    val signingPrivateKey: ByteArray = ByteArray(0),
+    val signingPublicKey: ByteArray = ByteArray(0)
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -15,7 +17,9 @@ data class IdentityKeyPair(
         return privateKey.contentEquals(other.privateKey) &&
                 publicKey.contentEquals(other.publicKey) &&
                 fingerprintHex == other.fingerprintHex &&
-                safetyNumber == other.safetyNumber
+                safetyNumber == other.safetyNumber &&
+                signingPrivateKey.contentEquals(other.signingPrivateKey) &&
+                signingPublicKey.contentEquals(other.signingPublicKey)
     }
 
     override fun hashCode(): Int {
@@ -23,6 +27,8 @@ data class IdentityKeyPair(
         result = 31 * result + publicKey.contentHashCode()
         result = 31 * result + fingerprintHex.hashCode()
         result = 31 * result + safetyNumber.hashCode()
+        result = 31 * result + signingPrivateKey.contentHashCode()
+        result = 31 * result + signingPublicKey.contentHashCode()
         return result
     }
 }
@@ -53,14 +59,17 @@ data class ProvisionedIdentity(
  *
  * Implements:
  * 1. Deterministic BIP-39 PT-BR 128-bit entropy -> 12-word mnemonic.
- * 2. Argon2id key derivation -> 256-bit X25519 keypair.
- * 3. Fingerprint computation: SHA-256(pubKey) as 12 blocks of 5 digits (60 digits total).
- * 4. Pair Safety Number computation: SHA-256(min(pkA, pkB) + max(pkA, pkB)) as 60 digits.
- * 5. Envelope encryption of private key and seed using KeyVault hardware keys.
+ * 2. Argon2id key derivation -> 256-bit X25519 keypair (salt: "pmsg-v1-identity-seed").
+ * 3. Deterministic Ed25519 signing keypair derivation (salt: "pmsg-v1-identity-signing").
+ * 4. Fingerprint computation: SHA-256(pubKey) as 12 blocks of 5 digits (60 digits total).
+ * 5. Pair Safety Number computation: SHA-256(min(pkA, pkB) + max(pkA, pkB)) as 60 digits.
+ * 6. Proof-of-possession signing for technical identity routing updates.
+ * 7. Envelope encryption of private keys and seed using KeyVault hardware keys.
  */
 object IdentityCryptoManager {
 
     private val SALT = "pmsg-v1-identity-seed".encodeToByteArray()
+    private val SIGNING_SALT = "pmsg-v1-identity-signing".encodeToByteArray()
 
     fun generateNewIdentity(providedEntropy: ByteArray? = null): ProvisionedIdentity {
         val entropy = providedEntropy ?: ByteArray(16).also { Random.nextBytes(it) }
@@ -78,6 +87,8 @@ object IdentityCryptoManager {
     fun deriveKeyPair(mnemonic: List<String>): IdentityKeyPair {
         val entropy = Bip39Portuguese.mnemonicToEntropy(mnemonic).getOrThrow()
         val seed = Sha256Digest.digest(entropy)
+
+        // 1. X25519 Encryption KeyPair
         val rawPriv = Argon2Kmp.deriveKey(seed = seed, salt = SALT, iterations = 3, memoryKiB = 32768, parallelism = 1, outputLength = 32)
 
         // RFC 7748 Clamping
@@ -90,12 +101,32 @@ object IdentityCryptoManager {
         val fingerprintHex = Sha256Digest.digestHex(pubKey)
         val safetyNumber = formatSafetyNumber(Sha256Digest.digest(pubKey))
 
+        // 2. Ed25519 Signing KeyPair (F0: Proof-of-Possession)
+        val rawSigningPriv = Argon2Kmp.deriveKey(seed = seed, salt = SIGNING_SALT, iterations = 3, memoryKiB = 32768, parallelism = 1, outputLength = 32)
+        val signingPubKey = IdentityEd25519.generatePublicKey(rawSigningPriv)
+
         return IdentityKeyPair(
             privateKey = clampedPriv,
             publicKey = pubKey,
             fingerprintHex = fingerprintHex,
-            safetyNumber = safetyNumber
+            safetyNumber = safetyNumber,
+            signingPrivateKey = rawSigningPriv,
+            signingPublicKey = signingPubKey
         )
+    }
+
+    fun buildRoutingSignaturePayload(fingerprint: String, newAuthUid: String, timestamp: Long): String {
+        return "pmsg-routing-v1|$fingerprint|$newAuthUid|$timestamp"
+    }
+
+    fun signRoutingUpdate(signingPrivKeySeed: ByteArray, fingerprint: String, newAuthUid: String, timestamp: Long): ByteArray {
+        val payload = buildRoutingSignaturePayload(fingerprint, newAuthUid, timestamp).encodeToByteArray()
+        return IdentityEd25519.sign(signingPrivKeySeed, payload)
+    }
+
+    fun verifyRoutingUpdate(signingPubKey: ByteArray, fingerprint: String, newAuthUid: String, timestamp: Long, signature: ByteArray): Boolean {
+        val payload = buildRoutingSignaturePayload(fingerprint, newAuthUid, timestamp).encodeToByteArray()
+        return IdentityEd25519.verify(signingPubKey, payload, signature)
     }
 
     fun restoreFromMnemonic(mnemonic: List<String>): Result<IdentityKeyPair> {

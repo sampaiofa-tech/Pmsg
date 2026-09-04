@@ -151,14 +151,20 @@ O Pmsg **rejeitou expressamente** a implementação de um diretório centralizad
 - **Motivo de Segurança & Privacidade**: Diretórios de handles viabilizam raspagem em massa (*scraping*), correlação de metadados, ataques de enumeração, sequestro de contas e intimidação dirigida por adversários estatais ou cibercriminosos.
 - **Design Pmsg**: Identidades no Pmsg utilizam hashes criptográficos de 256 bits ($2^{256}$ chaves possíveis). É matematicamente impossível varrer ou enumerar usuários sem que o contato forneça seu identificador explicitamente.
 
-### 5. Restauração & Recuperação de Identidade (Fase 5 - Recovery)
-- **Restauração em Novo Dispositivo**: O operador insere seu mnemônico de 12 palavras em um novo dispositivo.
-- **Regeneração Determinística**: O mesmo par X25519 e o mesmo fingerprint de 256 bits são gerados.
-- **Atualização do Roteamento Técnico (`updateIdentityRouting`)**:
-  - O novo dispositivo obtém um novo `authUid` do Firebase Auth.
-  - A callable `updateIdentityRouting` valida a prova criptográfica ($\text{SHA-256}(\text{pubKey}) == \text{fingerprint}$).
-  - O documento `identities/{fingerprint}` é atualizado atomicamente com o novo `currentAuthUid`.
-  - Contatos existentes continuam enviando mensagens normalmente para o mesmo fingerprint.
+### 5. Restauração & Recuperação de Identidade com Prova de Posse Ed25519 (Fase 5 & F0 Fix)
+- **Restauração em Novo Dispositivo**: O operador insere seu mnemônico BIP-39 de 12 palavras em português em um novo dispositivo.
+- **Regeneração Determinística Dupla**:
+  1. Par X25519 de cifragem: derivado via Argon2id com salt `"pmsg-v1-identity-seed"`, gerando o mesmo par e o mesmo fingerprint imutável ($\text{SHA-256}(\text{pubKey})$).
+  2. Par Ed25519 de assinatura: derivado via Argon2id com salt `"pmsg-v1-identity-signing"`, gerando a chave de assinatura vinculada à identidade.
+- **Vulnerabilidade Corrigida (F0 Security Fix)**:
+  - *Problema Identificado*: Validar apenas $\text{SHA-256}(\text{pubKey}) == \text{fingerprint}$ não prova posse da chave privada — qualquer contato (Eve) conhece a `pubKey` pública de Bob e poderia sequestrar o roteamento técnico (`identities/{fingerprint}`) para receber mensagens destinadas a ele.
+  - *Princípio Adotado*: **"Roteamento exige prova de posse Ed25519; hash de consistência não é autenticação."**
+  - *Solução Criptográfica Implementada*:
+    - Na criação da identidade ou convite, a chave pública de assinatura Ed25519 (`signingPubKey`) é registrada de forma imutável em `identities/{fingerprint}`.
+    - A callable `updateIdentityRouting` exige assinatura digital Ed25519 válida sobre o payload canônico `"pmsg-routing-v1|<fingerprint>|<newAuthUid>|<timestamp>"`.
+    - Janela anti-replay estrita: timestamps com desvio superior a 5 minutos ($|\text{now} - \text{timestamp}| > 300.000\text{ ms}$) são sumariamente rejeitados.
+    - A assinatura é verificada contra o `signingPubKey` registrado no documento. Chamadas sem assinatura válida ou originadas por contatos atacantes são rejeitadas com `permission-denied`.
+    - No `firestore.rules`, updates diretos à coleção `identities` por clientes SDK são terminantemente bloqueados (`allow update: if false;`), garantindo que o roteamento só possa ser alterado mediante verificação criptográfica no backend.
 - **Mensagens Anteriores Perdidas por Design**: Mensagens recebidas no antigo dispositivo $\le 24$h antes da recuperação são perdidas por design. O Pmsg **não mantém histórico de conversas nem backlogs persistentes em servidores**, garantindo imunidade contra apreensão física retrospectiva.
 
 ### 6. Rate Limiting em Firestore (`userRateLimits`)

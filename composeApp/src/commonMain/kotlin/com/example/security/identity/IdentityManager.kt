@@ -47,11 +47,42 @@ object IdentityManager {
         val privKey = IdentityCryptoManager.envelopeDecrypt(stored.encryptedPrivateKey)
         if (privKey.size != 32) return null
         val pubKey = Base64.decode(stored.publicKeyBase64)
+
+        var signingPrivKey = if (stored.encryptedSigningPrivateKey.isNotEmpty()) {
+            IdentityCryptoManager.envelopeDecrypt(stored.encryptedSigningPrivateKey)
+        } else {
+            ByteArray(0)
+        }
+        var signingPubKey = if (stored.signingPublicKeyBase64.isNotEmpty()) {
+            try { Base64.decode(stored.signingPublicKeyBase64) } catch (_: Exception) { ByteArray(0) }
+        } else {
+            ByteArray(0)
+        }
+
+        // Automatic migration if signing keys were not yet persisted
+        if (signingPrivKey.isEmpty() || signingPubKey.isEmpty()) {
+            val entropy = IdentityCryptoManager.envelopeDecrypt(stored.encryptedEntropy)
+            if (entropy.size == 16) {
+                val mnemonic = Bip39Portuguese.entropyToMnemonic(entropy)
+                val derived = IdentityCryptoManager.deriveKeyPair(mnemonic)
+                signingPrivKey = derived.signingPrivateKey
+                signingPubKey = derived.signingPublicKey
+
+                val updatedStored = stored.copy(
+                    signingPublicKeyBase64 = Base64.encode(signingPubKey),
+                    encryptedSigningPrivateKey = IdentityCryptoManager.envelopeEncrypt(signingPrivKey)
+                )
+                IdentityStorage.saveIdentity(updatedStored)
+            }
+        }
+
         return IdentityKeyPair(
             privateKey = privKey,
             publicKey = pubKey,
             fingerprintHex = stored.fingerprintHex,
-            safetyNumber = stored.safetyNumber
+            safetyNumber = stored.safetyNumber,
+            signingPrivateKey = signingPrivKey,
+            signingPublicKey = signingPubKey
         )
     }
 
@@ -72,12 +103,17 @@ object IdentityManager {
         val entropyEncrypted = IdentityCryptoManager.envelopeEncrypt(provisioned.entropy)
         val pubKeyBase64 = Base64.encode(provisioned.keyPair.publicKey)
 
+        val signingPrivEncrypted = IdentityCryptoManager.envelopeEncrypt(provisioned.keyPair.signingPrivateKey)
+        val signingPubKeyBase64 = Base64.encode(provisioned.keyPair.signingPublicKey)
+
         val stored = StoredIdentity(
             publicKeyBase64 = pubKeyBase64,
             fingerprintHex = provisioned.keyPair.fingerprintHex,
             safetyNumber = provisioned.keyPair.safetyNumber,
             encryptedPrivateKey = privEncrypted,
-            encryptedEntropy = entropyEncrypted
+            encryptedEntropy = entropyEncrypted,
+            signingPublicKeyBase64 = signingPubKeyBase64,
+            encryptedSigningPrivateKey = signingPrivEncrypted
         )
         IdentityStorage.saveIdentity(stored)
     }
@@ -93,12 +129,17 @@ object IdentityManager {
         val entropyEncrypted = IdentityCryptoManager.envelopeEncrypt(entropy)
         val pubKeyBase64 = Base64.encode(keyPair.publicKey)
 
+        val signingPrivEncrypted = IdentityCryptoManager.envelopeEncrypt(keyPair.signingPrivateKey)
+        val signingPubKeyBase64 = Base64.encode(keyPair.signingPublicKey)
+
         val stored = StoredIdentity(
             publicKeyBase64 = pubKeyBase64,
             fingerprintHex = keyPair.fingerprintHex,
             safetyNumber = keyPair.safetyNumber,
             encryptedPrivateKey = privEncrypted,
-            encryptedEntropy = entropyEncrypted
+            encryptedEntropy = entropyEncrypted,
+            signingPublicKeyBase64 = signingPubKeyBase64,
+            encryptedSigningPrivateKey = signingPrivEncrypted
         )
         IdentityStorage.saveIdentity(stored)
         return Result.success(keyPair)

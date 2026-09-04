@@ -75,6 +75,7 @@ describe("resolveFingerprint Cloud Function Test Suite", () => {
     const mockIdentity = {
       currentAuthUid: "user_bob",
       pubKey: "dGVzdC1wdWJsaWMta2V5LTMyeHh4eHh4eHh4eHh4eHg=",
+      signingPubKey: "dGVzdC1zaWduaW5nLXB1YmtleS0zMnh4eHg=",
       updatedAt: 1725390000000,
     };
 
@@ -94,6 +95,7 @@ describe("resolveFingerprint Cloud Function Test Suite", () => {
     expect(response).toEqual({
       currentAuthUid: "user_bob",
       pubKey: "dGVzdC1wdWJsaWMta2V5LTMyeHh4eHh4eHh4eHh4eHg=",
+      signingPubKey: "dGVzdC1zaWduaW5nLXB1YmtleS0zMnh4eHg=",
       updatedAt: 1725390000000,
     });
   });

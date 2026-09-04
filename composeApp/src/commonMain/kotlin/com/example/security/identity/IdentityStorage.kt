@@ -5,7 +5,9 @@ data class StoredIdentity(
     val fingerprintHex: String,
     val safetyNumber: String,
     val encryptedPrivateKey: String,
-    val encryptedEntropy: String
+    val encryptedEntropy: String,
+    val signingPublicKeyBase64: String = "",
+    val encryptedSigningPrivateKey: String = ""
 )
 
 /**

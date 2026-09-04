@@ -54,7 +54,7 @@ export const resolveFingerprint = onCall(async (request) => {
   try {
     await db.runTransaction(async (t) => {
       const doc = await t.get(rateLimitRef);
-      const data = doc.data() || { count: 0, windowStart: now };
+      const data = (doc && typeof doc.data === "function" && doc.data()) || { count: 0, windowStart: now };
       if (now - data.windowStart > RATE_LIMIT_WINDOW_MS) {
         t.set(rateLimitRef, { count: 1, windowStart: now });
       } else if (data.count >= MAX_REQUESTS_PER_WINDOW) {
@@ -81,6 +81,7 @@ export const resolveFingerprint = onCall(async (request) => {
   return {
     currentAuthUid: identityData.currentAuthUid,
     pubKey: identityData.pubKey,
+    signingPubKey: identityData.signingPubKey || "",
     updatedAt: identityData.updatedAt?.toMillis
       ? identityData.updatedAt.toMillis()
       : typeof identityData.updatedAt === "number"
