@@ -53,6 +53,15 @@ service cloud.firestore {
     }
 
     // =========================================================================
+    // COLEÇÃO: invites (Modelo C - Convites Efêmeros Remotos)
+    // =========================================================================
+    // ISOLAMENTO TOTAL: Leitura e escrita NEGADAS para todos os clientes SDK.
+    // Gerenciamento e incineração (vanish-after-accept) exclusivos via Cloud Functions Admin SDK.
+    match /invites/{inviteId} {
+      allow read, write: if false;
+    }
+
+    // =========================================================================
     // COLEÇÃO: identities (Diretório Técnico de Roteamento)
     // =========================================================================
     // Read: NEGADO para clientes SDK (resolução restrita à callable resolveFingerprint).

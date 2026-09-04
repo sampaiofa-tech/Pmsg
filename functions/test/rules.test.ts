@@ -133,4 +133,63 @@ describe("Firestore Security Rules Verification", () => {
       await assertSucceeds(deletePromise);
     });
   });
+
+  describe("Rule Verification: invites Collection (Modelo C)", () => {
+    it("MUST DENY any client from reading invites", async () => {
+      await testEnv.withSecurityRulesDisabled(async (context) => {
+        await context.firestore().collection("invites").doc("inv_001").set({
+          creatorUid: "alice",
+          used: false,
+        });
+      });
+
+      const bobDb = testEnv.authenticatedContext("bob").firestore();
+      await assertFails(bobDb.collection("invites").doc("inv_001").get());
+    });
+
+    it("MUST DENY any client from writing directly to invites", async () => {
+      const aliceDb = testEnv.authenticatedContext("alice").firestore();
+      await assertFails(
+        aliceDb.collection("invites").doc("inv_002").set({
+          creatorUid: "alice",
+          used: false,
+        })
+      );
+    });
+  });
+
+  describe("Rule Verification: identities Collection", () => {
+    it("MUST DENY any client from reading identities directly", async () => {
+      await testEnv.withSecurityRulesDisabled(async (context) => {
+        await context.firestore().collection("identities").doc("fp_123").set({
+          currentAuthUid: "alice",
+          pubKey: "pubkey",
+        });
+      });
+
+      const bobDb = testEnv.authenticatedContext("bob").firestore();
+      await assertFails(bobDb.collection("identities").doc("fp_123").get());
+    });
+
+    it("MUST SUCCEED when authenticated user sets their own identity (currentAuthUid == auth.uid)", async () => {
+      const aliceDb = testEnv.authenticatedContext("alice").firestore();
+      await assertSucceeds(
+        aliceDb.collection("identities").doc("fp_alice").set({
+          currentAuthUid: "alice",
+          pubKey: "alice_pubkey",
+        })
+      );
+    });
+
+    it("MUST FAIL when authenticated user tries to impersonate another UID", async () => {
+      const eveDb = testEnv.authenticatedContext("eve").firestore();
+      await assertFails(
+        eveDb.collection("identities").doc("fp_alice").set({
+          currentAuthUid: "alice",
+          pubKey: "eve_pubkey",
+        })
+      );
+    });
+  });
 });
+

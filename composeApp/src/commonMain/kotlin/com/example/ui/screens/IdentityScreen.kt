@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -38,6 +39,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -62,15 +64,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.data.network.IdentityNetworkClient
 import com.example.security.BiometricAuth
 import com.example.security.ClipboardSensivel
 import com.example.security.identity.IdentityKeyPair
 import com.example.security.identity.IdentityManager
 import com.example.security.identity.ProvisionedIdentity
 import kotlinx.coroutines.launch
+import kotlin.io.encoding.Base64
+import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.random.Random
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class, ExperimentalEncodingApi::class)
 @Composable
 fun IdentityScreen(
     currentAuthUid: String = "anonymous_uid",
@@ -90,6 +95,12 @@ fun IdentityScreen(
     var showMnemonicWarningDialog by remember { mutableStateOf(false) }
     var isMnemonicUnlocked by remember { mutableStateOf(false) }
     var mnemonicWords by remember { mutableStateOf<List<String>?>(null) }
+
+    // Recovery & Restoration state
+    var showRestoreDialog by remember { mutableStateOf(false) }
+    var inputRestoreMnemonic by remember { mutableStateOf("") }
+    var restoreError by remember { mutableStateOf<String?>(null) }
+    var isRestoring by remember { mutableStateOf(false) }
 
     // Auto-generate draft if identity does not exist
     LaunchedEffect(showProvisioningDialog) {
@@ -373,6 +384,21 @@ fun IdentityScreen(
                                 }
                             }
                         }
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Button(
+                            onClick = {
+                                inputRestoreMnemonic = ""
+                                restoreError = null
+                                showRestoreDialog = true
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1B2A3A))
+                        ) {
+                            Icon(Icons.Default.Key, contentDescription = null, tint = Color(0xFF00FFC2), modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Restaurar Outro Aparelho (Recovery)", color = Color(0xFF00FFC2), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        }
                     }
                 }
             } else {
@@ -578,6 +604,130 @@ fun IdentityScreen(
                     TextButton(onClick = { step = 1; verificationError = null }) {
                         Text("Voltar e Rever")
                     }
+                } else {
+                    TextButton(onClick = {
+                        showProvisioningDialog = false
+                        inputRestoreMnemonic = ""
+                        restoreError = null
+                        showRestoreDialog = true
+                    }) {
+                        Text("Já possuo 12 palavras (Restaurar)", color = Color(0xFF00FFC2), fontSize = 12.sp)
+                    }
+                }
+            }
+        )
+    }
+
+    // Restore from Mnemonic (Recovery) Dialog
+    if (showRestoreDialog) {
+        AlertDialog(
+            onDismissRequest = { if (!isRestoring) showRestoreDialog = false },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Key, contentDescription = null, tint = Color(0xFF00FFC2))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Restaurar Identidade (Recovery)", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                }
+            },
+            text = {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        text = "Informe as 12 palavras do seu mnemônico BIP-39 em português para restaurar sua chave privada X25519 e o mesmo Número de Segurança.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFF2A1515)),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text(
+                            text = "⚠️ DESIGN EFÊMERO: Mensagens de até 24h destinadas à sessão do aparelho anterior foram destruídas por design (sem histórico permanente nos servidores).",
+                            color = Color(0xFFFF8A80),
+                            fontSize = 11.sp,
+                            lineHeight = 15.sp,
+                            modifier = Modifier.padding(10.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    OutlinedTextField(
+                        value = inputRestoreMnemonic,
+                        onValueChange = { inputRestoreMnemonic = it },
+                        label = { Text("12 Palavras em Português") },
+                        placeholder = { Text("palavra1 palavra2 ... palavra12") },
+                        modifier = Modifier.fillMaxWidth().height(110.dp),
+                        shape = RoundedCornerShape(10.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color(0xFF00FFC2),
+                            unfocusedBorderColor = Color(0xFF2A3B4D)
+                        )
+                    )
+
+                    if (restoreError != null) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = restoreError ?: "",
+                            color = Color(0xFFFF5252),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val words = inputRestoreMnemonic.trim().lowercase().split(Regex("\\s+")).filter { it.isNotEmpty() }
+                        if (words.size != 12) {
+                            restoreError = "O mnemônico deve conter exatamente 12 palavras (fornecidas: ${words.size})."
+                            return@Button
+                        }
+                        isRestoring = true
+                        restoreError = null
+                        coroutineScope.launch {
+                            val result = IdentityManager.restoreFromMnemonic(words)
+                            if (result.isFailure) {
+                                isRestoring = false
+                                restoreError = "Mnemônico inválido ou checksum incorreto: ${result.exceptionOrNull()?.message}"
+                                return@launch
+                            }
+                            val keyPair = result.getOrThrow()
+                            identity = keyPair
+
+                            // Call updateIdentityRouting Cloud Function
+                            val pubKeyB64 = Base64.encode(keyPair.publicKey)
+                            IdentityNetworkClient.updateIdentityRouting(
+                                fingerprint = keyPair.fingerprintHex,
+                                pubKey = pubKeyB64,
+                                idToken = "anonymous_token"
+                            )
+
+                            isRestoring = false
+                            showRestoreDialog = false
+                            snackbarHostState.showSnackbar("Identidade restaurada com sucesso! Roteamento técnico atualizado 🛡️")
+                            onProvisioned()
+                        }
+                    },
+                    enabled = !isRestoring,
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00FFC2))
+                ) {
+                    Text(
+                        text = if (isRestoring) "Restaurando..." else "Restaurar e Vincular Roteamento",
+                        color = Color(0xFF0A1128),
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showRestoreDialog = false },
+                    enabled = !isRestoring
+                ) {
+                    Text("Cancelar")
                 }
             }
         )

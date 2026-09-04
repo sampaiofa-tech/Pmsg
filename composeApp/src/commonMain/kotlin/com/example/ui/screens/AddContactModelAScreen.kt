@@ -65,7 +65,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.ContactItem
+import com.example.data.network.IdentityNetworkClient
 import com.example.data.repository.ContactRepository
+import com.example.security.ClipboardSensivel
 import com.example.security.identity.IdentityCryptoManager
 import com.example.security.identity.IdentityManager
 import kotlinx.coroutines.launch
@@ -94,6 +96,16 @@ fun AddContactModelAScreen(
     var inputUri by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
+    // State for Modelo C Remote Invites
+    val clipboardSensivel = remember { ClipboardSensivel() }
+    var inviteLink by remember { mutableStateOf<String?>(null) }
+    var isCreatingInvite by remember { mutableStateOf(false) }
+    var isAcceptingInvite by remember { mutableStateOf(false) }
+    var inputInviteLink by remember { mutableStateOf("") }
+    var inputRemoteName by remember { mutableStateOf("") }
+    var remoteInviteError by remember { mutableStateOf<String?>(null) }
+    var remoteInviteSuccess by remember { mutableStateOf<String?>(null) }
+
     LaunchedEffect(Unit) {
         val identity = IdentityManager.getOrGenerateIdentity()
         myFingerprint = identity.fingerprintHex
@@ -105,7 +117,7 @@ fun AddContactModelAScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "Troca Presencial (Modelo A)",
+                        text = "Adicionar Contato",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
@@ -132,7 +144,7 @@ fun AddContactModelAScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // Tabs: [Meu Código (Compartilhar), Adicionar Contato (Colar)]
+            // Tabs: [Meu Código (Presencial), Colar Código (Presencial), Convite Remoto (Modelo C)]
             TabRow(
                 selectedTabIndex = selectedTab,
                 containerColor = Color(0xFF0D1B2A),
@@ -147,12 +159,17 @@ fun AddContactModelAScreen(
                 Tab(
                     selected = selectedTab == 0,
                     onClick = { selectedTab = 0 },
-                    text = { Text("Meu Código", fontWeight = FontWeight.Bold) }
+                    text = { Text("Meu Código", fontWeight = FontWeight.Bold, fontSize = 12.sp) }
                 )
                 Tab(
                     selected = selectedTab == 1,
                     onClick = { selectedTab = 1 },
-                    text = { Text("Colar Código", fontWeight = FontWeight.Bold) }
+                    text = { Text("Colar Presencial", fontWeight = FontWeight.Bold, fontSize = 12.sp) }
+                )
+                Tab(
+                    selected = selectedTab == 2,
+                    onClick = { selectedTab = 2 },
+                    text = { Text("Convite Remoto", fontWeight = FontWeight.Bold, fontSize = 12.sp) }
                 )
             }
 
@@ -266,7 +283,7 @@ fun AddContactModelAScreen(
                         )
                     }
 
-                } else {
+                } else if (selectedTab == 1) {
                     // TAB 1: Paste Other's Code
                     Spacer(modifier = Modifier.height(12.dp))
 
@@ -421,6 +438,317 @@ fun AddContactModelAScreen(
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 14.sp
                             )
+                        }
+                    }
+                } else if (selectedTab == 2) {
+                    // TAB 2: Modelo C Remote Invites
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Box(
+                        modifier = Modifier
+                            .size(72.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFF131B2A)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Security,
+                            contentDescription = null,
+                            tint = Color(0xFF00FFC2),
+                            modifier = Modifier.size(36.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Text(
+                        text = "Convite Efêmero Remoto (Modelo C)",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        textAlign = TextAlign.Center
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Text(
+                        text = "Gera um link criptográfico único com validade de 24 horas. O convite é permanentemente incinerado no primeiro aceite (vanish-after-accept).",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color(0xFFB0BEC5),
+                        textAlign = TextAlign.Center
+                    )
+
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    // SECTION 1: CREATE INVITE
+                    ElevatedCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.elevatedCardColors(containerColor = Color(0xFF131B2A))
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(
+                                text = "1. GERAR MEU CONVITE DE 24 HORAS",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = Color(0xFF00FFC2),
+                                fontWeight = FontWeight.Bold
+                            )
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            Text(
+                                text = "Envie o link seguro para um contato remoto por qualquer canal seguro (Signal, e-mail cifrado, etc).",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color(0xFFB0BEC5)
+                            )
+
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            Button(
+                                onClick = {
+                                    isCreatingInvite = true
+                                    remoteInviteError = null
+                                    remoteInviteSuccess = null
+                                    coroutineScope.launch {
+                                        val identity = IdentityManager.getOrGenerateIdentity()
+                                        val pubKeyB64 = Base64.encode(identity.publicKey)
+                                        val result = IdentityNetworkClient.createInvite(
+                                            creatorFingerprint = identity.fingerprintHex,
+                                            creatorPubKey = pubKeyB64,
+                                            idToken = "anonymous_token"
+                                        )
+                                        isCreatingInvite = false
+                                        if (result.isSuccess) {
+                                            val data = result.getOrThrow()
+                                            inviteLink = data.inviteLink
+                                            remoteInviteSuccess = "Convite gerado com sucesso! Válido por 24 horas."
+                                        } else {
+                                            remoteInviteError = result.exceptionOrNull()?.message ?: "Falha ao gerar convite."
+                                        }
+                                    }
+                                },
+                                enabled = !isCreatingInvite,
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(10.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00FFC2))
+                            ) {
+                                Text(
+                                    text = if (isCreatingInvite) "Gerando Convite..." else "Gerar Convite de 24 Horas",
+                                    color = Color(0xFF0A1128),
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+
+                            if (inviteLink != null) {
+                                Spacer(modifier = Modifier.height(12.dp))
+
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(8.dp),
+                                    colors = CardDefaults.cardColors(containerColor = Color(0xFF0A0E17))
+                                ) {
+                                    Column(modifier = Modifier.padding(12.dp)) {
+                                        Text(
+                                            text = "LINK SEGURO (USO ÚNICO):",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = Color(0xFF00FFC2),
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            text = inviteLink ?: "",
+                                            fontFamily = FontFamily.Monospace,
+                                            fontSize = 11.sp,
+                                            color = Color(0xFFE0E0E0),
+                                            lineHeight = 15.sp
+                                        )
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        Button(
+                                            onClick = {
+                                                inviteLink?.let { link ->
+                                                    clipboardSensivel.copySensitive(link, "Pmsg Convite")
+                                                    copyFeedback = "Link copiado com auto-limpeza em 30 segundos! ⏱️"
+                                                }
+                                            },
+                                            modifier = Modifier.fillMaxWidth(),
+                                            shape = RoundedCornerShape(8.dp),
+                                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1B2A3A))
+                                        ) {
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                Icon(
+                                                    imageVector = Icons.Default.ContentCopy,
+                                                    contentDescription = null,
+                                                    tint = Color(0xFF00FFC2),
+                                                    modifier = Modifier.size(16.dp)
+                                                )
+                                                Spacer(modifier = Modifier.width(6.dp))
+                                                Text(
+                                                    text = "Copiar Link Seguro (30s wipe)",
+                                                    color = Color(0xFF00FFC2),
+                                                    fontSize = 12.sp,
+                                                    fontWeight = FontWeight.Bold
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    // SECTION 2: ACCEPT INVITE
+                    ElevatedCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.elevatedCardColors(containerColor = Color(0xFF131B2A))
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(
+                                text = "2. ACEITAR CONVITE RECEBIDO",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = Color(0xFF00FFC2),
+                                fontWeight = FontWeight.Bold
+                            )
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            Text(
+                                text = "Cole o link 'pmsg://invite?token=...' que você recebeu para estabelecer o contato.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color(0xFFB0BEC5)
+                            )
+
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            OutlinedTextField(
+                                value = inputRemoteName,
+                                onValueChange = { inputRemoteName = it },
+                                label = { Text("Nome do Contato (ex: Bob)") },
+                                placeholder = { Text("Identificação local (100% privada)") },
+                                singleLine = true,
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(10.dp),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = Color(0xFF00FFC2),
+                                    unfocusedBorderColor = Color(0xFF2A3B4D),
+                                    focusedTextColor = Color.White,
+                                    unfocusedTextColor = Color.White
+                                )
+                            )
+
+                            Spacer(modifier = Modifier.height(10.dp))
+
+                            OutlinedTextField(
+                                value = inputInviteLink,
+                                onValueChange = { inputInviteLink = it },
+                                label = { Text("Link ou Token do Convite") },
+                                placeholder = { Text("pmsg://invite?token=...") },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(10.dp),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = Color(0xFF00FFC2),
+                                    unfocusedBorderColor = Color(0xFF2A3B4D),
+                                    focusedTextColor = Color.White,
+                                    unfocusedTextColor = Color.White
+                                )
+                            )
+
+                            Spacer(modifier = Modifier.height(14.dp))
+
+                            Button(
+                                onClick = {
+                                    if (inputRemoteName.isBlank()) {
+                                        remoteInviteError = "Por favor, digite um nome para o contato."
+                                        return@Button
+                                    }
+                                    val token = IdentityNetworkClient.parseInviteToken(inputInviteLink)
+                                    if (token == null) {
+                                        remoteInviteError = "Link ou token de convite inválido (formato esperado: pmsg://invite?token=...)."
+                                        return@Button
+                                    }
+
+                                    isAcceptingInvite = true
+                                    remoteInviteError = null
+                                    coroutineScope.launch {
+                                        val acceptResult = IdentityNetworkClient.acceptInvite(token, "anonymous_token")
+                                        if (acceptResult.isFailure) {
+                                            isAcceptingInvite = false
+                                            remoteInviteError = acceptResult.exceptionOrNull()?.message ?: "Falha ao aceitar convite."
+                                            return@launch
+                                        }
+
+                                        val creatorData = acceptResult.getOrThrow()
+                                        val myIdentity = IdentityManager.getOrGenerateIdentity()
+                                        val creatorPubKeyBytes = try {
+                                            Base64.decode(creatorData.creatorPubKey)
+                                        } catch (e: Exception) {
+                                            isAcceptingInvite = false
+                                            remoteInviteError = "Chave pública do criador corrompida."
+                                            return@launch
+                                        }
+
+                                        // Resolve routing UID
+                                        val resolveResult = IdentityNetworkClient.resolveFingerprint(creatorData.creatorFingerprint, "anonymous_token")
+                                        val targetUid = if (resolveResult.isSuccess) {
+                                            resolveResult.getOrThrow().currentAuthUid
+                                        } else {
+                                            "user_${creatorData.creatorFingerprint.take(8)}"
+                                        }
+
+                                        // Compute Pair Safety Number
+                                        val pairSafetyNumber = IdentityCryptoManager.computePairSafetyNumber(
+                                            myPubKey = myIdentity.publicKey,
+                                            peerPubKey = creatorPubKeyBytes
+                                        )
+
+                                        val newContact = ContactItem(
+                                            fingerprint = creatorData.creatorFingerprint,
+                                            pubKey = creatorData.creatorPubKey,
+                                            currentAuthUid = targetUid,
+                                            displayName = inputRemoteName.trim(),
+                                            securityNumber = pairSafetyNumber,
+                                            verified = false,
+                                            addedAt = PlatformEnvironment.currentTimeMillis()
+                                        )
+
+                                        contactRepository.saveContact(newContact)
+                                        isAcceptingInvite = false
+                                        onContactCreated(newContact)
+                                    }
+                                },
+                                enabled = !isAcceptingInvite,
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(10.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00FFC2))
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = Icons.Default.Shield,
+                                        contentDescription = null,
+                                        tint = Color(0xFF0A1128),
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = if (isAcceptingInvite) "Validando no Servidor..." else "Aceitar Convite e Validar (60 Dígitos)",
+                                        color = Color(0xFF0A1128),
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 13.sp
+                                    )
+                                }
+                            }
+
+                            if (remoteInviteError != null) {
+                                Spacer(modifier = Modifier.height(10.dp))
+                                Text(
+                                    text = remoteInviteError ?: "",
+                                    color = Color(0xFFFF5252),
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
                         }
                     }
                 }
