@@ -430,6 +430,26 @@ O ciclo **v1.3** implementa os requisitos técnicos mandatórios da Google Play 
   > O servidor Pmsg opera sob a premissa fundamental de **Zero-Knowledge** e não armazena nem tem visibilidade sobre a lista de contatos bloqueados pelos usuários. Portanto, o bloqueio é **estritamente client-enforced** (executado no dispositivo do destinatário).
   > O remetente bloqueado ainda pode gerar tráfego efêmero e custo de escrita transitório no Firestore até que a mensagem seja purgada na chegada pelo destinatário ou destruída pelo TTL máximo de 24 horas. Esse custo é estritamente contido pelos rate limits por UID e autenticação do Firebase.
 
+### 3. Denúncia de Abuso Zero-Knowledge (`reportAbuse`)
+- **Arquitetura Zero-Knowledge**: Denúncias não contêm texto, anexos, históricos ou corpos de mensagem. O backend é estritamente cego.
+- **Allow-List Estrita de Payload**: A Cloud Function `reportAbuse` aceita EXCLUSIVAMENTE `{reportedFingerprint, abuseType, inviteId}`. Qualquer campo adicional (como `"texto"` ou `"nota"`) é rejeitado na borda com erro `invalid-argument` (HTTP 400).
+- **Métricas Comportamentais & `abuseFlag`**:
+  - Sliding-window rate limit no Firestore: máximo de 5 denúncias a cada 10 minutos por UID (6ª tentativa rejeitada com HTTP 429 / `resource-exhausted`).
+  - Quando 3 denunciantes independentes reportam um mesmo fingerprint, o sinal `abuseFlag: true` é gravado em `abuseMetrics/{fingerprint}` para posterior revisão manual do operador (sinal para análise humana, nunca sanção automática, prevenindo ataques Sybil com contas anônimas).
+- **Isolamento Total no Firestore**: Coleções `abuseReports` e `abuseMetrics` possuem `allow read, write: if false;` nas Security Rules, operadas com exclusividade pelo Admin SDK.
+
+### 4. Tabela de Pré-Check da Google Play Store (Políticas de Segurança e UGC)
+
+| # | Requisito Play Store / UGC | Status | Implementação Técnica & Evidências |
+|---|---|:---:|---|
+| 1 | **Classificação 18+ (Age-Gate)** | ✅ APROVADO | Gate bloqueante de primeira execução (`AgeGateScreen.kt`) exigindo duplo aceite (idade 18+ e Termos/Política) antes de renderizar qualquer função do app. Consentimento persistido e versionado via `LegalConsentManager.kt`. |
+| 2 | **Termos e Política Públicos** | ✅ NO AR | Política de Privacidade e Termos de Uso publicados e acessíveis via HTTPS no GitHub Pages: [privacidade.html](https://sampaiofa-tech.github.io/Pmsg/privacidade.html) e [termos.html](https://sampaiofa-tech.github.io/Pmsg/termos.html). |
+| 3 | **Bloqueio de Usuários (Block)** | ✅ APROVADO | Blocklist local criptografada em Room (`blocked_contacts`). Descarte instantâneo client-side (`auto-purge`) no momento do recebimento, sem decifração em RAM. Tela dedicada `BlockedContactsScreen.kt` para auditoria e desbloqueio. |
+| 4 | **Denúncia de Conteúdo/Abuso (Report)** | ✅ APROVADO | Diálogo de denúncia comportamental em `ContactChatScreen.kt` com aviso explícito de servidor cego e seleção categorizada (Spam, Assédio, Ilegal, Outro), integrada ao bloqueio local opcional simultâneo. |
+| 5 | **Blindagem Zero-Knowledge & Allow-List** | ✅ APROVADO | Cloud Function `reportAbuse` em produção com validação por allow-list estrita. Qualquer injeção de mensagens, texto ou campos extras é barrada com HTTP 400 (`invalid-argument`). |
+| 6 | **Proteção Anti-Abuso & Anti-Sybil** | ✅ APROVADO | Rate limiting de 5 denúncias/10 min por UID (HTTP 429 na 6ª chamada). `abuseFlag` documentado no `DSR_RUNBOOK.md` como sinal de auditoria manual humana, vedando punições automáticas via identidades anônimas. |
+| 7 | **Homologação Multiplataforma (CI)** | ✅ APROVADO | 100% dos testes unitários e de regras verdes (106+ testes). Suíte iOS Simulator Arm64 CI (`ios-build.yml` - Run ID `33909867672`) concluída com status `SUCCESS` para os fontes do v1.3. |
+
 ---
 
 ## 📄 Licença

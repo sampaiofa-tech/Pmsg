@@ -155,3 +155,34 @@ Para fins de prestação de contas (*Accountability* — Art. 6º, X da LGPD) e 
 | ID | Data Recebimento | Solicitante (E-mail) | Fingerprint Técnico | Tipo de Solicitação | Ação Executada | Data Resposta | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | DSR-001 | DD/MM/AAAA | usuario@exemplo.com | `0123456789abcdef...` | Eliminação (Art. 18, VI) | Doc identities deletado | DD/MM/AAAA | Concluído (≤15 dias) |
+
+---
+
+## 7. Protocolo de Governança de Denúncias de Abuso (v1.3)
+
+### 7.1. Natureza do Sinal `abuseFlag` (Zero-Knowledge)
+
+A Cloud Function `reportAbuse` opera de forma estritamente comportamental e assíncrona, registrando métricas agregadas na coleção `abuseMetrics/{fingerprint}`. Quando o limiar de 3 denunciantes independentes é atingido na janela temporal, o campo `abuseFlag: true` é acionado no documento correspondente.
+
+> [!WARNING]
+> **DIRETRIZ MANDATÓRIA DE OPERAÇÃO: SINAL, NUNCA SANÇÃO AUTOMÁTICA**  
+> O `abuseFlag: true` é **EXCLUSIVAMENTE UM SINAL DE ALERTA PARA REVISÃO MANUAL DO OPERADOR**. É **TERMINANTEMENTE PROIBIDO** implementar punições, banimentos ou revogações automáticas de rota baseadas isoladamente neste indicador.
+
+### 7.2. Análise do Risco de Ataque Sybil (Autenticação Anônima)
+
+O Pmsg adota por premissa arquitetural a **autenticação 100% anônima**, sem atrelamento a número de telefone (SMS), CPF ou identificadores estatais. Embora essa decisão elimine riscos de vazamento de dados de identidade, ela introduz um vetor conhecido de **Ataque Sybil**:
+- Um único agente mal-intencionado pode gerar programaticamente múltiplos UIDs efêmeros anônimos e orquestrar denúncias coordenadas contra um fingerprint legítimo para tentar induzir uma sanção.
+- Por essa razão, sanções automáticas transformariam o sistema de denúncias em uma ferramenta de censura e assédio contra alvos legítimos.
+
+### 7.3. Camadas de Mitigação e Ação Operacional
+
+1. **Defesa em Profundidade Client-Side (Imediata e Soberana):**  
+   O usuário vítima de assédio ou spam não depende do servidor ou de moderação externa. O app oferece bloqueio client-side instantâneo com `auto-purge`: toda mensagem de contato bloqueado é descartada no dispositivo sem descriptografia e sem rastro.
+2. **Revisão Manual pelo Operador:**  
+   Periodicamente, o operador inspeciona a coleção `abuseMetrics` onde `abuseFlag == true`. A análise deve correlacionar:
+   - Dispersão de IPs / horários dos reporters (quando disponível via Cloud Logging);
+   - Reincidência de convites efêmeros (Modelo C) vinculados;
+   - Padrão de tráfego de mensagens associado ao fingerprint.
+3. **Ações Discricionárias Manuais:**  
+   Apenas após constatação manual cabal de abuso volumétrico ou conduta contrária aos Termos de Serviço, o operador poderá intervir manualmente deletando o registro em `identities/{fingerprint}`, impedindo novas resoluções de chave no diretório técnico.
+
