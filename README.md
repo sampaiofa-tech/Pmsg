@@ -394,6 +394,9 @@ O monitoramento contínuo da infraestrutura em produção (`gen-lang-client-0858
 | **`[PMSG-P0] Alteração no Secret GEMINI_API_KEY`** | Cloud Audit Log | **CRÍTICO (P0)** | Chamadas de auditoria `DestroySecretVersion`, `DisableSecretVersion` ou `DeleteSecret` no secret `GEMINI_API_KEY`. | ✅ **ATIVO** | Previne e notifica alterações indevidas ou deleção da chave da IA no Secret Manager. |
 | **`[PMSG] geminiProxy online`** | Uptime Check HTTPS | **ALTO (P1)** | Sondagem HTTPS a cada 1 min no endpoint `geminiProxy`. Validação de status code: resposta `401 Unauthorized` tratada como sucesso. | ✅ **ATIVO** | Comprova disponibilidade contínua do endpoint e validação da barreira de autenticação. |
 
+#### 6.3 Integração Contínua (CI) e Orçamento de Minutos macOS
+- **Política de Execução**: O CI iOS (`.github/workflows/ios-build.yml`) roda em tags, disparos manuais (`workflow_dispatch`) e em pushes/PRs de código. Não roda em commits de documentação (economia de minutos macOS do plano Free: ~200 min/mês = ~13 builds). Commits com alterações exclusivas em `**.md`, `docs/**`, `LICENSE`, `LICENSE-COMMERCIAL.md` e `CLA.md` são ignorados via `paths-ignore`.
+
 ---
 
 ## 📄 Licença
