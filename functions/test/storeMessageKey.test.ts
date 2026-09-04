@@ -26,7 +26,8 @@ describe("storeMessageKey Cloud Function Test Suite", () => {
         messageId: "msg_123",
         senderId: "alice",
         recipientId: "bob",
-        dek: "secret_dek",
+        ephemeralPubKey: "a1b2c3d4",
+        wrappedDek: "wrapped_base64_payload",
         expiresAtMillis: Date.now() + 60000,
       },
     };
@@ -43,7 +44,8 @@ describe("storeMessageKey Cloud Function Test Suite", () => {
         messageId: "msg_123",
         senderId: "alice", // Eve is trying to store a key for Alice's message
         recipientId: "bob",
-        dek: "malicious_dek",
+        ephemeralPubKey: "a1b2c3d4",
+        wrappedDek: "malicious_wrapped_dek",
         expiresAtMillis: Date.now() + 60000,
       },
     };
@@ -67,7 +69,7 @@ describe("storeMessageKey Cloud Function Test Suite", () => {
     );
   });
 
-  it("should clamp TTL to maximum 24h and successfully save DEK when caller is authorized sender", async () => {
+  it("should clamp TTL to maximum 24h and successfully save opaque wrapped DEK when caller is authorized sender", async () => {
     const now = Date.now();
     const excessiveExpiration = now + 48 * 60 * 60 * 1000; // 48h in future
 
@@ -77,7 +79,8 @@ describe("storeMessageKey Cloud Function Test Suite", () => {
         messageId: "msg_123",
         senderId: "alice",
         recipientId: "bob",
-        dek: "super_secure_dek_256_bit",
+        ephemeralPubKey: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+        wrappedDek: "super_secure_sealed_box_payload_base64",
         expiresAtMillis: excessiveExpiration,
       },
     };
@@ -94,6 +97,8 @@ describe("storeMessageKey Cloud Function Test Suite", () => {
     expect(savedData.messageId).toBe("msg_123");
     expect(savedData.senderId).toBe("alice");
     expect(savedData.recipientId).toBe("bob");
-    expect(savedData.dek).toBe("super_secure_dek_256_bit");
+    expect(savedData.ephemeralPubKey).toBe("0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef");
+    expect(savedData.wrappedDek).toBe("super_secure_sealed_box_payload_base64");
+    expect(savedData.dek).toBeUndefined(); // Plaintext DEK MUST NEVER be saved
   });
 });

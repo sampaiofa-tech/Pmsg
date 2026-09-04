@@ -47,12 +47,14 @@ class AppEndpointsTest {
     @Test
     fun testFirebaseCallableEnvelopeFormat() {
         // Enforces that storeMessageKey payload conforms strictly to Firebase Callable {"data": {...}}
+        // with opaque SealedBox fields (ephemeralPubKey, wrappedDek)
         val payload = buildJsonObject {
             put("data", buildJsonObject {
                 put("messageId", "msg_test_01")
                 put("senderId", "sender_alice")
                 put("recipientId", "recipient_bob")
-                put("dek", "ZGVrX2Jhc2U2NF9zZWNyZXQ=")
+                put("ephemeralPubKey", "8520f0098930a754748b7ddcb43ef75a0dbf3a0d26381af4eba4a98eaa9b4e6a")
+                put("wrappedDek", "ZGVrX3dyYXBwZWRfYmFzZTY0X3BheWxvYWQ=")
                 put("expiresAtMillis", 1725350000000L)
             })
         }
@@ -65,7 +67,8 @@ class AppEndpointsTest {
         assertEquals("msg_test_01", dataObj["messageId"]?.jsonPrimitive?.content)
         assertEquals("sender_alice", dataObj["senderId"]?.jsonPrimitive?.content)
         assertEquals("recipient_bob", dataObj["recipientId"]?.jsonPrimitive?.content)
-        assertEquals("ZGVrX2Jhc2U2NF9zZWNyZXQ=", dataObj["dek"]?.jsonPrimitive?.content)
+        assertEquals("8520f0098930a754748b7ddcb43ef75a0dbf3a0d26381af4eba4a98eaa9b4e6a", dataObj["ephemeralPubKey"]?.jsonPrimitive?.content)
+        assertEquals("ZGVrX3dyYXBwZWRfYmFzZTY0X3BheWxvYWQ=", dataObj["wrappedDek"]?.jsonPrimitive?.content)
         assertEquals("1725350000000", dataObj["expiresAtMillis"]?.jsonPrimitive?.content)
     }
 

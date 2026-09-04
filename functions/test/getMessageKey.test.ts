@@ -69,7 +69,8 @@ describe("getMessageKey Cloud Function Test Suite", () => {
       data: () => ({
         senderId: "alice",
         recipientId: "bob",
-        dek: "secret_dek_123",
+        ephemeralPubKey: "ephemeral_pub_key_hex",
+        wrappedDek: "wrapped_dek_base64",
         expiresAt: { toMillis: () => pastTimestamp },
       }),
     });
@@ -93,7 +94,8 @@ describe("getMessageKey Cloud Function Test Suite", () => {
       data: () => ({
         senderId: "alice",
         recipientId: "bob",
-        dek: "secret_dek_123",
+        ephemeralPubKey: "ephemeral_pub_key_hex",
+        wrappedDek: "wrapped_dek_base64",
         expiresAt: { toMillis: () => futureTimestamp },
       }),
     });
@@ -110,14 +112,15 @@ describe("getMessageKey Cloud Function Test Suite", () => {
     );
   });
 
-  it("should deliver DEK to the authorized recipient", async () => {
+  it("should deliver opaque wrapped DEK to the authorized recipient", async () => {
     const futureTimestamp = Date.now() + 300000;
     mockDocGet.mockResolvedValue({
       exists: true,
       data: () => ({
         senderId: "alice",
         recipientId: "bob",
-        dek: "valid_dek_base64_payload",
+        ephemeralPubKey: "valid_ephemeral_pub_hex",
+        wrappedDek: "valid_wrapped_dek_base64_payload",
         expiresAt: { toMillis: () => futureTimestamp },
       }),
     });
@@ -133,18 +136,21 @@ describe("getMessageKey Cloud Function Test Suite", () => {
 
     expect(result.success).toBe(true);
     expect(result.messageId).toBe("msg_valid_01");
-    expect(result.dek).toBe("valid_dek_base64_payload");
+    expect(result.ephemeralPubKey).toBe("valid_ephemeral_pub_hex");
+    expect(result.wrappedDek).toBe("valid_wrapped_dek_base64_payload");
+    expect(result.dek).toBeUndefined(); // Server never returns plaintext DEK
     expect(result.expiresAtMillis).toBe(futureTimestamp);
   });
 
-  it("should deliver DEK to the authorized sender (for local resync)", async () => {
+  it("should deliver opaque wrapped DEK to the authorized sender (for local resync)", async () => {
     const futureTimestamp = Date.now() + 300000;
     mockDocGet.mockResolvedValue({
       exists: true,
       data: () => ({
         senderId: "alice",
         recipientId: "bob",
-        dek: "valid_dek_base64_payload",
+        ephemeralPubKey: "valid_ephemeral_pub_hex",
+        wrappedDek: "valid_wrapped_dek_base64_payload",
         expiresAt: { toMillis: () => futureTimestamp },
       }),
     });
@@ -159,6 +165,8 @@ describe("getMessageKey Cloud Function Test Suite", () => {
     const result = await (getMessageKey as any).run(request);
 
     expect(result.success).toBe(true);
-    expect(result.dek).toBe("valid_dek_base64_payload");
+    expect(result.ephemeralPubKey).toBe("valid_ephemeral_pub_hex");
+    expect(result.wrappedDek).toBe("valid_wrapped_dek_base64_payload");
+    expect(result.dek).toBeUndefined();
   });
 });

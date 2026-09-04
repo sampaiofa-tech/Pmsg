@@ -9,22 +9,24 @@ export interface GetMessageKeyData {
 export interface GetMessageKeyResult {
   success: boolean;
   messageId: string;
-  dek: string;
+  ephemeralPubKey: string;
+  wrappedDek: string;
   expiresAtMillis: number;
 }
 
 /**
- * HTTPS Callable Cloud Function to deliver a message's Data Encryption Key (DEK)
+ * HTTPS Callable Cloud Function to deliver a message's wrapped Data Encryption Key (DEK)
  * strictly to an authorized participant (recipient or sender).
  *
- * ZERO-TRACE DESIGN:
+ * ZERO-TRACE / ZERO-KNOWLEDGE DESIGN:
  * 1. Clients have NO direct read access to 'messageKeys' in Firestore (rules: allow read: if false).
  * 2. This callable validates that the authenticated caller (request.auth.uid) matches the message's
  *    recipientId (or senderId).
  * 3. Expired keys are rejected and cannot be read.
- * 4. Vanish-After-Read Semantics: Once the recipient decrypts and marks the message as read,
+ * 4. The server returns ONLY opaque bytes (ephemeralPubKey, wrappedDek). It never sees or learns plaintext DEKs.
+ * 5. Vanish-After-Read Semantics: Once the recipient decrypts and marks the message as read,
  *    the message doc in 'messages' is deleted by the client, triggering 'onDeleteMessage'
- *    which permanently shreds the DEK in 'messageKeys'.
+ *    which permanently shreds the wrapped DEK in 'messageKeys'.
  */
 export const getMessageKey = onCall(async (request): Promise<GetMessageKeyResult> => {
   // 1. Enforce Authentication
@@ -64,7 +66,7 @@ export const getMessageKey = onCall(async (request): Promise<GetMessageKeyResult
   }
 
   const keyData = keyDocSnap.data();
-  if (!keyData || !keyData.dek || !keyData.expiresAt) {
+  if (!keyData || !keyData.ephemeralPubKey || !keyData.wrappedDek || !keyData.expiresAt) {
     logger.error(`getMessageKey: Corrupt key document structure for message ${messageId}.`);
     throw new HttpsError(
       "internal",
@@ -100,13 +102,14 @@ export const getMessageKey = onCall(async (request): Promise<GetMessageKeyResult
     );
   }
 
-  // Zero-trace logging: audit access without logging secret DEK material
-  logger.info(`getMessageKey: DEK securely released to participant ${callerUid} for message ${messageId}.`);
+  // Zero-trace logging: audit access without logging secret key material
+  logger.info(`getMessageKey: Opaque wrapped DEK securely released to participant ${callerUid} for message ${messageId}.`);
 
   return {
     success: true,
     messageId: messageId,
-    dek: keyData.dek,
+    ephemeralPubKey: keyData.ephemeralPubKey,
+    wrappedDek: keyData.wrappedDek,
     expiresAtMillis: expiresAtMillis,
   };
 });

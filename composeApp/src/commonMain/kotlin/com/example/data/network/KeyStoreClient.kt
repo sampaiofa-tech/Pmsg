@@ -40,7 +40,8 @@ object KeyStoreClient {
         messageId: String,
         senderId: String,
         recipientId: String,
-        dek: String,
+        ephemeralPubKey: String,
+        wrappedDek: String,
         expiresAtMillis: Long,
         idToken: String
     ): StoreKeyResult {
@@ -50,7 +51,8 @@ object KeyStoreClient {
                     put("messageId", messageId)
                     put("senderId", senderId)
                     put("recipientId", recipientId)
-                    put("dek", dek)
+                    put("ephemeralPubKey", ephemeralPubKey)
+                    put("wrappedDek", wrappedDek)
                     put("expiresAtMillis", expiresAtMillis)
                 })
             }
@@ -121,20 +123,22 @@ object KeyStoreClient {
                 val resultObj = parsed["result"]?.jsonObject
                 val success = resultObj?.get("success")?.jsonPrimitive?.content?.toBoolean() ?: true
                 val returnedMsgId = resultObj?.get("messageId")?.jsonPrimitive?.content ?: messageId
-                val dek = resultObj?.get("dek")?.jsonPrimitive?.content
+                val ephemeralPubKey = resultObj?.get("ephemeralPubKey")?.jsonPrimitive?.content
+                val wrappedDek = resultObj?.get("wrappedDek")?.jsonPrimitive?.content
                 val returnedExpiresAt = resultObj?.get("expiresAtMillis")?.jsonPrimitive?.content?.toLongOrNull()
 
-                if (dek != null) {
+                if (ephemeralPubKey != null && wrappedDek != null) {
                     GetKeyResult(
                         success = success,
                         messageId = returnedMsgId,
-                        dek = dek,
+                        ephemeralPubKey = ephemeralPubKey,
+                        wrappedDek = wrappedDek,
                         expiresAtMillis = returnedExpiresAt
                     )
                 } else {
                     GetKeyResult(
                         success = false,
-                        errorMessage = "Malformed response: missing DEK payload"
+                        errorMessage = "Malformed response: missing opaque wrapped DEK payload"
                     )
                 }
             } else {
@@ -164,7 +168,8 @@ object KeyStoreClient {
 data class GetKeyResult(
     val success: Boolean,
     val messageId: String? = null,
-    val dek: String? = null,
+    val ephemeralPubKey: String? = null,
+    val wrappedDek: String? = null,
     val expiresAtMillis: Long? = null,
     val errorMessage: String? = null
 )

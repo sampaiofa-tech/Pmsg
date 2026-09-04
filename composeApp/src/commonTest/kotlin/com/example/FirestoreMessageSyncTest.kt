@@ -67,12 +67,14 @@ class FirestoreMessageSyncTest {
 
         val key = FirestoreMessageSync.buildMessageKey(
             messageId = msg.id,
-            dek = "raw_dek_key_material_bytes",
+            ephemeralPubKey = "8520f0098930a754748b7ddcb43ef75a0dbf3a0d26381af4eba4a98eaa9b4e6a",
+            wrappedDek = "opaque_wrapped_dek_base64",
             expiresAt = msg.expiresAt
         )
 
         assertEquals(msg.id, key.messageId)
-        assertEquals("raw_dek_key_material_bytes", key.dek)
+        assertEquals("8520f0098930a754748b7ddcb43ef75a0dbf3a0d26381af4eba4a98eaa9b4e6a", key.ephemeralPubKey)
+        assertEquals("opaque_wrapped_dek_base64", key.wrappedDek)
         assertEquals(msg.expiresAt, key.expiresAt)
     }
 
@@ -91,6 +93,62 @@ class FirestoreMessageSyncTest {
         val deserialized = json.decodeFromString<FirestoreMessage>(serialized)
 
         assertEquals(original, deserialized)
+
+        val keyDoc = FirestoreMessageKey(
+            messageId = "m1",
+            ephemeralPubKey = "01020304",
+            wrappedDek = "opaque_base64_payload",
+            expiresAt = 999999999L
+        )
+        val serializedKey = json.encodeToString(keyDoc)
+        val deserializedKey = json.decodeFromString<FirestoreMessageKey>(serializedKey)
+
+        assertEquals(keyDoc, deserializedKey)
+        assertTrue(!serializedKey.contains("\"dek\""), "Document messageKeys must never serialize a plaintext 'dek' field")
+    }
+
+    @Test
+    fun testPrepareAndWrapMessageKeyE2ERoundtripAndNegativeSecurity() {
+        // Alice & Bob identity keypairs
+        val bobPriv = com.example.security.identity.Curve25519Engine.clampPrivateKey(
+            ByteArray(32) { (it + 42).toByte() }
+        )
+        val bobPub = com.example.security.identity.IdentityCurve25519.generatePublicKey(bobPriv)
+
+        val evePriv = com.example.security.identity.Curve25519Engine.clampPrivateKey(
+            ByteArray(32) { (it + 99).toByte() }
+        )
+
+        val originalDek = "super_secret_aes_dek_key_material_32bytes_len!!".encodeToByteArray().copyOf(32)
+
+        // Alice wraps DEK for Bob
+        val messageKey = FirestoreMessageSync.prepareAndWrapMessageKey(
+            messageId = "msg_sealed_123",
+            dek = originalDek,
+            recipientX25519PubKey = bobPub,
+            expiresAt = 1800000000000L
+        )
+
+        assertEquals("msg_sealed_123", messageKey.messageId)
+        assertTrue(messageKey.ephemeralPubKey.isNotEmpty())
+        assertTrue(messageKey.wrappedDek.isNotEmpty())
+
+        // Bob unwraps with his private key
+        val envelope = com.example.security.identity.SealedBoxEnvelope(
+            ephemeralPubKeyHex = messageKey.ephemeralPubKey,
+            wrappedDekBase64 = messageKey.wrappedDek
+        )
+        val recoveredDek = com.example.security.identity.SealedBox.unseal(envelope, bobPriv)
+        assertTrue(originalDek.contentEquals(recoveredDek), "Bob must successfully recover the exact DEK")
+
+        // Eve tries to unwrap Bob's message key with Eve's private key -> FAILS
+        var eveFailed = false
+        try {
+            com.example.security.identity.SealedBox.unseal(envelope, evePriv)
+        } catch (_: Exception) {
+            eveFailed = true
+        }
+        assertTrue(eveFailed, "Eve must never be able to unwrap Bob's wrapped DEK without Bob's private key")
     }
 
     @Test
@@ -105,12 +163,12 @@ class FirestoreMessageSyncTest {
         )
 
         // Verifies the decryption lambda signature and data transformation
-        val decryptLambda: (String, String, String) -> String = { cipher, iv, dek ->
-            "Decrypted using DEK: $dek for $cipher"
+        val decryptLambda: (String, String, ByteArray) -> String = { cipher, iv, dek ->
+            "Decrypted using DEK of length ${dek.size} for $cipher"
         }
 
-        val result = decryptLambda(msg.ciphertext, msg.iv, "mock_dek_key")
-        assertTrue(result.contains("mock_dek_key"))
+        val result = decryptLambda(msg.ciphertext, msg.iv, ByteArray(32))
+        assertTrue(result.contains("length 32"))
         assertTrue(result.contains(msg.ciphertext))
     }
 }

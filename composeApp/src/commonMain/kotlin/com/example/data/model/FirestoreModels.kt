@@ -21,15 +21,17 @@ data class FirestoreMessage(
 
 /**
  * Server-side Firestore document in "messageKeys" collection.
- * Required schema: { messageId, dek, expiresAt }
+ * Required schema: { messageId, ephemeralPubKey, wrappedDek, expiresAt }
  *
  * Stored in a separate collection. Access rules:
  * allow read, write: if false; (Universal client block).
  * Only accessible by Cloud Functions (Admin SDK) for Crypto-Shredding.
+ * Server stores only opaque bytes (ephemeralPubKey, wrappedDek) and never sees plaintext DEK.
  */
 @Serializable
 data class FirestoreMessageKey(
     val messageId: String = "",
-    val dek: String = "",
+    val ephemeralPubKey: String = "",
+    val wrappedDek: String = "",
     val expiresAt: Long = 0L // Must match exactly the message expiresAt
 )
