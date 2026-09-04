@@ -106,7 +106,7 @@ describe("Modelo C: createInvite and acceptInvite Test Suite", () => {
       expect(result).toHaveProperty("inviteToken");
       expect(result.inviteToken).toHaveLength(64);
       expect(result.inviteLink).toBe(
-        `pmsg://invite?token=${result.inviteToken}&fp=${validFingerprint}`
+        `pmsg://invite?i=${result.inviteToken}&fp=${validFingerprint}`
       );
       expect(result.expiresAtMillis).toBeGreaterThan(Date.now() + 23 * 3600 * 1000);
 

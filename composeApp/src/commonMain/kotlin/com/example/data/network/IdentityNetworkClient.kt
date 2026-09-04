@@ -60,7 +60,7 @@ object IdentityNetworkClient {
                 val params = trimmed.substring(queryIndex + 1).split('&')
                 for (param in params) {
                     val parts = param.split('=')
-                    if (parts.size == 2 && parts[0] == "token") {
+                    if (parts.size == 2 && (parts[0] == "token" || parts[0] == "i")) {
                         val token = parts[1].trim().lowercase()
                         if (token.length == 64) return token
                     }

@@ -26,17 +26,18 @@ export const acceptInvite = onCall(async (request) => {
   }
 
   const callerUid = request.auth.uid;
-  const data = request.data as { inviteToken?: string };
+  const data = (request.data || {}) as { inviteToken?: string; token?: string; i?: string };
+  const rawToken = data.inviteToken || data.token || data.i;
 
   // 2. Validate payload
-  if (!data || !data.inviteToken || typeof data.inviteToken !== "string") {
+  if (!rawToken || typeof rawToken !== "string") {
     throw new HttpsError(
       "invalid-argument",
-      "Campo 'inviteToken' é obrigatório e deve ser uma string."
+      "Campo 'inviteToken' (ou 'i') é obrigatório e deve ser uma string."
     );
   }
 
-  const inviteToken = data.inviteToken.trim().toLowerCase();
+  const inviteToken = rawToken.trim().toLowerCase();
   if (inviteToken.length !== 64 || !/^[0-9a-f]{64}$/.test(inviteToken)) {
     throw new HttpsError(
       "invalid-argument",

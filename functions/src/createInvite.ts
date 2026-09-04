@@ -115,7 +115,7 @@ export const createInvite = onCall(async (request) => {
 
   return {
     inviteToken: token,
-    inviteLink: `pmsg://invite?token=${token}&fp=${fingerprint}`,
+    inviteLink: `pmsg://invite?i=${token}&fp=${fingerprint}`,
     expiresAtMillis,
   };
 });
