@@ -81,3 +81,6 @@ Fica atestado tecnicamente que o aplicativo Pmsg:
 ## 3. Conclusão e Certificação Técnica
 
 O ecossistema Pmsg opera sob estrita consonância com os princípios de **Finalidade**, **Adequação**, **Necessidade** e **Segurança** dispostos no art. 6º da Lei Geral de Proteção de Dados (Lei nº 13.709/2018), tratando unicamente os elementos técnicos indispensáveis para viabilizar a entrega de mensagens efêmeras com criptografia ponta-a-ponta de chaves.
+
+### 3.1. Certificação de Ausência de Segredos no Histórico de Versionamento
+Adicionalmente, confirma-se que o repositório público do Pmsg é 100% isento de chaves privadas, segredos de infraestrutura ou mnemônicos BIP-39 em todo o histórico de commits, conforme atestado pelas auditorias de segurança conduzidas nas versões v1.0, v1.1 e v1.2 e pelas diretrizes permanentes de operação do agente de IA documentadas em `AGENTS.md`.

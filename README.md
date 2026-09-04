@@ -191,11 +191,11 @@ O Pmsg **rejeitou expressamente** a implementação de um diretório centralizad
     - A assinatura é verificada contra o `signingPubKey` registrado no documento. Chamadas sem assinatura válida ou originadas por contatos atacantes são rejeitadas com `permission-denied`.
     - No `firestore.rules`, updates diretos à coleção `identities` por clientes SDK são terminantemente bloqueados (`allow update, delete: if false;`), garantindo que o roteamento só possa ser alterado mediante verificação criptográfica no backend.
 
-- **Janela TOFU de Criação de Identidades & Mitigação Futura (v1.2)**:
+- **Janela TOFU de Criação de Identidades & Mitigação Futura (Backlog v1.3)**:
   - *Mecanismo Atual de Criação*: Atualmente, o documento `identities/{fingerprint}` pode ser criado diretamente pelo cliente SDK autenticado (onde `firestore.rules` exige `request.auth != null`, `!exists(...)`, `currentAuthUid == request.auth.uid` e presença de todas as chaves obrigatórias) OU indiretamente via Admin SDK ao invocar `createInvite`.
   - *Janela TOFU (Trust On First Use)*: Como o `create` é liberado para novos documentos, se um atacante obtiver antecipadamente o fingerprint público de um usuário antes que este registre seu documento ou emita seu primeiro convite, o atacante poderia tentar pré-criar o registro vinculando sua própria `signingPubKey`.
   - *Avaliação de Risco Atual*: Risco residual nulo/baixo no estágio atual, uma vez que não existem diretórios públicos de enumeração e a base ainda não possui usuários reais.
-  - *Mitigação Futura Planejada (v1.2)*: Bloqueio total de criação direta por clientes em `firestore.rules` (`allow create: if false;`), transferindo a inicialização da identidade exclusivamente para uma Cloud Function Callable que exigirá prova de posse cruzada (assinatura Ed25519 sobre o binding criptográfico canônico `x25519pub || ed25519pub`), impedindo que qualquer entidade pré-registre chaves que não possui.
+  - *Mitigação Futura Planejada (Backlog v1.3)*: Bloqueio total de criação direta por clientes em `firestore.rules` (`allow create: if false;`), transferindo a inicialização da identidade exclusivamente para uma Cloud Function Callable que exigirá prova de posse cruzada (assinatura Ed25519 sobre o binding criptográfico canônico `x25519pub || ed25519pub`), impedindo que qualquer entidade pré-registre chaves que não possui.
 
 - **Mensagens Anteriores Perdidas por Design**: Mensagens recebidas no antigo dispositivo $\le 24$h antes da recuperação são perdidas por design. O Pmsg **não mantém histórico de conversas nem backlogs persistentes em servidores**, garantindo imunidade contra apreensão física retrospectiva.
 
@@ -406,6 +406,9 @@ $token = ($cred | Where-Object { $_ -match '^password=' }) -replace '^password='
 # PROIBIDO: imprimir $token, gravá-lo em logs/arquivos ou deixá-lo ecoar no terminal
 ```
 Para as diretrizes completas e regras permanentes do agente de IA, consulte [`AGENTS.md`](AGENTS.md).
+
+#### 6.5 Visibilidade do Repositório e Auditoria Pública
+O repositório é PÚBLICO por decisão de arquitetura (AGPL-3.0): todo o código, documentos legais e o histórico de homologação são auditáveis publicamente. Documentos internos de operação (DSR, runbooks) são controlados fora do versionamento público. O inventário de segurança confirma que nenhuma chave privada, segredo de infraestrutura ou mnemônico BIP-39 jamais existiu no histórico de commits (conforme auditorias rigorosas v1.0–v1.2 e regras em [`AGENTS.md`](AGENTS.md)).
 
 ---
 
