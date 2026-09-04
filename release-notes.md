@@ -1,3 +1,35 @@
+# Pmsg v1.2 — E2E DE DEK (Zero-Knowledge) + QR Presencial
+
+## 🛡️ Resumo da Versão v1.2
+A versão **v1.2** eleva a garantia criptográfica do **Pmsg** ao estado de arte da privacidade:
+1. **Frente 1 — E2E de DEK (Servidor Zero-Knowledge)**: O servidor nunca mais vê a DEK em claro. A chave simétrica da mensagem passa a ser envelopada usando o esquema **Sealed-Box** (par efêmero X25519 por mensagem + HKDF-SHA256 + AES-256-GCM de 96 bits). O Firestore armazena estritamente **bytes opacos**. Mesmo na hipótese de comprometimento total da nuvem (banco de dados, functions e logs), o conteúdo de todas as mensagens permanece **matematicamente irrecuperável**.
+2. **Frente 2 — Troca Presencial via QR Code**: Exibição universal de QR Codes via `qrose` (Android, Desktop, iOS, Web) e leitura por câmera via CameraX + ML Kit offline (Android) e AVFoundation (iOS), com fallback transparente para colar strings no Desktop.
+
+---
+
+### 🔑 Inovações Criptográficas da Frente 1 (E2E DEK)
+- **Esquema Sealed-Box por Mensagem**:
+  - Remetente (Alice) gera par efêmero X25519 por mensagem (anonimato criptográfico do remetente no envelope).
+  - $sharedSecret = \text{X25519}(ephemeralPriv, recipientPubKey)$.
+  - $KEK = \text{HKDF-SHA256}(sharedSecret, salt=\text{SHA-256}(ephemeralPub), info=\text{"pmsg-dek-wrap-v1"})$.
+  - $wrappedDek = \text{AES-256-GCM}(DEK, KEK, nonce_{96\text{-bit}})$.
+- **Payload 100% Opaco**: Documentos na coleção `messageKeys` gravam exclusivamente `{ messageId, senderId, recipientId, ephemeralPubKey, wrappedDek, expiresAt }`. Campo `dek` em claro eliminado.
+- **Desembrulho por Bob**: $sharedSecret = \text{X25519}(recipientPrivKey, ephemeralPub) \rightarrow KEK \rightarrow unwrap \rightarrow DEK$.
+- **Garantia Evoluída**: Comprometimento total do servidor = ciphertexts + DEKs envelopadas = IRRECUPERÁVEL sem as chaves privadas físicas dos dispositivos.
+
+---
+
+### 📷 Inovações da Frente 2 (QR Presencial)
+- **Exibição Universal**: Renderização nativa multiplataforma de QR Codes na aba "Meu Código" (Modelo A) e no "Convite Remoto" (Modelo C) com toggle fluido *QR Code ↔ String URI*.
+- **Desktop Interoperável**: O Desktop exibe o QR na tela para que celulares escaneiem sem necessidade de periféricos de webcam.
+- **Leitura Offline (Zero-Trace)**:
+  - Android: `CameraX` + `ML Kit Barcode Scanning` em modo 100% offline.
+  - iOS: `AVFoundation` nativo via Kotlin/Native com preview `UIKitView`.
+  - Desktop / Web: Fallback transparente para área de transferência.
+- **Pipeline Unificado**: O payload decodificado do QR alimenta exatamente o mesmo validador da string URI ($\text{fp} == \text{SHA-256}(\text{pk})$ e cálculo comutativo do Número de Segurança de 60 dígitos).
+
+---
+
 # Pmsg v1.0-mvp — Release Notes
 
 ## 🛡️ Resumo

@@ -46,19 +46,27 @@ O **Pmsg** foi desenvolvido com um objetivo claro: **garantir privacidade absolu
 Para mitigar ameaças em que clientes modificados ou offline tentam burlar o TTL local, o **Pmsg** implementa exclusão e destruição criptográfica autoritativa no servidor:
 
 ```mermaid
-graph TD
-    Sender[Remetente Pmsg] -->|1. Envia Mensagem Cifrada| MessagesColl[(Coleção messages)]
-    Sender -->|2. storeMessageKey| StoreKeyFn[Callable storeMessageKey]
-    StoreKeyFn -->|3. Persiste DEK isolada| KeysColl[(Coleção messageKeys)]
-    Recipient[Destinatário Pmsg] -->|4. Baixa Ciphertext| MessagesColl
-    Recipient -->|5. getMessageKey com Bearer| GetKeyFn[Callable getMessageKey]
-    GetKeyFn -->|6. Valida auth.uid == recipientId| KeysColl
-    Recipient -->|7. Decripta em RAM e deleta doc| MessagesColl
-    MessagesColl -.->|8. onDeleteMessage Trigger| KeysColl
-    Scheduler[Cloud Scheduler - A cada 1h] -->|9. expiresAt vencido| Shredder[Crypto-Shredder Function]
-    Shredder -->|10. Hard-Delete DEK| KeysColl
-    Shredder -->|11. Hard-Delete Ciphertext| MessagesColl
-    FirestoreTTL[Firestore Native TTL] -.->|Expurgo assíncrono| MessagesColl
+sequenceDiagram
+    autonumber
+    participant Sender as Alice (Remetente)
+    participant MessagesColl as Firestore (messages)
+    participant StoreKeyFn as Callable storeMessageKey
+    participant KeysColl as Firestore (messageKeys)
+    participant Recipient as Bob (Destinatário)
+
+    Note over Sender: 1. Gera DEK aleatória (AES-256)<br/>2. Cifra payload: AES-256-GCM(msg, DEK, IV)
+    Sender->>MessagesColl: 3. Grava doc messages {ciphertext, iv, senderId, recipientId, expiresAt}
+    Note over Sender: 4. Par efêmero X25519<br/>5. sharedSecret = X25519(ephemPriv, BobPubKey)<br/>6. KEK = HKDF-SHA256(sharedSecret)<br/>7. wrappedDek = AES-GCM(DEK, KEK, nonce)
+    Sender->>StoreKeyFn: 8. storeMessageKey {messageId, ephemeralPubKey, wrappedDek, expiresAt}
+    Note over StoreKeyFn: 9. Valida senderId == auth.uid<br/>10. Servidor vê SOMENTE bytes opacos (zero-knowledge)
+    StoreKeyFn->>KeysColl: 11. Grava doc messageKeys {ephemeralPubKey, wrappedDek, expiresAt}
+
+    Recipient->>MessagesColl: 12. Escuta/baixa mensagem cifrada
+    Recipient->>StoreKeyFn: 13. getMessageKey(messageId) com Bearer token
+    StoreKeyFn-->>Recipient: 14. Retorna {ephemeralPubKey, wrappedDek}
+    Note over Recipient: 15. sharedSecret = X25519(BobPrivKey, ephemPub)<br/>16. Mesma KEK -> unwrap -> DEK<br/>17. Decifra mensagem em RAM volátil
+    Recipient->>MessagesColl: 18. Vanish-After-Read (Deleta doc em messages)
+    MessagesColl-.->KeysColl: 19. Trigger onDeleteMessage incinera messageKeys imediatamente
 ```
 
 1. **Ciclo de Vida da DEK e Semântica Vanish-After-Read (`storeMessageKey` & `getMessageKey`)**:
@@ -199,8 +207,39 @@ Para impedir ataques de força bruta, colheita e negação de serviço, todas as
 - **`updateIdentityRouting`**: 5 atualizações / 10 minutos.
 - **`geminiProxy`**: 5 chamadas / 1 minuto.
 
-### 7. Declaração Formal de Escopo da Fase 6 (E2E DEK)
-Em alinhamento arquitetural com a garantia de excelência e segurança sem concessões, a **Fase 6 (Camada E2E de DEK)** foi formalmente programada para a versão **v1.2**. Isso assegura a homologação exaustiva de primitivas Diffie-Hellman em hardware nativo para todos os targets (Android StrongBox, Windows CNG, Apple Secure Enclave e Web WebCrypto).
+### 7. E2E de DEK via Sealed-Box (v1.2 — Servidor Zero-Knowledge)
+
+A versão v1.2 do **Pmsg** implementa o encapsulamento criptográfico ponta-a-ponta das chaves de criptografia de dados (DEK), eliminando por completo qualquer visibilidade de chaves em claro por parte do servidor:
+
+- **Esquema Sealed-Box por Mensagem**:
+  - Para cada mensagem enviada, o remetente (Alice) gera um par de chaves efêmero X25519 (`ephemeralPriv`, `ephemeralPub`).
+  - **Anonimato Criptográfico do Remetente**: A chave de identidade de Alice NÃO é utilizada no wrapping da DEK. O envelope não vaza metadados sobre a identidade do remetente.
+  - $\text{sharedSecret} = \text{X25519}(\text{ephemeralPriv}, \text{recipientPubKey})$
+  - $\text{KEK} = \text{HKDF-SHA256}(\text{sharedSecret}, \text{salt}=\text{SHA-256}(\text{ephemeralPub}), \text{info}=\text{"pmsg-dek-wrap-v1"})$
+  - $\text{wrappedDek} = \text{AES-256-GCM}(\text{DEK}, \text{KEK}, \text{nonce}_{96\text{-bit}})$
+- **Armazenamento de Bytes 100% Opacos no Firestore**:
+  - O documento na coleção `messageKeys` armazena exclusivamente: `{ messageId, senderId, recipientId, ephemeralPubKey, wrappedDek, expiresAt }`.
+  - **O campo "dek" em claro foi terminantemente eliminado** de toda a infraestrutura e chamadas de rede.
+- **Desembrulho pelo Destinatário (Bob)**:
+  - Bob obtém `{ ephemeralPubKey, wrappedDek }` via `getMessageKey`.
+  - $\text{sharedSecret} = \text{X25519}(\text{recipientPrivKey}, \text{ephemeralPub})$
+  - Deriva exatamente a mesma $\text{KEK}$ via HKDF-SHA256 e decifra a $\text{DEK}$ via AES-256-GCM em memória volátil.
+- **🛡️ GARANTIA DEFINITIVA EVOLUÍDA (Zero-Trace / Zero-Knowledge)**:
+  - **Comprometimento TOTAL do Servidor**: Mesmo na hipótese de comprometimento absoluto do Firestore, Cloud Functions, logs e tráfego de rede, um invasor obtém apenas **ciphertexts + DEKs envelopadas**. O conteúdo é **MATEMATICAMENTE IRRECUPERÁVEL** sem as chaves privadas dos dispositivos participantes.
+  - **Histórico Local de Mensagens Enviadas**: A cópia da DEK de Alice é cifrada localmente em seu cofre de hardware (KeyVault). A perda física do dispositivo implica na perda do histórico de enviados — característica inerente ao modelo de privacidade máxima.
+
+### 8. Troca Presencial de Contatos via QR Code (v1.2)
+
+- **Exibição Universal (Display)**:
+  - Implementado com a biblioteca pura Kotlin `io.github.alexzhirkevich:qrose` para Compose Multiplatform.
+  - Renderiza nativamente em **todas as plataformas** (Android, iOS, Desktop Windows e Web).
+  - Disponível na aba **"Meu Código"** (Modelo A) com toggle intuitivo *QR Code ↔ String URI* e no **Convite Remoto** (Modelo C).
+  - **Desktop interoperável**: O PC desktop exibe o QR Code em tela cheia para que dispositivos móveis escaneiem sem necessidade de webcam no computador.
+- **Leitura via Câmera (Scanner Offline)**:
+  - **Android**: `CameraX` + `ML Kit Barcode Scanning` operando **100% offline no dispositivo** (nenhuma imagem ou frame sai do aparelho, em estrita fidelidade ao princípio zero-trace). Permissão `CAMERA` com fallback transparente.
+  - **iOS**: Pipeline nativo via `AVFoundation` (`AVCaptureMetadataOutput` tipo `.qr`) com preview acelerado por hardware via `UIKitView`.
+  - **Desktop / Web**: Fallback claro e orientado para inserção de string URI via área de transferência (desktops raramente possuem câmera frontal conveniente).
+  - **Pipeline Unificado de Parsing**: O payload decodificado do QR entra exatamente no mesmo analisador e validador (`IdentityManager.parseContactUri`), aplicando a checagem criptográfica $\text{fingerprint} == \text{SHA-256}(\text{pubKey})$ e cálculo do Número de Segurança de 60 dígitos.
 
 ---
 
