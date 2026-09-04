@@ -77,11 +77,6 @@ abstract class VanishDatabase : RoomDatabase() {
                     db.execSQL("PRAGMA secure_delete = ON")
                     db.execSQL("PRAGMA auto_vacuum = INCREMENTAL")
                 } catch (_: Throwable) {}
-                INSTANCE?.let { database ->
-                    scope.launch(Dispatchers.IO) {
-                        populateInitialChannels(database)
-                    }
-                }
             }
 
             private suspend fun populateInitialChannels(database: VanishDatabase) {

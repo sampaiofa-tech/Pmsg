@@ -30,6 +30,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.lifecycleScope
 import com.example.data.worker.ExpiredMessageCleanupWorker
 import com.example.ui.screens.BiometricLockScreen
 import com.example.ui.screens.ChannelListScreen
@@ -81,30 +82,15 @@ class MainActivity : FragmentActivity() {
         mutableStateOf(NotificationHelper.hasNotificationPermission(context))
       }
 
-      var hasContactsPermission by remember {
-        mutableStateOf(ContactsHelper.hasContactsPermission(context))
-      }
-
       val notificationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
       ) { isGranted ->
         hasNotificationPermission = isGranted
-        if (isGranted) {
-          viewModel.showFeedback("🔔 Notificações do sistema autorizadas.")
-        } else {
-          viewModel.showFeedback("⚠️ Notificações foram negadas.")
-        }
       }
 
-      val contactsPermissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission()
-      ) { isGranted ->
-        hasContactsPermission = isGranted
-        viewModel.refreshContacts()
-        if (isGranted) {
-          viewModel.showFeedback("👥 Contatos sincronizados com sucesso!")
-        } else {
-          viewModel.showFeedback("⚠️ Permissão de contatos negada.")
+      LaunchedEffect(Unit) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !hasNotificationPermission) {
+          notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
       }
 
@@ -151,21 +137,7 @@ class MainActivity : FragmentActivity() {
           modifier = Modifier.fillMaxSize(),
           color = ImmersiveSurface
         ) {
-          VanishApp(
-            viewModel = viewModel,
-            notificationsEnabled = hasNotificationPermission,
-            hasContactsPermission = hasContactsPermission,
-            onRequestNotificationPermission = {
-              if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-              } else {
-                hasNotificationPermission = NotificationHelper.hasNotificationPermission(context)
-              }
-            },
-            onRequestContactsPermission = {
-              contactsPermissionLauncher.launch(Manifest.permission.READ_CONTACTS)
-            }
-          )
+          App()
         }
       }
     }
