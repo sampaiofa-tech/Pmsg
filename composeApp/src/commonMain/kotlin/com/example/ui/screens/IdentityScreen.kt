@@ -62,6 +62,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.security.BiometricAuth
 import com.example.security.ClipboardSensivel
 import com.example.security.identity.IdentityKeyPair
 import com.example.security.identity.IdentityManager
@@ -73,11 +74,13 @@ import kotlin.random.Random
 @Composable
 fun IdentityScreen(
     currentAuthUid: String = "anonymous_uid",
-    onBack: () -> Unit = {}
+    onBack: () -> Unit = {},
+    onProvisioned: () -> Unit = {}
 ) {
     val coroutineScope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     val clipboard = remember { ClipboardSensivel() }
+    val biometricAuth = remember { BiometricAuth() }
 
     var identity by remember { mutableStateOf<IdentityKeyPair?>(IdentityManager.getIdentity()) }
     var showProvisioningDialog by remember { mutableStateOf(!IdentityManager.hasIdentity()) }
@@ -422,11 +425,21 @@ fun IdentityScreen(
                 Button(
                     onClick = {
                         showMnemonicWarningDialog = false
-                        mnemonicWords = IdentityManager.getMnemonicWords()
-                        isMnemonicUnlocked = true
+                        coroutineScope.launch {
+                            val authenticated = biometricAuth.authenticate(
+                                title = "Revisão de Mnemônico",
+                                subtitle = "Confirme sua biometria ou PIN para visualizar o mnemônico de 12 palavras"
+                            )
+                            if (authenticated) {
+                                mnemonicWords = IdentityManager.getMnemonicWords()
+                                isMnemonicUnlocked = true
+                            } else {
+                                snackbarHostState.showSnackbar("Autenticação necessária para revelar o mnemônico 🔒")
+                            }
+                        }
                     }
                 ) {
-                    Text("Exibir Palavras")
+                    Text("Exibir Palavras com Biometria")
                 }
             },
             dismissButton = {
@@ -550,6 +563,7 @@ fun IdentityScreen(
                                 coroutineScope.launch {
                                     snackbarHostState.showSnackbar("Identidade provisionada com sucesso! 🛡️")
                                 }
+                                onProvisioned()
                             } else {
                                 verificationError = "Palavras incorretas. Verifique suas anotações."
                             }

@@ -93,6 +93,9 @@ fun App() {
                         IdentityScreen(
                             onBack = {
                                 currentDestination = AppDestination.Contacts
+                            },
+                            onProvisioned = {
+                                currentDestination = AppDestination.Contacts
                             }
                         )
                     }

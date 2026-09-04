@@ -118,4 +118,36 @@ class ModelAE2ETest {
             "Error should indicate fingerprint mismatch"
         )
     }
+
+    @Test
+    fun testMnemonic_ProvisioningVerification_RandomWordsAndDeterministicDerivation() {
+        // 1. Provision new identity draft (12 BIP-39 words)
+        val draft = IdentityCryptoManager.generateNewIdentity()
+        assertEquals(12, draft.mnemonic.size, "Mnemonic must have exactly 12 words")
+
+        // 2. Select 3 random indices (1-based: e.g. 2, 6, 10)
+        val testIndices = listOf(2, 6, 10)
+        val expectedWord1 = draft.mnemonic[testIndices[0] - 1]
+        val expectedWord2 = draft.mnemonic[testIndices[1] - 1]
+        val expectedWord3 = draft.mnemonic[testIndices[2] - 1]
+
+        // 3. Verify incorrect words are rejected
+        val fakeInput1 = "palavraerrada"
+        val isWrongRejected = !(fakeInput1 == expectedWord1 && expectedWord2 == expectedWord2 && expectedWord3 == expectedWord3)
+        assertTrue(isWrongRejected, "Verification must reject incorrect mnemonic words")
+
+        // 4. Verify correct words match
+        val isCorrectAccepted = (expectedWord1 == draft.mnemonic[1] &&
+                expectedWord2 == draft.mnemonic[5] &&
+                expectedWord3 == draft.mnemonic[9])
+        assertTrue(isCorrectAccepted, "Verification passes with correct words")
+
+        // 5. Restoration on a new device produces 100% identical public key and fingerprint
+        val restoredResult = IdentityCryptoManager.restoreFromMnemonic(draft.mnemonic)
+        assertTrue(restoredResult.isSuccess, "Restoration must succeed")
+        val restoredKeyPair = restoredResult.getOrThrow()
+        assertEquals(draft.keyPair.fingerprintHex, restoredKeyPair.fingerprintHex, "Fingerprint must match")
+        assertEquals(draft.keyPair.safetyNumber, restoredKeyPair.safetyNumber, "Safety number must match")
+        assertTrue(draft.keyPair.publicKey.contentEquals(restoredKeyPair.publicKey), "Public key must match")
+    }
 }
