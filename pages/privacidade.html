@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Pmsg — Política de Privacidade e Tratamento de Dados (LGPD)">
+  <title>Política de Privacidade — Pmsg (nome provisório)</title>
+  <style>
+    :root {
+      --bg: #0a0e17;
+      --surface: #111827;
+      --card-bg: #1f2937;
+      --text: #f3f4f6;
+      --text-muted: #9ca3af;
+      --primary: #00ffc2;
+      --primary-hover: #00d6a3;
+      --border: #374151;
+      --danger: #ef4444;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      padding: 2.5rem 1.25rem;
+      display: flex;
+      justify-content: center;
+    }
+    .container {
+      max-width: 820px;
+      width: 100%;
+    }
+    nav.breadcrumbs {
+      margin-bottom: 2rem;
+      font-size: 0.9rem;
+    }
+    nav.breadcrumbs a {
+      color: var(--primary);
+      text-decoration: none;
+    }
+    header {
+      margin-bottom: 2.5rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    h1 {
+      font-size: 2.2rem;
+      color: #ffffff;
+      margin-bottom: 0.5rem;
+    }
+    .meta {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+    h2 {
+      font-size: 1.4rem;
+      color: var(--primary);
+      margin-top: 2rem;
+      margin-bottom: 0.75rem;
+      border-left: 3px solid var(--primary);
+      padding-left: 0.75rem;
+    }
+    p {
+      margin-bottom: 1rem;
+      color: #d1d5db;
+    }
+    ul, ol {
+      margin-left: 1.5rem;
+      margin-bottom: 1.25rem;
+      color: #d1d5db;
+    }
+    li { margin-bottom: 0.4rem; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1.5rem 0;
+      background-color: var(--surface);
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    th, td {
+      padding: 0.75rem 1rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.9rem;
+    }
+    th {
+      background-color: var(--card-bg);
+      color: #ffffff;
+      font-weight: 600;
+    }
+    .box {
+      background-color: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem;
+      margin: 1.5rem 0;
+    }
+    .box.danger {
+      border-color: rgba(239, 68, 68, 0.4);
+      background-color: rgba(239, 68, 68, 0.05);
+    }
+    .box.danger h3 { color: var(--danger); margin-bottom: 0.5rem; }
+    code {
+      background-color: rgba(255, 255, 255, 0.1);
+      padding: 0.2rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.85em;
+      color: var(--primary);
+    }
+    footer {
+      margin-top: 3rem;
+      padding-top: 2rem;
+      border-top: 1px solid var(--border);
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+    footer a { color: var(--primary); text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <nav class="breadcrumbs">
+      <a href="index.html">← Voltar para a Página Inicial</a>
+    </nav>
+
+    <header>
+      <h1>Política de Privacidade</h1>
+      <div class="meta">
+        <strong>Pmsg (nome provisório)</strong> • Versão 1.0 (Refletindo a Arquitetura v1.2) • 4 de setembro de 2026
+      </div>
+    </header>
+
+    <section>
+      <p>Esta Política de Privacidade descreve de forma clara e transparente como o aplicativo <strong>Pmsg (nome provisório)</strong> trata dados e preserva a privacidade dos usuários, em estrita conformidade com a <strong>Lei Geral de Proteção de Dados Pessoais do Brasil (Lei nº 13.709/2018 - LGPD)</strong>.</p>
+
+      <h2>1. Identificação do Controlador e do Encarregado (DPO)</h2>
+      <p>Para os efeitos da LGPD, a entidade controladora e o encarregado pelo tratamento dos dados pessoais são identificados como:</p>
+      <ul>
+        <li><strong>Controlador dos Dados</strong>: Filippe Andrade Sampaio, desenvolvedor independente.</li>
+        <li><strong>Encarregado de Dados (DPO)</strong>: Filippe Andrade Sampaio.</li>
+        <li><strong>Canal Oficial de Atendimento e DSR</strong>: <a href="mailto:azfstick00@gmail.com" style="color: var(--primary);">azfstick00@gmail.com</a>.</li>
+      </ul>
+
+      <h2>2. Dados Tratados pelo Servidor (Inventário Exato)</h2>
+      <p>O Pmsg foi construído sobre o princípio da minimização absoluta de dados (<em>Privacy by Design</em>). O servidor em nuvem processa apenas metadados técnicos efêmeros estritamente necessários para a entrega das mensagens:</p>
+      <ul>
+        <li><strong>Identificador Anônimo de Sessão (UID)</strong>: Identificador técnico aleatório gerado pelo Firebase Authentication. Não vinculado a e-mail, telefone, nome ou identificadores físicos de hardware.</li>
+        <li><strong>Documento Técnico de Roteamento (<code>identities</code>)</strong>:
+          <ul>
+            <li><code>fingerprint</code>: Hash SHA-256 da chave pública do usuário.</li>
+            <li><code>pubKey</code>: Chave pública crua X25519 para cifragem assimétrica de envelopes.</li>
+            <li><code>signingPubKey</code>: Chave pública crua Ed25519 para prova de posse criptográfica do roteamento.</li>
+            <li><code>currentAuthUid</code>: UID da sessão do aparelho ativo associado para entrega de notificações.</li>
+          </ul>
+        </li>
+        <li><strong>Timestamps</strong>: Horários de criação (<code>createdAt</code>) e expiração (<code>expiresAt</code>) de mensagens e chaves para acionamento do motor de expurgo automático.</li>
+        <li><strong>Ciphertext Efêmero da Mensagem</strong>: Conteúdo da mensagem cifrado com AES-256-GCM. O servidor não possui a chave para decifrá-lo.</li>
+        <li><strong>DEK Envelopada (Sealed-Box)</strong>: A Chave de Criptografia de Dados (DEK) envelopada via Sealed-Box X25519 (par efêmero + HKDF-SHA256 + AES-256-GCM). O servidor armazena exclusivamente bytes opacos (<code>wrappedDek</code>).</li>
+        <li><strong>Chave Efêmera por Mensagem (<code>ephemeralPubKey</code>)</strong>: Chave pública temporária gerada pelo remetente exclusivamente para aquela mensagem.</li>
+      </ul>
+
+      <h2>3. Dados que NUNCA são Tratados pelo Servidor</h2>
+      <div class="box danger">
+        <h3>Garantia Arquitetural de Zero-Knowledge</h3>
+        <p>Devido à arquitetura criptográfica do Pmsg, o servidor <strong>JAMAIS</strong> tem acesso a:</p>
+        <ul style="margin-bottom: 0;">
+          <li>O conteúdo em claro (texto legível) das mensagens trocadas.</li>
+          <li>Sua lista de contatos (salva exclusivamente no SQLite local cifrado do seu aparelho).</li>
+          <li>Suas chaves privadas ou sua frase mnemônica de 12 palavras (permanecem isoladas no cofre do seu dispositivo).</li>
+          <li>Imagens ou frames da câmera (a leitura de QR Code é realizada 100% offline no hardware do celular).</li>
+          <li>Seu nome civil, e-mail, telefone ou documentos pessoais.</li>
+        </ul>
+      </div>
+
+      <h2>4. Bases Legais para o Tratamento (Art. 7º da LGPD)</h2>
+      <p>O processamento técnico dos dados transitórios apoia-se em duas bases legais previstas na LGPD:</p>
+      <ol>
+        <li><strong>Execução de Contrato (Art. 7º, V)</strong>: Viabilizar a transmissão e entrega das mensagens solicitadas pelos interlocutores.</li>
+        <li><strong>Legítimo Interesse (Art. 7º, IX)</strong>: Segurança cibernética, prevenção contra abusos e controle de taxa de requisições (<em>rate limiting</em>).</li>
+      </ol>
+
+      <h2>5. Compartilhamento de Dados com Terceiros</h2>
+      <p>O Pmsg <strong>NÃO vende, NÃO aluga, NÃO comercializa e NÃO compartilha</strong> dados com terceiros para fins de marketing ou publicidade.</p>
+      <p>O único compartilhamento ocorre na qualidade de operador de infraestrutura de nuvem:</p>
+      <ul>
+        <li><strong>Google Cloud Platform / Firebase (Google LLC)</strong>: Provedor de hospedagem de banco de dados NoSQL (Firestore), execução serverless (Cloud Functions) e autenticação anônima.</li>
+      </ul>
+      <p>O aplicativo não incorpora SDKs de analytics, redes sociais, publicidade ou telemetria invasiva.</p>
+
+      <h2>6. Transferência Internacional de Dados (Art. 33 da LGPD)</h2>
+      <p>Os servidores de nuvem do aplicativo estão sediados na região <strong><code>us-central1</code> (Estados Unidos)</strong> da Google Cloud Platform.</p>
+      <p>A transferência cumpre as exigências do Art. 33 da LGPD com base em garantias contratuais robustas e certificações internacionais de segurança do operador Google Cloud, tais como <strong>ISO/IEC 27001</strong> e relatórios <strong>SOC 1/2/3</strong>.</p>
+
+      <h2>7. Prazos de Retenção e Expurgo</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Dado</th>
+            <th>Local</th>
+            <th>Retenção</th>
+            <th>Mecanismo de Descarte</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Mensagens e Chaves Envelopadas</td>
+            <td>Firestore</td>
+            <td>Máx 24 horas (ou menor via TTL)</td>
+            <td>Deleção no consumo (<em>Vanish-After-Read</em>) ou purga horária (<em>Crypto-Shredder</em>).</td>
+          </tr>
+          <tr>
+            <td>Identidade de Roteamento</td>
+            <td>Firestore</td>
+            <td>Até exclusão voluntária</td>
+            <td>Exclusão pelo usuário ou solicitação formal ao Encarregado.</td>
+          </tr>
+          <tr>
+            <td>Logs Técnicos de Auditoria</td>
+            <td>Cloud Logging</td>
+            <td>30 dias</td>
+            <td>Sobrescrita automática pelo ciclo de retenção da Google Cloud.</td>
+          </tr>
+          <tr>
+            <td>Contatos e Chaves Privadas</td>
+            <td>Dispositivo Local</td>
+            <td>Permanente até remoção local</td>
+            <td>Controle exclusivo do usuário ou modo Pânico (<em>Panic Wipe</em>).</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>8. Medidas de Segurança da Informação (Art. 46 da LGPD)</h2>
+      <p>O aplicativo adota salvaguardas avançadas de segurança cibernética e criptografia:</p>
+      <ul>
+        <li><strong>Sealed-Box X25519</strong> com AES-256-GCM para envelopamento de chaves simétricas DEK.</li>
+        <li><strong>Prova de posse Ed25519</strong> com proteção contra ataques de repetição (janela de 5 minutos) no roteamento.</li>
+        <li><strong>Crypto-Shredding imediato</strong> com destruição atômica da chave criptográfica após a leitura da mensagem.</li>
+        <li><strong>Cofres de chaves de hardware</strong> (Android StrongBox/TEE, iOS Secure Enclave, Windows DPAPI).</li>
+      </ul>
+
+      <h2>9. Uso da Câmera do Dispositivo</h2>
+      <p>A câmera é acionada exclusivamente para escaneamento presencial de códigos QR de contato ou convite. Todo o processamento visual ocorre <strong>100% de forma local e offline no processador do seu dispositivo</strong>. Nenhuma foto, vídeo ou frame de câmera é salvo em disco ou enviado pela rede.</p>
+
+      <h2>10. Direitos do Titular (Art. 18 da LGPD)</h2>
+      <p>Você pode solicitar a qualquer momento a confirmação da existência de tratamento, o acesso ou a eliminação definitiva do documento de sua identidade técnica (<code>identities/{fingerprint}</code>).</p>
+      <div class="box">
+        <p><strong>Como solicitar:</strong></p>
+        <p>Envie um e-mail para <a href="mailto:azfstick00@gmail.com" style="color: var(--primary);">azfstick00@gmail.com</a> informando seu fingerprint público ou UID de sessão com o assunto <code>[LGPD - Solicitação de Titular]</code>.</p>
+        <p>O prazo de resposta é de até <strong>15 (quinze) dias</strong> corridos, conforme o Art. 19 da LGPD. Você também tem o direito de peticionar à <strong>Autoridade Nacional de Proteção de Dados (ANPD)</strong>.</p>
+      </div>
+
+      <h2>11. Atualizações desta Política</h2>
+      <p>Quaisquer modificações materiais nesta política serão notificadas por meio de aviso na aplicação e atualizadas nesta página pública.</p>
+    </section>
+
+    <footer>
+      <p>Controlador e Encarregado de Dados (DPO): Filippe Andrade Sampaio (<a href="mailto:azfstick00@gmail.com">azfstick00@gmail.com</a>)</p>
+      <p style="margin-top: 0.5rem; font-size: 0.75rem; color: #6b7280;">© 2026 Pmsg (nome provisório). Código sob licença AGPL-3.0.</p>
+    </footer>
+  </div>
+</body>
+</html>
