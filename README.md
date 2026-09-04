@@ -255,6 +255,7 @@ A versão v1.2 do **Pmsg** implementa o encapsulamento criptográfico ponta-a-po
 | **Incineração (Panic Shredding)** | ✅ Sim (Invalidação KeyStore + Overwrite) | ✅ Sim (Deleção DPAPI + Overwrite de memória) | ✅ Sim (Deleção Keychain + Overwrite) | ⚠️ Sim (Limpeza de memória volátil) |
 | **Contatos Locais Cifrados** | ✅ Sim (Room + AES-256-GCM em Hardware) | ✅ Sim (SQLite Cifrado com Envelope Local) | ✅ Sim (Keychain + Armazenamento Local Cifrado) | ⚠️ Volátil (IndexedDB efêmero em sessão) |
 | **Integridade (App Check)** | ✅ Sim (Play Integrity API nativo) | ⚠️ Sim (Token de Sessão via Proxy Backend) | ✅ Sim (DeviceCheck / App Attest nativo) | ⚠️ Sim (reCAPTCHA Enterprise / Proxy) |
+| **Visibilidade da DEK no Servidor** | 🛡️ **Zero-Knowledge** (Sealed-Box X25519; servidor vê apenas bytes opacos) | 🛡️ **Zero-Knowledge** | 🛡️ **Zero-Knowledge** | 🛡️ **Zero-Knowledge** |
 | **Origem da API Key Gemini** | 🛡️ Server-Side (Firebase Secret Manager) | 🛡️ Server-Side (Proxy Backend HTTPS) | 🛡️ Server-Side (Firebase Secret Manager) | 🛡️ Server-Side (Proxy Backend HTTPS) |
 
 ---

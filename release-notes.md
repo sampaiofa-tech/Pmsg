@@ -15,7 +15,8 @@ A versão **v1.2** eleva a garantia criptográfica do **Pmsg** ao estado de arte
   - $wrappedDek = \text{AES-256-GCM}(DEK, KEK, nonce_{96\text{-bit}})$.
 - **Payload 100% Opaco**: Documentos na coleção `messageKeys` gravam exclusivamente `{ messageId, senderId, recipientId, ephemeralPubKey, wrappedDek, expiresAt }`. Campo `dek` em claro eliminado.
 - **Desembrulho por Bob**: $sharedSecret = \text{X25519}(recipientPrivKey, ephemeralPub) \rightarrow KEK \rightarrow unwrap \rightarrow DEK$.
-- **Garantia Evoluída**: Comprometimento total do servidor = ciphertexts + DEKs envelopadas = IRRECUPERÁVEL sem as chaves privadas físicas dos dispositivos.
+- **Garantia Evoluída Definitiva**: Comprometimento TOTAL do servidor (Firestore + Cloud Functions + logs) = ciphertexts + DEKs envelopadas = **MATEMATICAMENTE IRRECUPERÁVEL** sem as chaves privadas físicas dos dispositivos.
+- **Nota de Incompatibilidade (Clean Break)**: Clientes legados v1.1 não conseguem comunicar-se com o backend v1.2, pois o schema da DEK em claro foi completamente erradicado em favor do Sealed-Box. Como a aplicação não possui usuários reais em produção, o corte limpo foi adotado sem necessidade de janelas de migração.
 
 ---
 
