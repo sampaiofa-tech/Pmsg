@@ -11,7 +11,10 @@
 .cxx
 local.properties
 .env
-.env.local
+# Keystores & Signing Credentials (AGENTS.md)
+keystore.properties
+*.jks
+*.keystore
 debug.keystore
 *.apk
 *.aab
