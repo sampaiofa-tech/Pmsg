@@ -1,6 +1,8 @@
 @file:OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
 
 import com.google.gms.googleservices.GoogleServicesPlugin.MissingGoogleServicesStrategy
+import java.io.FileInputStream
+import java.util.Properties
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 
 plugins {
@@ -167,18 +169,36 @@ extensions.configure<com.android.build.api.dsl.ApplicationExtension> {
         applicationId = "com.aistudio.vanishchat.zr7k"
         minSdk = 24
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 4
+        versionName = "1.3.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     signingConfigs {
         create("release") {
-            val keystorePath = System.getenv("KEYSTORE_PATH") ?: "${rootDir}/my-upload-key.jks"
-            storeFile = file(keystorePath)
-            storePassword = System.getenv("STORE_PASSWORD")
-            keyAlias = "upload"
-            keyPassword = System.getenv("KEY_PASSWORD")
+            val keystorePropertiesFile = rootProject.file("keystore.properties")
+            if (keystorePropertiesFile.exists()) {
+                val properties = Properties()
+                keystorePropertiesFile.reader(Charsets.UTF_8).use { reader ->
+                    properties.load(reader)
+                }
+                fun getProp(key: String): String {
+                    return (properties.getProperty(key)
+                        ?: properties.getProperty("\uFEFF$key")
+                        ?: properties.entries.firstOrNull { (it.key as? String)?.trim()?.removePrefix("\uFEFF") == key }?.value as? String)
+                        ?: throw GradleException("Propriedade '$key' ausente em keystore.properties")
+                }
+                val storeFilePath = getProp("storeFile")
+                storeFile = file(storeFilePath)
+                storePassword = getProp("storePassword")
+                keyAlias = getProp("keyAlias")
+                keyPassword = getProp("keyPassword")
+            } else {
+                throw GradleException(
+                    "ERRO CRÍTICO DE SEGURANÇA: 'keystore.properties' não encontrado na raiz do projeto! " +
+                    "A compilação de release foi bloqueada para impedir assinatura acidental com debug."
+                )
+            }
         }
         val customDebugKeystore = file("${rootDir}/debug.keystore")
         if (customDebugKeystore.exists()) {
@@ -226,9 +246,12 @@ compose.desktop {
     application {
         mainClass = "com.example.MainKt"
         nativeDistributions {
-            targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            packageName = "com.example.pmsg"
-            packageVersion = "1.0.0"
+            targetFormats(TargetFormat.Msi, TargetFormat.AppImage)
+            packageName = "Pmsg"
+            packageVersion = "1.3.0"
+            description = "Pmsg - Mensageiro Efêmero e Criptografado (Zero-Trace)"
+            copyright = "© 2026 Pmsg"
+            vendor = "Pmsg"
         }
     }
 }
