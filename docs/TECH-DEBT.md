@@ -27,6 +27,38 @@ Este documento registra a triagem formal, justificativas arquiteturais, impactos
 | **8** | `engines node "20" vs Node 24 local host` | `functions/package.json` vs Node local | **Nenhum**. O Google Cloud Functions executa no runtime gerenciado oficial `nodejs20` LTS. Localmente, o emulador executa no Node 24 do host sem divergências funcionais. | Opcional: padronização do ambiente local com Node 20 LTS via `nvm-windows` em ciclo de infraestrutura pós-deploy. | Node.js 20 LTS |
 | **9** | `X25519 Pure-Kotlin Timing Hardening` | `Curve25519Engine.kt` (commonMain) | **Baixo/Teórico**. Implementação pura RFC 7748 §5 utiliza Montgomery ladder com operações aritméticas de 64 bits. Em runtimes JIT JVM/JS, branchless e constant-time estrito podem sofrer variações sutis de microarquitetura comparado a C/libsodium nativo. | Avaliar integração opcional de libsodium via FFI nativo caso o modelo de ameaça exija proteção contra ataques físicos de canal lateral local. | v1.3 / v2.0 |
 | **10** | `Scanner de Câmera no WasmJs (Web)` | `QrScannerView.wasmJs.kt` (wasmJsMain) | **Nenhum (Fallback funcional)**. No target Web (WasmJs), o scanner por câmera foi declarado como stub com fallback para colar o URI de contato ou convite. A API padrão `BarcodeDetector` ainda possui suporte variável entre navegadores móveis/desktop. | Implementar captura via `navigator.mediaDevices.getUserMedia` combinada com `BarcodeDetector` ou lib JS leve de WASM. | v1.3 |
+| **11** | **Migração de Runtime Cloud Functions: `nodejs20` → `nodejs22`** | Google Cloud Functions v2 / Cloud Run | **CRÍTICO / BLOQUEANTE pós-30/10/2026**. O Google Cloud descomissiona o runtime Node.js 20 em 30/10/2026, bloqueando novos deploys. | **DEADLINE DURA: 30/10/2026**.<br/>**Gatilho de execução: até 30/09/2026** (margem de 30 dias). | Node.js 22 LTS (`nodejs22`) |
+
+---
+
+## Detalhamento de Itens Críticos de Dívida Técnica
+
+### Item 11 — Migração de Runtime das Cloud Functions (`nodejs20` → `nodejs22`)
+
+- **Deadline Dura**: **2026-10-30** (Descomissionamento definitivo pelo Google Cloud).
+- **Gatilho de Execução Mandatório**: **Até 30/09/2026** (margem prudencial de 30 dias antes do bloqueio da plataforma).
+- **Avisos Oficiais do Provedor (Deploy v1.3)**:
+  ```text
+  ! functions: Runtime Node.js 20 was deprecated on 2026-04-30 and will be decommissioned on 2026-10-30,
+    after which you will not be able to deploy without upgrading.
+  ! functions: package.json indicates an outdated version of firebase-functions.
+  ```
+
+#### Roteiro Técnico de Execução (Ciclo Dedicado):
+1. **Configuração de Dependências (`functions/package.json`)**:
+   - Atualizar `"engines": { "node": "22" }`.
+   - Atualizar `firebase-functions` e `firebase-admin` para versões compatíveis estáveis, eliminando simultaneamente o aviso de versão desatualizada da biblioteca.
+2. **Homologação Local**:
+   - Execução integral de `npm test` (testes unitários com mocks de todas as funções).
+   - Execução dos testes em emulador com regras de segurança ativas (`npx -y firebase-tools emulators:exec --only firestore,auth "npm --prefix functions run test:emulator"`).
+3. **Redeploy Completo de Backend**:
+   - Deploy das funções do projeto (`storeMessageKey`, `getMessageKey`, `onDeleteMessage`, `scheduledMessageShredder`, `geminiProxy`, `resolveFingerprint`, `createInvite`, `acceptInvite`, `updateIdentityRouting`, `reportAbuse`) e das Security Rules.
+4. **Validação em Produção**:
+   - CI do GitHub Actions 100% verde em todas as plataformas.
+   - Execução das suítes de fumaça em produção:
+     - `scripts/v1_2_production_smoke_test.mjs` (E2E de chaves e sealed-box ZK).
+     - `scripts/v1_3_production_smoke_test.mjs` (E2E de denúncias comportamentais, rate limit e allow-list).
+
 
 ---
 
