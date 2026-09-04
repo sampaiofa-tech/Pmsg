@@ -6,6 +6,7 @@ describe("E2E Real Firestore Emulator - Authoritative Crypto-Shredder", () => {
   let db: admin.firestore.Firestore;
 
   beforeAll(() => {
+    jest.setTimeout(30000);
     process.env.FIRESTORE_EMULATOR_HOST = "127.0.0.1:8080";
     process.env.GCLOUD_PROJECT = "pmsg-e2e-project";
 
@@ -86,7 +87,8 @@ describe("E2E Real Firestore Emulator - Authoritative Crypto-Shredder", () => {
       messageId: "e2e_msg_delivery",
       senderId: "alice",
       recipientId: "bob",
-      dek: "QXV0aG9yaXplZERlZUZvckJvYg==",
+      ephemeralPubKey: "valid_ephemeral_pub_hex",
+      wrappedDek: "QXV0aG9yaXplZERlZUZvckJvYg==",
       expiresAt: futureTimestamp,
     });
 
@@ -97,7 +99,8 @@ describe("E2E Real Firestore Emulator - Authoritative Crypto-Shredder", () => {
     };
     const bobResult = await (getMessageKey as any).run(bobRequest);
     expect(bobResult.success).toBe(true);
-    expect(bobResult.dek).toBe("QXV0aG9yaXplZERlZUZvckJvYg==");
+    expect(bobResult.wrappedDek).toBe("QXV0aG9yaXplZERlZUZvckJvYg==");
+    expect(bobResult.ephemeralPubKey).toBe("valid_ephemeral_pub_hex");
     expect(bobResult.messageId).toBe("e2e_msg_delivery");
 
     // 3. Eve (Attacker / Non-participant) requests DEK -> REJECTED with permission-denied
