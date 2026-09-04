@@ -26,5 +26,5 @@ Para organizações que não desejam ou não podem cumprir as obrigações da AG
 
 Para solicitar propostas comerciais, esclarecer dúvidas contratuais ou obter cotações para sua empresa ou escritório, entre em contato:
 
-- **E-mail / Canal Comercial**: `[CONTATO_A_PREENCHER_POR_MIM]`
+- **E-mail / Canal Comercial**: `azfstick00@gmail.com`
 - **Assunto Recomendado**: `[Pmsg Comercial] Solicitação de Licença Corporativa`
