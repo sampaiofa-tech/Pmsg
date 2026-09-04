@@ -24,6 +24,7 @@ object AppEndpoints {
     const val PROD_CREATE_INVITE_URL: String = "https://$REGION-$DEFAULT_PROJECT_ID.cloudfunctions.net/createInvite"
     const val PROD_ACCEPT_INVITE_URL: String = "https://$REGION-$DEFAULT_PROJECT_ID.cloudfunctions.net/acceptInvite"
     const val PROD_UPDATE_IDENTITY_ROUTING_URL: String = "https://$REGION-$DEFAULT_PROJECT_ID.cloudfunctions.net/updateIdentityRouting"
+    const val PROD_REPORT_ABUSE_URL: String = "https://$REGION-$DEFAULT_PROJECT_ID.cloudfunctions.net/reportAbuse"
     const val PROD_IDENTITY_TOOLKIT_URL: String = "https://identitytoolkit.googleapis.com/v1"
 
     val isDebug: Boolean
@@ -114,6 +115,17 @@ object AppEndpoints {
             }
         } else {
             PROD_UPDATE_IDENTITY_ROUTING_URL
+        }
+
+    val reportAbuseUrl: String
+        get() = if (isDebug) {
+            PlatformEnvironment.getEnv("PMSG_REPORT_ABUSE_URL") ?: if (isEmulator) {
+                "http://127.0.0.1:5001/$projectId/$REGION/reportAbuse"
+            } else {
+                PROD_REPORT_ABUSE_URL
+            }
+        } else {
+            PROD_REPORT_ABUSE_URL
         }
 
     val identityToolkitBaseUrl: String

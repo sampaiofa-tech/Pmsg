@@ -76,6 +76,19 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    // =========================================================================
+    // COLEÇÕES: abuseReports e abuseMetrics (Denúncias Comportamentais - v1.3)
+    // =========================================================================
+    // ISOLAMENTO TOTAL: Leitura e escrita NEGADAS para todos os clientes SDK.
+    // Registro e métricas comportamentais exclusivos via Cloud Functions Admin SDK.
+    match /abuseReports/{reportId} {
+      allow read, write: if false;
+    }
+
+    match /abuseMetrics/{fingerprint} {
+      allow read, write: if false;
+    }
+
     // Bloqueio preventivo padrão para qualquer outro documento não mapeado
     match /{document=**} {
       allow read, write: if false;

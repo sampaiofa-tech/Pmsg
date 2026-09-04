@@ -237,6 +237,42 @@ object IdentityNetworkClient {
         }
     }
 
+    suspend fun reportAbuse(
+        reportedFingerprint: String,
+        abuseType: String,
+        idToken: String = "anonymous_token",
+        inviteId: String? = null
+    ): Result<Boolean> {
+        return try {
+            val payload = buildJsonObject {
+                put("data", buildJsonObject {
+                    put("reportedFingerprint", reportedFingerprint)
+                    put("abuseType", abuseType)
+                    if (inviteId != null) {
+                        put("inviteId", inviteId)
+                    }
+                })
+            }
+
+            val response = ApiClient.client.post(AppEndpoints.reportAbuseUrl) {
+                contentType(ContentType.Application.Json)
+                header("Authorization", "Bearer $idToken")
+                setBody(payload.toString())
+            }
+
+            val responseBody = response.bodyAsText()
+
+            if (response.status.isSuccess()) {
+                Result.success(true)
+            } else {
+                val errorMsg = extractErrorMessage(responseBody, response.status.value)
+                Result.failure(Exception(errorMsg))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     private fun extractErrorMessage(responseBody: String, statusCode: Int): String {
         return try {
             val parsed = json.parseToJsonElement(responseBody).jsonObject

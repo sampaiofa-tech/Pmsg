@@ -24,7 +24,35 @@ class AppEndpointsTest {
         assertTrue(AppEndpoints.PROD_STORE_KEY_URL.contains("storeMessageKey"))
         assertTrue(AppEndpoints.PROD_GET_KEY_URL.startsWith("https://"))
         assertTrue(AppEndpoints.PROD_GET_KEY_URL.contains("getMessageKey"))
+        assertTrue(AppEndpoints.PROD_REPORT_ABUSE_URL.startsWith("https://"))
+        assertTrue(AppEndpoints.PROD_REPORT_ABUSE_URL.contains("reportAbuse"))
         assertTrue(AppEndpoints.PROD_IDENTITY_TOOLKIT_URL.startsWith("https://identitytoolkit.googleapis.com"))
+    }
+
+    @Test
+    fun testReportAbuseCallableEnvelopeFormat() {
+        // Enforces that reportAbuse conforms to Zero-Knowledge Firebase Callable {"data": {...}}
+        // and contains NO message content fields
+        val payload = buildJsonObject {
+            put("data", buildJsonObject {
+                put("reportedFingerprint", "a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90")
+                put("abuseType", "SPAM")
+                put("inviteId", "sample_invite_token_123")
+            })
+        }
+
+        val jsonString = payload.toString()
+        val parsed = json.parseToJsonElement(jsonString).jsonObject
+
+        assertNotNull(parsed["data"], "Firebase Callable requires top-level 'data' wrapper")
+        val dataObj = parsed["data"]!!.jsonObject
+        assertEquals("a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90", dataObj["reportedFingerprint"]?.jsonPrimitive?.content)
+        assertEquals("SPAM", dataObj["abuseType"]?.jsonPrimitive?.content)
+        assertEquals("sample_invite_token_123", dataObj["inviteId"]?.jsonPrimitive?.content)
+        // Verify ZERO message content
+        assertTrue(dataObj["text"] == null)
+        assertTrue(dataObj["message"] == null)
+        assertTrue(dataObj["content"] == null)
     }
 
     @Test

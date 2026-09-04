@@ -24,8 +24,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DeleteSweep
+import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Shield
@@ -34,6 +36,9 @@ import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -44,12 +49,15 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import com.example.data.network.IdentityNetworkClient
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -102,6 +110,11 @@ fun ContactChatScreen(
     var currentTime by remember { mutableStateOf(0L) }
     var showUnverifiedWarningDialog by remember { mutableStateOf(false) }
     var showBlockConfirmationDialog by remember { mutableStateOf(false) }
+    var showReportAbuseDialog by remember { mutableStateOf(false) }
+    var selectedAbuseType by remember { mutableStateOf("SPAM") }
+    var alsoBlockOnReport by remember { mutableStateOf(true) }
+    var reportStatusMessage by remember { mutableStateOf<String?>(null) }
+    var isReporting by remember { mutableStateOf(false) }
     var isBlocked by remember { mutableStateOf(false) }
     var pendingMessageToSend by remember { mutableStateOf<String?>(null) }
     val listState = rememberLazyListState()
@@ -222,6 +235,15 @@ fun ContactChatScreen(
                     }
                 },
                 actions = {
+                    IconButton(
+                        onClick = { showReportAbuseDialog = true }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Flag,
+                            contentDescription = "Denunciar Abuso",
+                            tint = Color(0xFFFFB74D)
+                        )
+                    }
                     IconButton(
                         onClick = { showBlockConfirmationDialog = true }
                     ) {
@@ -410,7 +432,8 @@ fun ContactChatScreen(
                         message = msg,
                         currentTime = currentTime,
                         onIncinerate = { messages.remove(msg) },
-                        onBlockSender = { showBlockConfirmationDialog = true }
+                        onBlockSender = { showBlockConfirmationDialog = true },
+                        onReportSender = { showReportAbuseDialog = true }
                     )
                 }
             }
@@ -531,6 +554,150 @@ fun ContactChatScreen(
             }
         )
     }
+
+    // Report Abuse Dialog
+    if (showReportAbuseDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                if (!isReporting) showReportAbuseDialog = false
+            },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.Flag,
+                        contentDescription = null,
+                        tint = Color(0xFFFFB74D),
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Denunciar Abuso", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                }
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        text = "O Pmsg opera em arquitetura Zero-Knowledge. O servidor é cego e não possui acesso a conteúdos de mensagens. Esta denúncia registra exclusivamente padrões de tráfego abusivo na rede.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color(0xFFB0BEC5)
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Motivo da Denúncia:",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                    val abuseOptions = listOf(
+                        "SPAM" to "Spam / Mensagens em massa",
+                        "HARASSMENT" to "Assédio ou Conduta abusiva",
+                        "ILLEGAL_CONTENT" to "Conteúdo ilegal ou ameaças",
+                        "OTHER" to "Outro comportamento inadequado"
+                    )
+                    abuseOptions.forEach { (type, label) ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { selectedAbuseType = type }
+                                .padding(vertical = 4.dp)
+                        ) {
+                            RadioButton(
+                                selected = (selectedAbuseType == type),
+                                onClick = { selectedAbuseType = type },
+                                colors = RadioButtonDefaults.colors(
+                                    selectedColor = Color(0xFF00FFC2),
+                                    unselectedColor = Color(0xFF90A4AE)
+                                )
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(text = label, style = MaterialTheme.typography.bodyMedium, color = Color.White)
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { alsoBlockOnReport = !alsoBlockOnReport }
+                    ) {
+                        Checkbox(
+                            checked = alsoBlockOnReport,
+                            onCheckedChange = { alsoBlockOnReport = it },
+                            colors = CheckboxDefaults.colors(
+                                checkedColor = Color(0xFFFF5252),
+                                uncheckedColor = Color(0xFF90A4AE)
+                            )
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Bloquear este contato no dispositivo",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color(0xFFFF8080),
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = !isReporting,
+                    onClick = {
+                        isReporting = true
+                        coroutineScope.launch {
+                            val result = IdentityNetworkClient.reportAbuse(
+                                reportedFingerprint = contact.fingerprint,
+                                abuseType = selectedAbuseType
+                            )
+                            if (result.isSuccess) {
+                                if (alsoBlockOnReport) {
+                                    contactRepository.blockContact(contact.fingerprint)
+                                    isBlocked = true
+                                    messages.removeAll { !it.isMe && it.senderId == contact.fingerprint }
+                                }
+                                reportStatusMessage = "Denúncia comportamental enviada com sucesso."
+                            } else {
+                                reportStatusMessage = "Falha ao enviar denúncia: ${result.exceptionOrNull()?.message}"
+                            }
+                            isReporting = false
+                            showReportAbuseDialog = false
+                        }
+                    }
+                ) {
+                    if (isReporting) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            color = Color(0xFF00FFC2),
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Text("Enviar Denúncia", color = Color(0xFFFF5252), fontWeight = FontWeight.Bold)
+                    }
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    enabled = !isReporting,
+                    onClick = { showReportAbuseDialog = false }
+                ) {
+                    Text("Cancelar")
+                }
+            }
+        )
+    }
+
+    // Status alert dialog if feedback exists
+    if (reportStatusMessage != null) {
+        AlertDialog(
+            onDismissRequest = { reportStatusMessage = null },
+            title = { Text("Denúncia de Abuso") },
+            text = { Text(reportStatusMessage ?: "") },
+            confirmButton = {
+                TextButton(onClick = { reportStatusMessage = null }) {
+                    Text("OK", color = Color(0xFF00FFC2))
+                }
+            }
+        )
+    }
 }
 
 @Composable
@@ -538,7 +705,8 @@ fun EphemeralMessageBubble(
     message: EphemeralUiMessage,
     currentTime: Long,
     onIncinerate: () -> Unit,
-    onBlockSender: (() -> Unit)? = null
+    onBlockSender: (() -> Unit)? = null,
+    onReportSender: (() -> Unit)? = null
 ) {
     val remainingMs = (message.expiresAt - currentTime).coerceAtLeast(0L)
     val remainingSec = remainingMs / 1000L
@@ -575,7 +743,7 @@ fun EphemeralMessageBubble(
             modifier = Modifier.fillMaxWidth(0.85f)
         ) {
             Column(modifier = Modifier.padding(12.dp)) {
-                // Sender label + block sender action for received message
+                // Sender label + block/report sender action for received message
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -596,6 +764,16 @@ fun EphemeralMessageBubble(
                                 color = Color(0xFFFF8080),
                                 fontSize = 10.sp,
                                 modifier = Modifier.clickable { onBlockSender() }
+                            )
+                        }
+                        if (!message.isMe && onReportSender != null) {
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "• Denunciar",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color(0xFFFFB74D),
+                                fontSize = 10.sp,
+                                modifier = Modifier.clickable { onReportSender() }
                             )
                         }
                     }

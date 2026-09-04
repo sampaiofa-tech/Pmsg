@@ -219,5 +219,29 @@ describe("Firestore Security Rules Verification", () => {
       );
     });
   });
+
+  describe("Rule Verification: abuseReports & abuseMetrics Collections (Total Client Isolation)", () => {
+    it("CRITICAL RULE: MUST DENY any client from reading or writing abuseReports directly", async () => {
+      const aliceDb = testEnv.authenticatedContext("alice").firestore();
+      await assertFails(aliceDb.collection("abuseReports").doc("rep_123").get());
+      await assertFails(
+        aliceDb.collection("abuseReports").doc("rep_123").set({
+          reportedFingerprint: "0".repeat(64),
+          abuseType: "SPAM",
+        })
+      );
+    });
+
+    it("CRITICAL RULE: MUST DENY any client from reading or writing abuseMetrics directly", async () => {
+      const aliceDb = testEnv.authenticatedContext("alice").firestore();
+      await assertFails(aliceDb.collection("abuseMetrics").doc("fp_123").get());
+      await assertFails(
+        aliceDb.collection("abuseMetrics").doc("fp_123").set({
+          reportedFingerprint: "0".repeat(64),
+          reportCount: 1,
+        })
+      );
+    });
+  });
 });
 

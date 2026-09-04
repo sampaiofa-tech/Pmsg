@@ -10,3 +10,4 @@ export { resolveFingerprint } from "./resolveFingerprint";
 export { createInvite } from "./createInvite";
 export { acceptInvite } from "./acceptInvite";
 export { updateIdentityRouting } from "./updateIdentityRouting";
+export { reportAbuse } from "./reportAbuse";
