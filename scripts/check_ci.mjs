@@ -1,6 +1,8 @@
 import https from 'https';
 import { execSync } from 'child_process';
 
+// Tooling: paths-ignore ativo para scripts/** (ignorado no CI iOS)
+
 function getGitHubToken() {
   try {
     const creds = execSync('git credential fill', {
