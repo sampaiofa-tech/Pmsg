@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import com.example.data.network.PlatformEnvironment
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -391,7 +393,7 @@ fun AddContactModelAScreen(
                                 displayName = inputName.trim(),
                                 securityNumber = pairSafetyNumber,
                                 verified = false,
-                                addedAt = System.currentTimeMillis()
+                                addedAt = PlatformEnvironment.currentTimeMillis()
                             )
 
                             coroutineScope.launch {

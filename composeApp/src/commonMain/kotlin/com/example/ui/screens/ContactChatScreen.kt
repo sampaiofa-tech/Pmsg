@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import com.example.data.network.PlatformEnvironment
+
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -114,7 +116,7 @@ fun ContactChatScreen(
 
     // Active real-time countdown timer tick (1 second loop)
     LaunchedEffect(Unit) {
-        val startEpoch = System.currentTimeMillis()
+        val startEpoch = PlatformEnvironment.currentTimeMillis()
         if (messages.isNotEmpty() && messages[0].timestamp == 0L) {
             messages[0] = messages[0].copy(
                 timestamp = startEpoch,
@@ -122,7 +124,7 @@ fun ContactChatScreen(
             )
         }
         while (true) {
-            currentTime = System.currentTimeMillis()
+            currentTime = PlatformEnvironment.currentTimeMillis()
             // Auto-incinerate expired messages in real time
             messages.removeAll { it.expiresAt <= currentTime }
             delay(1000)
@@ -233,7 +235,7 @@ fun ContactChatScreen(
                             pendingMessageToSend = textToSend
                             showUnverifiedWarningDialog = true
                         } else {
-                            val now = System.currentTimeMillis()
+                            val now = PlatformEnvironment.currentTimeMillis()
                             val ttlMs = selectedTtlSeconds * 1000L
                             messages.add(
                                 EphemeralUiMessage(
@@ -251,7 +253,7 @@ fun ContactChatScreen(
                                 listState.animateScrollToItem(messages.size)
                                 if (onSimulateIncomingReply) {
                                     delay(2500)
-                                    val replyNow = System.currentTimeMillis()
+                                    val replyNow = PlatformEnvironment.currentTimeMillis()
                                     messages.add(
                                         EphemeralUiMessage(
                                             id = "reply_${replyNow}",
@@ -366,7 +368,7 @@ fun ContactChatScreen(
                         val textToSend = pendingMessageToSend ?: ""
                         showUnverifiedWarningDialog = false
                         pendingMessageToSend = null
-                        val now = System.currentTimeMillis()
+                        val now = PlatformEnvironment.currentTimeMillis()
                         val ttlMs = selectedTtlSeconds * 1000L
                         messages.add(
                             EphemeralUiMessage(

@@ -1,7 +1,6 @@
 package com.example.security.identity
 
 actual object IdentityStorage {
-    @Volatile
     private var inMemoryCache: StoredIdentity? = null
 
     actual fun hasIdentity(): Boolean = inMemoryCache != null
