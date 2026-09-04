@@ -19,7 +19,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import com.example.data.model.ContactItem
 import com.example.data.repository.ContactRepositoryProvider
+import com.example.security.consent.LegalConsentManager
 import com.example.ui.screens.AddContactModelAScreen
+import com.example.ui.screens.AgeGateScreen
 import com.example.ui.screens.ContactChatScreen
 import com.example.ui.screens.ContactsScreen
 import com.example.ui.screens.DataPrivacyScreen
@@ -27,6 +29,7 @@ import com.example.ui.screens.IdentityScreen
 import com.example.ui.screens.SafetyNumberScreen
 
 sealed interface AppDestination {
+    data object AgeGate : AppDestination
     data object Contacts : AppDestination
     data class Chat(val contact: ContactItem) : AppDestination
     data object Identity : AppDestination
@@ -47,7 +50,12 @@ private val PmsgDarkColors = darkColorScheme(
 @Composable
 fun App() {
     val contactRepository = remember { ContactRepositoryProvider.get() }
-    var currentDestination by remember { mutableStateOf<AppDestination>(AppDestination.Contacts) }
+    val isConsentValid = remember { LegalConsentManager.isConsentValid() }
+    var currentDestination by remember {
+        mutableStateOf<AppDestination>(
+            if (isConsentValid) AppDestination.Contacts else AppDestination.AgeGate
+        )
+    }
 
     MaterialTheme(colorScheme = PmsgDarkColors) {
         Surface(modifier = Modifier.fillMaxSize(), color = Color(0xFF0A0E17)) {
@@ -61,6 +69,14 @@ fun App() {
                 label = "app_navigation_transition"
             ) { destination ->
                 when (destination) {
+                    is AppDestination.AgeGate -> {
+                        AgeGateScreen(
+                            onConsentAccepted = {
+                                currentDestination = AppDestination.Contacts
+                            }
+                        )
+                    }
+
                     is AppDestination.Contacts -> {
                         ContactsScreen(
                             contactRepository = contactRepository,
