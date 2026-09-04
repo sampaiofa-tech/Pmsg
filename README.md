@@ -47,8 +47,6 @@ Para mitigar ameaças em que clientes modificados ou offline tentam burlar o TTL
 
 ```mermaid
 graph TD
-```mermaid
-graph TD
     Sender[Remetente Pmsg] -->|1. Envia Mensagem Cifrada| MessagesColl[(Coleção messages)]
     Sender -->|2. storeMessageKey| StoreKeyFn[Callable storeMessageKey]
     StoreKeyFn -->|3. Persiste DEK isolada| KeysColl[(Coleção messageKeys)]
@@ -93,15 +91,100 @@ graph TD
 
 ---
 
+## 🆔 Arquitetura de Identidade Criptográfica (v1.1)
+
+A versão v1.1 do **Pmsg** introduz uma camada completa de identidade descentralizada, determinística e autodestrutiva, eliminando a dependência de identidades voláteis ou centralizadas.
+
+### 1. Identidade Descentralizada & Não-Enumerável
+- **Par de Chaves X25519 (Curve25519)**: Cada dispositivo possui um par de chaves assimétricas de alta performance e segurança de 128 bits.
+- **Derivação Determinística via Argon2id (RFC 9106)**:
+  - Seed mnemônica **BIP-39 PT-BR (12 palavras)** com dicionário de 2048 palavras em português.
+  - Derivação de chave via Argon2id: **3 iterações**, **32 MB de memória RAM** (32.768 KiB), **paralelismo 1**, e salt de domínio fixo `pmsg-v1-identity-seed`.
+  - O material derivado gera a semente privada para a curva X25519.
+- **Número de Segurança Comutativo (Padrão Signal)**:
+  - Fingerprint de 256 bits: $\text{SHA-256}(\text{chave pública})$.
+  - Exibição em **60 dígitos decimais** agrupados em **12 blocos de 5 dígitos**.
+  - A ordenação lexicográfica garante comutatividade: ambas as pontas da conversa visualizam exatamente o mesmo número de segurança, permitindo conferência visual presencial ou out-of-band contra ataques MITM.
+
+### 2. Provisionamento Seguro & Envelope Criptográfico
+- **Exibição Única**: O mnemônico de 12 palavras é exibido estritamente uma única vez durante o onboarding de criação.
+- **Desafio de Confirmação**: O usuário deve confirmar 3 palavras aleatórias antes de inicializar o cofre.
+- **Envelope Criptográfico (`IdentityEnvelope`)**: O mnemônico e a chave privada nunca são persistidos em claro no disco nem transmitidos pela rede. São selados com AES-256-GCM utilizando chaves gerenciadas por hardware (**AndroidKeyStore StrongBox/TEE**, **Apple Keychain Secure Enclave**, **Windows DPAPI**).
+- **Revisão com Barreira Biométrica**: Qualquer consulta futura ao mnemônico exige autorização biométrica do sistema operacional (ou PIN do dispositivo).
+- **Panic Shredding**: O acionamento do Panic Wipe destrói imediatamente o cofre local de identidade e todas as chaves associadas.
+
+### 3. Estabelecimento de Contatos: Modelos A e C
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Alice as Alice (Criadora)
+    participant Cloud as Cloud Functions / Firestore
+    participant Bob as Bob (Destinatário)
+
+    Note over Alice,Bob: MODELO A (Presencial / Sem Servidor)
+    Alice->>Bob: Exibe QR Code (Fingerprint + PubKey)
+    Bob-->>Alice: Escaneia e armazena no SQLite cifrado (VanishDatabase)
+    Note over Alice,Bob: Número de Segurança comutativo validado visualmente
+
+    Note over Alice,Bob: MODELO C (Remoto / Efêmero com TTL 24h)
+    Alice->>Cloud: createInvite(creatorFingerprint, creatorPubKey)
+    Cloud-->>Alice: Retorna link pmsg://invite?token=...&fp=... (TTL 24h)
+    Alice->>Bob: Envia link via canal seguro (Clipboard com auto-clear 30s)
+    Bob->>Cloud: acceptInvite(inviteToken)
+    Note over Cloud: Transação atômica: valida uso único e TTL
+    Cloud->>Cloud: Vanish-After-Accept (Hard Delete do convite em invites)
+    Cloud-->>Bob: Retorna AlicePubKey e AliceFingerprint
+    Bob->>Bob: Armazena Alice em contatos locais e calcula Número de Segurança
+```
+
+- **Modelo A (Presencial / Local)**: Troca direta de chaves via QR Code ou string Base64. Totalmente offline, zero metadados em rede.
+- **Modelo C (Remoto / Efêmero)**:
+  - Links efêmeros com esquema `pmsg://invite?token=<64-hex>&fp=<64-hex>`.
+  - Token aleatório com **256 bits de entropia** (`crypto.randomBytes(32)`).
+  - Persistido na coleção `invites` com **acesso direto negado a clientes SDK** (`allow read, write: if false` em `firestore.rules`).
+  - **Vanish-After-Accept**: Transação atômica no Cloud Functions valida o token, checa o TTL de 24 horas, impede auto-aceite e **exclui imediatamente** o registro do Firestore.
+  - Tentativas adicionais com o mesmo token falham com `404 Not Found` ou `400 Failed Precondition`.
+  - Área de transferência protegida com auto-limpeza após 30 segundos.
+
+### 4. Rejeição Formal do Modelo B (Diretório Centralizado de Handles)
+O Pmsg **rejeitou expressamente** a implementação de um diretório centralizado de usernames, números de telefone ou handles pesquisáveis.
+- **Motivo de Segurança & Privacidade**: Diretórios de handles viabilizam raspagem em massa (*scraping*), correlação de metadados, ataques de enumeração, sequestro de contas e intimidação dirigida por adversários estatais ou cibercriminosos.
+- **Design Pmsg**: Identidades no Pmsg utilizam hashes criptográficos de 256 bits ($2^{256}$ chaves possíveis). É matematicamente impossível varrer ou enumerar usuários sem que o contato forneça seu identificador explicitamente.
+
+### 5. Restauração & Recuperação de Identidade (Fase 5 - Recovery)
+- **Restauração em Novo Dispositivo**: O operador insere seu mnemônico de 12 palavras em um novo dispositivo.
+- **Regeneração Determinística**: O mesmo par X25519 e o mesmo fingerprint de 256 bits são gerados.
+- **Atualização do Roteamento Técnico (`updateIdentityRouting`)**:
+  - O novo dispositivo obtém um novo `authUid` do Firebase Auth.
+  - A callable `updateIdentityRouting` valida a prova criptográfica ($\text{SHA-256}(\text{pubKey}) == \text{fingerprint}$).
+  - O documento `identities/{fingerprint}` é atualizado atomicamente com o novo `currentAuthUid`.
+  - Contatos existentes continuam enviando mensagens normalmente para o mesmo fingerprint.
+- **Mensagens Anteriores Perdidas por Design**: Mensagens recebidas no antigo dispositivo $\le 24$h antes da recuperação são perdidas por design. O Pmsg **não mantém histórico de conversas nem backlogs persistentes em servidores**, garantindo imunidade contra apreensão física retrospectiva.
+
+### 6. Rate Limiting em Firestore (`userRateLimits`)
+Para impedir ataques de força bruta, colheita e negação de serviço, todas as Cloud Functions críticas implementam janelas deslizantes atômicas gravadas na coleção `userRateLimits/{uid}` (inacessível a clientes SDK):
+- **`resolveFingerprint`**: 10 consultas / 1 minuto.
+- **`createInvite`**: 10 convites / 10 minutos.
+- **`acceptInvite`**: 15 tentativas / 1 minuto.
+- **`updateIdentityRouting`**: 5 atualizações / 10 minutos.
+- **`geminiProxy`**: 5 chamadas / 1 minuto.
+
+### 7. Declaração Formal de Escopo da Fase 6 (E2E DEK)
+Em alinhamento arquitetural com a garantia de excelência e segurança sem concessões, a **Fase 6 (Camada E2E de DEK)** foi formalmente programada para a versão **v1.2**. Isso assegura a homologação exaustiva de primitivas Diffie-Hellman em hardware nativo para todos os targets (Android StrongBox, Windows CNG, Apple Secure Enclave e Web WebCrypto).
+
+---
+
 ## 🛡️ Matriz Honesta de Garantias de Segurança por Plataforma
 
 | Recurso / Garantia | Android (Nativo) | Desktop Windows (JVM) | iOS (CMP) | Web (WasmJS) |
 |---|---|---|---|---|
 | **Hardware KeyStore / TEE** | ✅ Sim (`AndroidKeyStore` StrongBox/TEE) | ⚠️ Parcial (Windows DPAPI / CNG em repouso) | ✅ Sim (`Apple Keychain` Secure Enclave) | ❌ Não (Memória volátil da aba) |
+| **Proteção de Identidade / Envelope** | ✅ Sim (Chave Mestre StrongBox + Biometria) | ✅ Sim (DPAPI + Chave AES-256 em Cofre) | ✅ Sim (Keychain + LocalAuthentication) | ⚠️ Parcial (Sessão efêmera WebCrypto) |
 | **Bloqueio de Screenshot** | ✅ Sim (`FLAG_SECURE` impede print e gravação) | ❌ Não (Sem API de SO para bloquear terceiros) | ❌ Não (iOS **NÃO** bloqueia hardware prints) | ❌ Não (Inviável no navegador) |
 | **Detecção de Screenshot** | ✅ Sim (`ScreenCaptureCallback`) | ❌ Não | ✅ Sim (`UserDidTakeScreenshotNotification`) | ❌ Não |
-| **Proteção de Clipboard** | ✅ Sim (`EXTRA_IS_SENSITIVE` + Clear TTL) | ⚠️ Sim (Auto-limpeza com timer na JVM) | ⚠️ Sim (Auto-limpeza com timer local) | ⚠️ Sim (Auto-limpeza volátil) |
+| **Proteção de Clipboard** | ✅ Sim (`EXTRA_IS_SENSITIVE` + Clear 30s) | ⚠️ Sim (Auto-limpeza com timer na JVM) | ⚠️ Sim (Auto-limpeza com timer local) | ⚠️ Sim (Auto-limpeza volátil) |
 | **Incineração (Panic Shredding)** | ✅ Sim (Invalidação KeyStore + Overwrite) | ✅ Sim (Deleção DPAPI + Overwrite de memória) | ✅ Sim (Deleção Keychain + Overwrite) | ⚠️ Sim (Limpeza de memória volátil) |
+| **Contatos Locais Cifrados** | ✅ Sim (Room + AES-256-GCM em Hardware) | ✅ Sim (SQLite Cifrado com Envelope Local) | ✅ Sim (Keychain + Armazenamento Local Cifrado) | ⚠️ Volátil (IndexedDB efêmero em sessão) |
 | **Integridade (App Check)** | ✅ Sim (Play Integrity API nativo) | ⚠️ Sim (Token de Sessão via Proxy Backend) | ✅ Sim (DeviceCheck / App Attest nativo) | ⚠️ Sim (reCAPTCHA Enterprise / Proxy) |
 | **Origem da API Key Gemini** | 🛡️ Server-Side (Firebase Secret Manager) | 🛡️ Server-Side (Proxy Backend HTTPS) | 🛡️ Server-Side (Firebase Secret Manager) | 🛡️ Server-Side (Proxy Backend HTTPS) |
 
