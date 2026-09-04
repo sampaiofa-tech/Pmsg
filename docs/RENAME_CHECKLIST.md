@@ -5,6 +5,8 @@ Este checklist consolida as ações técnicas, regulatórias e operacionais obri
 > [!WARNING]
 > **Atenção aos Prazos e Pontos de Não Retorno**: As decisões de `applicationId` e `deep link scheme` **PRECISAM** ser tomadas e implementadas **ANTES** do primeiro lançamento público na Google Play Store / Apple App Store. Alterá-los posteriormente quebra a base instalada, requer nova listagem de app e invalida todos os links/QR codes distribuídos fisicamente.
 
+<!-- CI Status: paths-ignore ativo para arquivos de documentação (economia de minutos macOS) -->
+
 ---
 
 ## 1. Repositório e Infraestrutura de Código (GitHub)
