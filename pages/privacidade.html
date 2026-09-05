@@ -215,9 +215,9 @@
           </tr>
           <tr>
             <td>Registros de Conexão (MCI Art. 15)</td>
-            <td>Firestore (<code>accessLogs</code>)</td>
+            <td>Firestore (<code>connectionLogs</code> / <code>accessLogs</code>)</td>
             <td>180 dias (obrigação legal)</td>
-            <td>Expurgo automático via política de TTL do banco.</td>
+            <td>Expurgo automático via política TTL do banco + purga ativa redundante pelo <em>Crypto-Shredder</em>.</td>
           </tr>
           <tr>
             <td>Denúncias com Conteúdo Voluntário</td>

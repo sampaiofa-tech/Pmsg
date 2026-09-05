@@ -39,8 +39,8 @@ describe("Crypto-Shredder Authoritative Server-Side TTL Test Suite", () => {
         where: (field: string, op: string, val: any) => ({
           limit: (limitCount: number) => ({
             get: async () => ({
-              empty: false,
-              docs: [expiredDoc1, expiredDoc2],
+              empty: name !== "messageKeys",
+              docs: name === "messageKeys" ? [expiredDoc1, expiredDoc2] : [],
             }),
           }),
         }),
@@ -126,6 +126,67 @@ describe("Crypto-Shredder Authoritative Server-Side TTL Test Suite", () => {
 
     // Decryption MUST throw an authentication error
     expect(attemptDecryptWithWrongKey).toThrow();
+  });
+
+  it("should hard-delete expired connectionLogs and accessLogs in batch", async () => {
+    const nowMillis = 1700000000000;
+    const nowTimestamp = {
+      toMillis: () => nowMillis,
+    } as any;
+
+    const expiredLog1 = {
+      id: "log_001",
+      data: () => ({
+        ip: "192.168.1.1",
+        expiresAt: { toMillis: () => nowMillis - 1000 },
+      }),
+      ref: { path: "connectionLogs/log_001" },
+    };
+
+    const expiredLog2 = {
+      id: "log_002",
+      data: () => ({
+        ip: "10.0.0.2",
+        expiresAt: { toMillis: () => nowMillis - 5000 },
+      }),
+      ref: { path: "accessLogs/log_002" },
+    };
+
+    mockDb = {
+      collection: (name: string) => ({
+        where: (field: string, op: string, val: any) => ({
+          limit: (limitCount: number) => ({
+            get: async () => {
+              if (name === "connectionLogs") {
+                return { empty: false, docs: [expiredLog1] };
+              }
+              if (name === "accessLogs") {
+                return { empty: false, docs: [expiredLog2] };
+              }
+              return { empty: true, docs: [] };
+            },
+          }),
+        }),
+        doc: (id: string) => ({
+          path: `${name}/${id}`,
+        }),
+      }),
+      batch: () => ({
+        delete: (ref: any) => {
+          batchDeletedPaths.push(ref.path);
+        },
+        commit: async () => {},
+      }),
+    };
+
+    const result = await executeCryptoShredding(mockDb, nowTimestamp);
+
+    expect(result.shreddedKeysCount).toBe(0);
+    expect(result.deletedMessagesCount).toBe(0);
+    expect(result.deletedLogsCount).toBe(2);
+
+    expect(batchDeletedPaths).toContain("connectionLogs/log_001");
+    expect(batchDeletedPaths).toContain("accessLogs/log_002");
   });
 });
 

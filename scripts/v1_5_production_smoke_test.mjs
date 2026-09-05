@@ -9,7 +9,7 @@ function httpRequest(options, postData = null) {
   return new Promise((resolve, reject) => {
     const opts = { ...options };
     opts.headers = {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) RaixSmokeTest/1.4',
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) RaixSmokeTest/1.5',
       ...(opts.headers || {})
     };
     const req = https.request(opts, (res) => {
@@ -83,7 +83,7 @@ async function readFirestoreDoc(collection, docId, idToken) {
 
 async function runV14SmokeTests() {
   console.log("================================================================================");
-  console.log("🚀 INICIANDO TESTES DE FUMAÇA EM PRODUÇÃO — RAIX v1.4");
+  console.log("🚀 INICIANDO TESTES DE FUMAÇA EM PRODUÇÃO — RAIX v1.5");
   console.log("================================================================================\n");
 
   let passed = 0;

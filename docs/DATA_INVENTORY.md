@@ -18,7 +18,7 @@ A tabela a seguir discrimina de forma taxativa e exaustiva todas as informaçõe
 | **Fingerprint Criptográfico (Ed25519)** | Firestore (`identities/{fingerprint}`) | Até remoção explícita pelo titular ou revogação de identidade | Usuários com o link/QR code de convite; Servidor (validação de roteamento) | Art. 7º, V — Execução de contrato / Termos de Uso |
 | **Chave Pública de Roteamento (Ed25519)** | Firestore (`identities/{fingerprint}`) | Até remoção explícita pelo titular ou revogação | Público aos portadores do fingerprint; Servidor | Art. 7º, V — Execução de contrato |
 | **Chave Pública de Criptografia (X25519)** | Firestore (`identities/{fingerprint}`) | Até remoção explícita pelo titular | Público aos portadores do fingerprint (usado para empacotar a DEK) | Art. 7º, V — Execução de contrato |
-| **Registros de Conexão (MCI Art. 15)** | Firestore (`accessLogs/{logId}`) | **180 dias** (TTL estrito com descarte automático) | **Admin SDK apenas** (read/write: false para clients). **SEM UID, SEM FINGERPRINT, SEM MESSAGEID, SEM PAYLOAD, SEM CHAVE, SEM MNEMÔNICO**. | Art. 7º, II da LGPD c/c Art. 15 da Lei nº 12.965/2014 (MCI) |
+| **Registros de Conexão (MCI Art. 15)** | Firestore (`connectionLogs/{logId}` / `accessLogs/{logId}`) | **180 dias** (TTL estrito com descarte automático nativo + purga horária pelo Shredder) | **Admin SDK apenas** (read/write: false para clients). **SEM UID, SEM FINGERPRINT, SEM MESSAGEID, SEM PAYLOAD, SEM CHAVE, SEM MNEMÔNICO**. | Art. 7º, II da LGPD c/c Art. 15 da Lei nº 12.965/2014 (MCI) |
 | **Ciphertext Efêmero da Mensagem** | Firestore (`messages/{messageId}`) | **Máximo de 24 horas** (TTL estrito) ou destruição imediata após leitura (*Vanish*) | Remetente e Destinatário (apenas bytes opacos ilegíveis pelo servidor) | Art. 7º, V — Execução de contrato |
 | **Metadados de Roteamento (`senderId` e `recipientId`)** | Firestore (`messages/{messageId}` e `messages/{messageId}/keys/{keyId}`) | **Máximo de 24 horas** (expurgados atomicamente junto ao envelope) | Remetente, Destinatário e Servidor (roteamento e autorização estrita). **Dado mais sensível que o servidor retém**, protegido por destruição em ≤24h. | Art. 7º, V — Execução de contrato |
 | **DEK Envelopada (bytes opacos)** | Firestore (`messages/{messageId}/keys`) | **Máximo de 24 horas** (TTL estrito) ou destruição imediata após leitura (*Vanish*) | Destinatário detentor da chave privada correspondente. O servidor **não possui a chave privada e não tem acesso aos bytes em claro** | Art. 7º, V — Execução de contrato |
@@ -35,7 +35,7 @@ A tabela a seguir discrimina de forma taxativa e exaustiva todas as informaçõe
 
 ## 2. Implementação e Segregação dos Logs de Conexão (MCI Art. 15 / Parecer C1)
 
-Em cumprimento ao Art. 15 da Lei nº 12.965/2014 (Marco Civil da Internet) e às determinações do Parecer Jurídico Especializado, a aplicação **Raix** mantém uma coleção segregada e isolada denominada `accessLogs`:
+Em cumprimento ao Art. 15 da Lei nº 12.965/2014 (Marco Civil da Internet) e às determinações do Parecer Jurídico Especializado, a aplicação **Raix** mantém uma coleção segregada e isolada denominada `connectionLogs` (com espelhamento em `accessLogs`):
 
 1. **Campos Registrados no Momento da Chamada:**
    - `ip`: Endereço IP do requisitante extraído do cabeçalho `x-forwarded-for` ou do raw request.

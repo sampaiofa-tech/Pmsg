@@ -16,40 +16,85 @@ import { logger } from "firebase-functions";
 export async function executeCryptoShredding(
   db: admin.firestore.Firestore,
   currentTime: admin.firestore.Timestamp
-): Promise<{ shreddedKeysCount: number; deletedMessagesCount: number }> {
+): Promise<{ shreddedKeysCount: number; deletedMessagesCount: number; deletedLogsCount: number }> {
+  const batch = db.batch();
+  let hasDeletions = false;
+
+  // 1. Mensagens expiradas: Hard-delete DEK em messageKeys + Hard-delete ciphertext em messages
   const expiredKeysQuery = db
     .collection("messageKeys")
     .where("expiresAt", "<=", currentTime)
     .limit(500);
 
   const snapshot = await expiredKeysQuery.get();
+  let messageCount = 0;
 
-  if (snapshot.empty) {
-    logger.info("Crypto-Shredder: No expired message keys found.");
-    return { shreddedKeysCount: 0, deletedMessagesCount: 0 };
+  if (!snapshot.empty) {
+    for (const doc of snapshot.docs) {
+      const data = doc.data();
+      const messageId = data.messageId || doc.id;
+
+      // 1. Hard-delete DEK (Irreversible Crypto-Shredding)
+      batch.delete(doc.ref);
+
+      // 2. Hard-delete matching ciphertext message document
+      const messageRef = db.collection("messages").doc(messageId);
+      batch.delete(messageRef);
+
+      messageCount++;
+    }
+    hasDeletions = true;
   }
 
-  const batch = db.batch();
-  let count = 0;
+  // 2. Logs de conexão expirados (Marco Civil Art. 15 - Retenção de 180 dias):
+  // Expurgo ativo das coleções connectionLogs e accessLogs
+  let logsCount = 0;
 
-  for (const doc of snapshot.docs) {
-    const data = doc.data();
-    const messageId = data.messageId || doc.id;
+  const expiredConnLogsQuery = db
+    .collection("connectionLogs")
+    .where("expiresAt", "<=", currentTime)
+    .limit(500);
 
-    // 1. Hard-delete DEK (Irreversible Crypto-Shredding)
-    batch.delete(doc.ref);
-
-    // 2. Hard-delete matching ciphertext message document
-    const messageRef = db.collection("messages").doc(messageId);
-    batch.delete(messageRef);
-
-    count++;
+  const connLogsSnapshot = await expiredConnLogsQuery.get();
+  if (!connLogsSnapshot.empty) {
+    for (const doc of connLogsSnapshot.docs) {
+      batch.delete(doc.ref);
+      logsCount++;
+    }
+    hasDeletions = true;
   }
 
-  await batch.commit();
+  const expiredAccessLogsQuery = db
+    .collection("accessLogs")
+    .where("expiresAt", "<=", currentTime)
+    .limit(500);
 
-  logger.info(`Crypto-Shredder: Successfully shredded ${count} keys and associated messages.`);
-  return { shreddedKeysCount: count, deletedMessagesCount: count };
+  const accessLogsSnapshot = await expiredAccessLogsQuery.get();
+  if (!accessLogsSnapshot.empty) {
+    for (const doc of accessLogsSnapshot.docs) {
+      batch.delete(doc.ref);
+      logsCount++;
+    }
+    hasDeletions = true;
+  }
+
+  if (hasDeletions) {
+    await batch.commit();
+  }
+
+  if (messageCount === 0 && logsCount === 0) {
+    logger.info("Crypto-Shredder: No expired message keys or connection logs found.");
+  } else {
+    logger.info(
+      `Crypto-Shredder: Successfully shredded ${messageCount} keys/messages and ${logsCount} connection logs.`
+    );
+  }
+
+  return {
+    shreddedKeysCount: messageCount,
+    deletedMessagesCount: messageCount,
+    deletedLogsCount: logsCount,
+  };
 }
 
 /**

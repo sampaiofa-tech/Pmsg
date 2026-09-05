@@ -91,7 +91,7 @@ A infraestrutura de servidores do Raix está alocada na região **`us-central1` 
 | **Mensagens e DEKs Envelopadas** | Firestore (`messages`, `messageKeys`) | **Máximo de 24 horas** (ou menos, conforme TTL) | Destruição no consumo (*Vanish-After-Read*) ou purga horária pelo *Crypto-Shredder*. |
 | **Metadados de Roteamento (`senderId` e `recipientId`)** | Firestore (`messages`, `messageKeys`) | **Máximo de 24 horas** (junto ao envelope) | Expurgo simultâneo irreversível no consumo ou no *Crypto-Shredder*. Dado mais sensível retido pelo servidor. |
 | **Identidade de Roteamento** | Firestore (`identities`) | Enquanto a identidade existir | Exclusão voluntária pelo usuário ou solicitação formal ao Encarregado. |
-| **Registros de Conexão (MCI Art. 15)** | Firestore (`accessLogs`) | **180 dias** (Art. 15 MCI) | Expurgo automático via política de TTL do banco. |
+| **Registros de Conexão (MCI Art. 15)** | Firestore (`connectionLogs` / `accessLogs`) | **180 dias** (Art. 15 MCI) | Expurgo automático via política TTL do banco + purga ativa redundante pelo *Crypto-Shredder*. |
 | **Denúncias com Conteúdo Voluntário** | Firestore (`abuseReportsWithContent`) | **Até 90 dias após o encerramento da apuração** | Exclusão definitiva e cripto-incineração irreversível (*hard-delete* do Firestore). |
 | **Logs Técnicos de Diagnóstico** | Google Cloud Logging | **30 dias** | Sobrescrita automática padrão do Cloud Logging. |
 | **Contatos e Chaves Privadas** | Dispositivo Local do Usuário | Permanente até remoção local | Controle exclusivo do usuário pelo aplicativo ou botão de Pânico (*Panic Wipe*). |

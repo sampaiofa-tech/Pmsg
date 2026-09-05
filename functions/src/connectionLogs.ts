@@ -74,7 +74,7 @@ export async function recordConnectionLog(
     const db = admin.firestore();
     if (db && typeof db.collection === "function") {
       // Store isolado conforme Art. 15 do Marco Civil da Internet (spec 1.1 do parecer jurídico)
-      const coll = db.collection("accessLogs");
+      const coll = db.collection("connectionLogs");
       if (coll && typeof coll.add === "function") {
         await coll.add(logEntry);
       }

@@ -2,11 +2,12 @@ import * as admin from "firebase-admin";
 import { Timestamp } from "firebase-admin/firestore";
 import { executeCryptoShredding } from "../src/shredder";
 
+jest.setTimeout(30000);
+
 describe("E2E Real Firestore Emulator - Authoritative Crypto-Shredder", () => {
   let db: admin.firestore.Firestore;
 
   beforeAll(() => {
-    jest.setTimeout(30000);
     process.env.FIRESTORE_EMULATOR_HOST = "127.0.0.1:8080";
     process.env.GCLOUD_PROJECT = "pmsg-e2e-project";
 
@@ -53,28 +54,49 @@ describe("E2E Real Firestore Emulator - Authoritative Crypto-Shredder", () => {
       expiresAt: futureTimestamp,
     });
 
+    // 3. Seed Expired and Active Connection Logs (Marco Civil Art. 15 Retenção 180d)
+    await db.collection("connectionLogs").doc("e2e_log_expired").set({
+      ip: "192.168.1.100",
+      porta: 54321,
+      functionName: "storeMessageKey",
+      expiresAt: pastTimestamp,
+    });
+    await db.collection("connectionLogs").doc("e2e_log_active").set({
+      ip: "192.168.1.100",
+      porta: 54321,
+      functionName: "storeMessageKey",
+      expiresAt: futureTimestamp,
+    });
+
     // Verify initial existence
     const beforeKeyDoc = await db.collection("messageKeys").doc("e2e_msg_expired").get();
     const beforeMsgDoc = await db.collection("messages").doc("e2e_msg_expired").get();
+    const beforeLogDoc = await db.collection("connectionLogs").doc("e2e_log_expired").get();
     expect(beforeKeyDoc.exists).toBe(true);
     expect(beforeMsgDoc.exists).toBe(true);
+    expect(beforeLogDoc.exists).toBe(true);
 
-    // 3. Run real executeCryptoShredding against Emulator
+    // 4. Run real executeCryptoShredding against Emulator
     const shredResult = await executeCryptoShredding(db, Timestamp.now());
     expect(shredResult.shreddedKeysCount).toBeGreaterThanOrEqual(1);
     expect(shredResult.deletedMessagesCount).toBeGreaterThanOrEqual(1);
+    expect(shredResult.deletedLogsCount).toBeGreaterThanOrEqual(1);
 
-    // 4. Verify post-shredder state: Expired docs are completely deleted!
+    // 5. Verify post-shredder state: Expired docs are completely deleted!
     const afterKeyDoc = await db.collection("messageKeys").doc("e2e_msg_expired").get();
     const afterMsgDoc = await db.collection("messages").doc("e2e_msg_expired").get();
+    const afterLogDoc = await db.collection("connectionLogs").doc("e2e_log_expired").get();
     expect(afterKeyDoc.exists).toBe(false);
     expect(afterMsgDoc.exists).toBe(false);
+    expect(afterLogDoc.exists).toBe(false);
 
     // Verify Active docs are preserved
     const activeKeyDoc = await db.collection("messageKeys").doc("e2e_msg_active").get();
     const activeMsgDoc = await db.collection("messages").doc("e2e_msg_active").get();
+    const activeLogDoc = await db.collection("connectionLogs").doc("e2e_log_active").get();
     expect(activeKeyDoc.exists).toBe(true);
     expect(activeMsgDoc.exists).toBe(true);
+    expect(activeLogDoc.exists).toBe(true);
   });
 
   it("CRITICAL E2E: getMessageKey delivers DEK to authorized recipient and rejects unauthorized or shredded keys", async () => {
