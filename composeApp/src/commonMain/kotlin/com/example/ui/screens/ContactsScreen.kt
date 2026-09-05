@@ -503,7 +503,7 @@ fun EmptyContactsView(
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = "O Pmsg não possui lista telefônica pública ou diretório de nick. Para conversar, faça a troca de chaves presencial (Modelo A).",
+            text = "O Raix não possui lista telefônica pública ou diretório de nick. Para conversar, faça a troca de chaves presencial (Modelo A).",
             style = MaterialTheme.typography.bodyMedium,
             color = Color(0xFF90A4AE),
             modifier = Modifier.padding(horizontal = 16.dp)

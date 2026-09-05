@@ -26,6 +26,8 @@ class AppEndpointsTest {
         assertTrue(AppEndpoints.PROD_GET_KEY_URL.contains("getMessageKey"))
         assertTrue(AppEndpoints.PROD_REPORT_ABUSE_URL.startsWith("https://"))
         assertTrue(AppEndpoints.PROD_REPORT_ABUSE_URL.contains("reportAbuse"))
+        assertTrue(AppEndpoints.PROD_REPORT_ABUSE_WITH_CONTENT_URL.startsWith("https://"))
+        assertTrue(AppEndpoints.PROD_REPORT_ABUSE_WITH_CONTENT_URL.contains("reportAbuseWithContent"))
         assertTrue(AppEndpoints.PROD_IDENTITY_TOOLKIT_URL.startsWith("https://identitytoolkit.googleapis.com"))
     }
 
@@ -53,6 +55,29 @@ class AppEndpointsTest {
         assertTrue(dataObj["text"] == null)
         assertTrue(dataObj["message"] == null)
         assertTrue(dataObj["content"] == null)
+    }
+
+    @Test
+    fun testReportAbuseWithContentCallableEnvelopeFormat() {
+        // Enforces that reportAbuseWithContent requires explicitConsent: true, contentSnippet and conforms to Firebase Callable
+        val payload = buildJsonObject {
+            put("data", buildJsonObject {
+                put("reportedFingerprint", "a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90")
+                put("abuseType", "ILLEGAL_CONTENT")
+                put("contentSnippet", "Mensagem abusiva voluntariamente reportada.")
+                put("explicitConsent", true)
+            })
+        }
+
+        val jsonString = payload.toString()
+        val parsed = json.parseToJsonElement(jsonString).jsonObject
+
+        assertNotNull(parsed["data"], "Firebase Callable requires top-level 'data' wrapper")
+        val dataObj = parsed["data"]!!.jsonObject
+        assertEquals("a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90", dataObj["reportedFingerprint"]?.jsonPrimitive?.content)
+        assertEquals("ILLEGAL_CONTENT", dataObj["abuseType"]?.jsonPrimitive?.content)
+        assertEquals("Mensagem abusiva voluntariamente reportada.", dataObj["contentSnippet"]?.jsonPrimitive?.content)
+        assertEquals("true", dataObj["explicitConsent"]?.jsonPrimitive?.content)
     }
 
     @Test

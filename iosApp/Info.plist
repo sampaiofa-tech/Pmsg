@@ -10,20 +10,22 @@
     <string>com.aistudio.vanishchat.zr7k</string>
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
+    <key>CFBundleDisplayName</key>
+    <string>Raix</string>
     <key>CFBundleName</key>
-    <string>Pmsg</string>
+    <string>Raix</string>
     <key>CFBundlePackageType</key>
     <string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
     <key>CFBundleShortVersionString</key>
-    <string>1.0</string>
+    <string>1.4.0</string>
     <key>CFBundleVersion</key>
     <string>1</string>
     <key>LSRequiresIPhoneOS</key>
     <true/>
     <key>NSFaceIDUsageDescription</key>
-    <string>Pmsg requer Face ID / Touch ID para proteger suas mensagens efêmeras.</string>
+    <string>Raix requer Face ID / Touch ID para proteger suas mensagens efêmeras.</string>
     <key>NSCameraUsageDescription</key>
-    <string>Pmsg utiliza a câmera exclusivamente para escanear QR codes de contatos e convites de forma local e offline.</string>
+    <string>Raix utiliza a câmera exclusivamente para escanear QR codes de contatos e convites de forma local e offline.</string>
     <key>UILaunchStoryboardName</key>
     <string>LaunchScreen</string>
     <key>UIRequiredDeviceCapabilities</key>

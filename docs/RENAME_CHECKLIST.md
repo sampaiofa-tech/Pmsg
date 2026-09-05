@@ -37,12 +37,12 @@ Este checklist consolida as ações técnicas, regulatórias e operacionais da t
 - [x] **Ativos Oficiais Fornecidos e Integrados**:
   - `branding/logo-app.png`: Escudo com centro esmeralda (extração pura para o ícone, sem o texto inferior "RAIX").
   - `branding/logo-empresa.png`: Marca corporativa com acabamento translúcido (exclusiva das telas institucionais/"Sobre").
-- [ ] **Display Name do Aplicativo**:
+- [x] **Display Name do Aplicativo**:
   - **Android**: `composeApp/src/androidMain/res/values/strings.xml` (`app_name = "Raix"`).
-  - **iOS**: `iosApp/iosApp/Info.plist` (`CFBundleDisplayName = "Raix"`).
-  - **Desktop**: Título da janela em `composeApp/src/desktopMain/kotlin/com/example/Main.kt` (`Window(title = "Raix")`).
-  - **Web**: Tag `<title>Raix</title>` em `composeApp/src/wasmJsMain/resources/index.html`.
-- [ ] **Paleta de Cores Compose**:
+  - **iOS**: `iosApp/Info.plist` (`CFBundleDisplayName = "Raix"`, `CFBundleName = "Raix"`).
+  - **Desktop**: Título da janela em `composeApp/src/desktopMain/kotlin/com/example/Main.kt` (`Window(title = "Raix [desktop-dev]")`).
+  - **Web**: Tag `<title>Raix - Zero-Trace Secure Messaging</title>` em `composeApp/src/wasmJsMain/resources/index.html`.
+- [x] **Paleta de Cores Compose**:
   - Verde Esmeralda (`#00E676`), Dourado (`#D4AF37`), Azul-Marinho Profundo (`#0B1325`).
 
 ---

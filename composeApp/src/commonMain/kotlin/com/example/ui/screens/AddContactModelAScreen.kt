@@ -764,7 +764,7 @@ fun AddContactModelAScreen(
                                         Button(
                                             onClick = {
                                                 inviteLink?.let { link ->
-                                                    clipboardSensivel.copySensitive(link, "Pmsg Convite")
+                                                    clipboardSensivel.copySensitive(link, "Raix Convite")
                                                     copyFeedback = "Link copiado com auto-limpeza em 30 segundos! ⏱️"
                                                 }
                                             },

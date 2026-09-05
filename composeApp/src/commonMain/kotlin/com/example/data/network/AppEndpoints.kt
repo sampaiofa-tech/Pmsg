@@ -26,6 +26,7 @@ object AppEndpoints {
     const val PROD_UPDATE_IDENTITY_ROUTING_URL: String = "https://$REGION-$DEFAULT_PROJECT_ID.cloudfunctions.net/updateIdentityRouting"
     const val DEFAULT_WEB_API_KEY: String = "AIzaSyDpVykwTzWXMqYQFpKGebyBW979nlcaL1Y"
     const val PROD_REPORT_ABUSE_URL: String = "https://$REGION-$DEFAULT_PROJECT_ID.cloudfunctions.net/reportAbuse"
+    const val PROD_REPORT_ABUSE_WITH_CONTENT_URL: String = "https://$REGION-$DEFAULT_PROJECT_ID.cloudfunctions.net/reportAbuseWithContent"
     const val PROD_IDENTITY_TOOLKIT_URL: String = "https://identitytoolkit.googleapis.com/v1"
     const val PROD_SECURE_TOKEN_URL: String = "https://securetoken.googleapis.com/v1"
     const val PROD_FIRESTORE_URL: String = "https://firestore.googleapis.com/v1"
@@ -129,6 +130,17 @@ object AppEndpoints {
             }
         } else {
             PROD_REPORT_ABUSE_URL
+        }
+
+    val reportAbuseWithContentUrl: String
+        get() = if (isDebug) {
+            PlatformEnvironment.getEnv("PMSG_REPORT_ABUSE_WITH_CONTENT_URL") ?: if (isEmulator) {
+                "http://127.0.0.1:5001/$projectId/$REGION/reportAbuseWithContent"
+            } else {
+                PROD_REPORT_ABUSE_WITH_CONTENT_URL
+            }
+        } else {
+            PROD_REPORT_ABUSE_WITH_CONTENT_URL
         }
 
     val identityToolkitBaseUrl: String

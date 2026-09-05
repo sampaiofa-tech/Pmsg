@@ -18,6 +18,8 @@ import com.example.security.identity.SealedBoxEnvelope
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -127,6 +129,9 @@ fun ContactChatScreen(
     var showReportAbuseDialog by remember { mutableStateOf(false) }
     var selectedAbuseType by remember { mutableStateOf("SPAM") }
     var alsoBlockOnReport by remember { mutableStateOf(true) }
+    var includeContentSnippet by remember { mutableStateOf(false) }
+    var contentSnippetText by remember { mutableStateOf("") }
+    var explicitConsentAccepted by remember { mutableStateOf(false) }
     var reportStatusMessage by remember { mutableStateOf<String?>(null) }
     var isReporting by remember { mutableStateOf(false) }
     var isBlocked by remember { mutableStateOf(false) }
@@ -679,7 +684,12 @@ fun ContactChatScreen(
     if (showReportAbuseDialog) {
         AlertDialog(
             onDismissRequest = {
-                if (!isReporting) showReportAbuseDialog = false
+                if (!isReporting) {
+                    showReportAbuseDialog = false
+                    includeContentSnippet = false
+                    contentSnippetText = ""
+                    explicitConsentAccepted = false
+                }
             },
             title = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -694,9 +704,12 @@ fun ContactChatScreen(
                 }
             },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    modifier = Modifier.verticalScroll(rememberScrollState())
+                ) {
                     Text(
-                        text = "O Pmsg opera em arquitetura Zero-Knowledge. O servidor é cego e não possui acesso a conteúdos de mensagens. Esta denúncia registra exclusivamente padrões de tráfego abusivo na rede.",
+                        text = "O Raix opera em arquitetura Zero-Knowledge. O servidor é cego e não possui acesso a conteúdos de mensagens. Esta denúncia registra exclusivamente padrões de tráfego abusivo na rede.",
                         style = MaterialTheme.typography.bodySmall,
                         color = Color(0xFFB0BEC5)
                     )
@@ -725,7 +738,7 @@ fun ContactChatScreen(
                                 selected = (selectedAbuseType == type),
                                 onClick = { selectedAbuseType = type },
                                 colors = RadioButtonDefaults.colors(
-                                    selectedColor = Color(0xFF00FFC2),
+                                    selectedColor = Color(0xFF00E676),
                                     unselectedColor = Color(0xFF90A4AE)
                                 )
                             )
@@ -733,6 +746,7 @@ fun ContactChatScreen(
                             Text(text = label, style = MaterialTheme.typography.bodyMedium, color = Color.White)
                         }
                     }
+
                     Spacer(modifier = Modifier.height(4.dp))
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -756,48 +770,139 @@ fun ContactChatScreen(
                             fontWeight = FontWeight.SemiBold
                         )
                     }
+
+                    // C6: Fluxo opcional e voluntário de envio de conteúdo para moderação
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { includeContentSnippet = !includeContentSnippet }
+                    ) {
+                        Checkbox(
+                            checked = includeContentSnippet,
+                            onCheckedChange = { includeContentSnippet = it },
+                            colors = CheckboxDefaults.colors(
+                                checkedColor = Color(0xFF00E676),
+                                uncheckedColor = Color(0xFF90A4AE)
+                            )
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Anexar trecho de texto voluntariamente (Opcional)",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color(0xFFE0E0E0),
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+
+                    if (includeContentSnippet) {
+                        OutlinedTextField(
+                            value = contentSnippetText,
+                            onValueChange = { if (it.length <= 500) contentSnippetText = it },
+                            modifier = Modifier.fillMaxWidth(),
+                            placeholder = { Text("Cole ou digite o trecho ofensivo...", fontSize = 12.sp, color = Color(0xFF78909C)) },
+                            maxLines = 3,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedTextColor = Color.White,
+                                unfocusedTextColor = Color.White,
+                                focusedBorderColor = Color(0xFF00E676),
+                                unfocusedBorderColor = Color(0xFF37474F)
+                            )
+                        )
+                        Row(
+                            verticalAlignment = Alignment.Top,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { explicitConsentAccepted = !explicitConsentAccepted }
+                                .padding(vertical = 2.dp)
+                        ) {
+                            Checkbox(
+                                checked = explicitConsentAccepted,
+                                onCheckedChange = { explicitConsentAccepted = it },
+                                colors = CheckboxDefaults.colors(
+                                    checkedColor = Color(0xFF00E676),
+                                    uncheckedColor = Color(0xFFFFB74D)
+                                )
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "Autorizo expressamente o envio voluntário deste trecho de texto para fins exclusivos de moderação e apuração de ilícitos (LGPD Art. 7º, I).",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color(0xFFFFCC80),
+                                fontSize = 11.sp,
+                                lineHeight = 15.sp
+                            )
+                        }
+                    }
                 }
             },
             confirmButton = {
+                val canSubmit = !isReporting && (!includeContentSnippet || (explicitConsentAccepted && contentSnippetText.isNotBlank()))
                 TextButton(
-                    enabled = !isReporting,
+                    enabled = canSubmit,
                     onClick = {
                         isReporting = true
                         coroutineScope.launch {
-                            val result = IdentityNetworkClient.reportAbuse(
-                                reportedFingerprint = contact.fingerprint,
-                                abuseType = selectedAbuseType
-                            )
+                            val result = if (includeContentSnippet && explicitConsentAccepted && contentSnippetText.isNotBlank()) {
+                                IdentityNetworkClient.reportAbuseWithContent(
+                                    reportedFingerprint = contact.fingerprint,
+                                    abuseType = selectedAbuseType,
+                                    contentSnippet = contentSnippetText.trim(),
+                                    explicitConsent = true
+                                )
+                            } else {
+                                IdentityNetworkClient.reportAbuse(
+                                    reportedFingerprint = contact.fingerprint,
+                                    abuseType = selectedAbuseType
+                                )
+                            }
                             if (result.isSuccess) {
                                 if (alsoBlockOnReport) {
                                     contactRepository.blockContact(contact.fingerprint)
                                     isBlocked = true
                                     messages.removeAll { !it.isMe && it.senderId == contact.fingerprint }
                                 }
-                                reportStatusMessage = "Denúncia comportamental enviada com sucesso."
+                                reportStatusMessage = if (includeContentSnippet) {
+                                    "Denúncia com conteúdo voluntário enviada com sucesso para apuração."
+                                } else {
+                                    "Denúncia comportamental Zero-Knowledge enviada com sucesso."
+                                }
                             } else {
                                 reportStatusMessage = "Falha ao enviar denúncia: ${result.exceptionOrNull()?.message}"
                             }
                             isReporting = false
                             showReportAbuseDialog = false
+                            includeContentSnippet = false
+                            contentSnippetText = ""
+                            explicitConsentAccepted = false
                         }
                     }
                 ) {
                     if (isReporting) {
                         CircularProgressIndicator(
                             modifier = Modifier.size(16.dp),
-                            color = Color(0xFF00FFC2),
+                            color = Color(0xFF00E676),
                             strokeWidth = 2.dp
                         )
                     } else {
-                        Text("Enviar Denúncia", color = Color(0xFFFF5252), fontWeight = FontWeight.Bold)
+                        Text(
+                            "Enviar Denúncia",
+                            color = if (canSubmit) Color(0xFFFF5252) else Color.Gray,
+                            fontWeight = FontWeight.Bold
+                        )
                     }
                 }
             },
             dismissButton = {
                 TextButton(
                     enabled = !isReporting,
-                    onClick = { showReportAbuseDialog = false }
+                    onClick = {
+                        showReportAbuseDialog = false
+                        includeContentSnippet = false
+                        contentSnippetText = ""
+                        explicitConsentAccepted = false
+                    }
                 ) {
                     Text("Cancelar")
                 }

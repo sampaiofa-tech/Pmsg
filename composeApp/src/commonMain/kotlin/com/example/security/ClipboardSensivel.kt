@@ -10,6 +10,6 @@ package com.example.security
  * - Web (WasmJS): Navigator.clipboard write + 30-second wipe timer.
  */
 expect class ClipboardSensivel() {
-    fun copySensitive(text: String, label: String = "Pmsg Segredo")
+    fun copySensitive(text: String, label: String = "Raix Segredo")
     fun clear()
 }

@@ -182,7 +182,7 @@ fun DataPrivacyScreen(
                     }
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
-                        text = "O Pmsg foi construído de forma que o servidor é matematicamente incapaz de ler o conteúdo das mensagens ou as chaves simétricas de criptografia (DEK). As chaves privadas nunca saem do seu dispositivo.",
+                        text = "O Raix foi construído de forma que o servidor é matematicamente incapaz de ler o conteúdo das mensagens ou as chaves simétricas de criptografia (DEK). As chaves privadas nunca saem do seu dispositivo.",
                         color = Color(0xFFD1D5DB),
                         fontSize = 13.sp,
                         lineHeight = 19.sp

@@ -149,7 +149,7 @@ fun BlockedContactsScreen(
                         }
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "O servidor Pmsg não conhece sua lista de bloqueados (modelo Zero-Knowledge). O descarte de mensagens é executado 100% no seu dispositivo (auto-purge no recebimento).",
+                            text = "O servidor Raix não conhece sua lista de bloqueados (modelo Zero-Knowledge). O descarte de mensagens é executado 100% no seu dispositivo (auto-purge no recebimento).",
                             style = MaterialTheme.typography.bodySmall,
                             color = Color(0xFFB0BEC5),
                             lineHeight = 18.sp
