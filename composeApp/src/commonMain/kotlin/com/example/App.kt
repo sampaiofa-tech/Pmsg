@@ -40,13 +40,18 @@ sealed interface AppDestination {
     data class SafetyNumber(val contact: ContactItem) : AppDestination
 }
 
-private val PmsgDarkColors = darkColorScheme(
-    primary = Color(0xFF00FFC2),
-    onPrimary = Color(0xFF0A1128),
-    surface = Color(0xFF0A0E17),
-    onSurface = Color.White,
-    background = Color(0xFF0A0E17),
-    onBackground = Color.White
+private val RaixDarkColors = darkColorScheme(
+    primary = Color(0xFF00E676),      // Verde Esmeralda
+    onPrimary = Color(0xFF0B1325),
+    secondary = Color(0xFFD4AF37),    // Ouro Envelhecido / Dourado
+    onSecondary = Color(0xFF0B1325),
+    tertiary = Color(0xFFD4AF37),
+    surface = Color(0xFF0B1325),      // Azul Marinho Profundo
+    onSurface = Color(0xFFF1F5F9),
+    background = Color(0xFF0B1325),   // Azul Marinho Profundo
+    onBackground = Color(0xFFF1F5F9),
+    surfaceVariant = Color(0xFF131F37),
+    outline = Color(0xFF203254)
 )
 
 @Composable
@@ -59,8 +64,8 @@ fun App() {
         )
     }
 
-    MaterialTheme(colorScheme = PmsgDarkColors) {
-        Surface(modifier = Modifier.fillMaxSize(), color = Color(0xFF0A0E17)) {
+    MaterialTheme(colorScheme = RaixDarkColors) {
+        Surface(modifier = Modifier.fillMaxSize(), color = Color(0xFF0B1325)) {
             AnimatedContent(
                 targetState = currentDestination,
                 transitionSpec = {

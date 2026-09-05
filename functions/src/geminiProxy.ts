@@ -2,6 +2,7 @@ import { onRequest } from "firebase-functions/v2/https";
 import { defineSecret } from "firebase-functions/params";
 import { logger } from "firebase-functions";
 import * as admin from "firebase-admin";
+import { recordConnectionLog } from "./connectionLogs";
 
 const geminiApiKey = defineSecret("GEMINI_API_KEY");
 
@@ -77,6 +78,9 @@ export const geminiProxy = onRequest(
     invoker: "public",
   },
   async (req, res) => {
+    // 0. Marco Civil da Internet Art. 15 Connection Log
+    await recordConnectionLog(req, "geminiProxy");
+
     // 1. Enforce POST method
     if (req.method !== "POST") {
       res.status(405).json({ error: "Method Not Allowed. Use POST." });

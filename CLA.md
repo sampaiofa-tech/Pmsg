@@ -1,6 +1,6 @@
-# Acordo de Contribuição Individual (CLA) — Pmsg (nome provisório)
+# Acordo de Contribuição Individual (CLA) — Raix
 
-Obrigado pelo seu interesse em contribuir para o projeto **Pmsg (nome provisório)**!
+Obrigado pelo seu interesse em contribuir para o projeto **Raix**!
 
 Para viabilizar a sustentabilidade do projeto sob o modelo de **licenciamento duplo** (Open Source AGPL-3.0 + Edição Comercial Proprietária), todos os colaboradores externos que submetem contribuições (pull requests, patches de código, documentação ou melhorias técnicas) concordam com os seguintes termos:
 

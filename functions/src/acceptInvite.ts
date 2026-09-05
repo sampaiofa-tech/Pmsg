@@ -1,6 +1,7 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import * as logger from "firebase-functions/logger";
+import { recordConnectionLog } from "./connectionLogs";
 
 const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
 const MAX_ACCEPTS_PER_WINDOW = 15; // Max 15 attempts / min
@@ -16,6 +17,9 @@ const MAX_ACCEPTS_PER_WINDOW = 15; // Max 15 attempts / min
  * 5. Returns only the technical routing metadata (creator's fingerprint and public key).
  */
 export const acceptInvite = onCall(async (request) => {
+  // 0. Marco Civil da Internet Art. 15 Connection Log
+  await recordConnectionLog(request, "acceptInvite");
+
   // 1. Enforce Authentication
   if (!request.auth || !request.auth.uid) {
     logger.warn("acceptInvite: Unauthenticated call rejected.");

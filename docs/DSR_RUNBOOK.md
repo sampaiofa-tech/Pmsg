@@ -1,56 +1,71 @@
-# Runbook Interno — Atendimento a Solicitações de Titulares (DSR / LGPD)
+# Runbook Interno — Atendimento a Solicitações de Titulares (DSR / LGPD) — Raix
 
 > **CONFIDENCIAL — DOCUMENTAÇÃO INTERNA DO CONTROLADOR**  
 > **NÃO PUBLICAR NO GITHUB PAGES OU RECURSOS PÚBLICOS**  
-> **Controlador & DPO:** Filippe Andrade Sampaio (`azfstick00@gmail.com`)  
+> **Controlador & DPO:** Filippe Andrade Sampaio (`contato@raixtech.com`)  
+> **Aplicação:** Raix (Marca nominativa depositada no INPI sob nº 945109300)  
 > **Legislação Base:** Lei Geral de Proteção de Dados (Lei nº 13.709/2018), Arts. 18 e 19
 
 ---
 
-## 1. Visão Geral e Prazos Legais
+## 1. Visão Geral, Prazos Legais e Princípio da Bifurcação (Parecer C7)
 
-Como desenvolvedor e controlador independente do **Pmsg (nome provisório)**, você tem o dever legal de responder a solicitações dos titulares de dados (direitos do Art. 18 da LGPD).
+Como desenvolvedor e controlador independente da infraestrutura **Raix**, você tem o dever legal de responder a solicitações dos titulares de dados (direitos do Art. 18 da LGPD).
 
 - **Prazo Máximo de Resposta:** **Até 15 (quinze) dias**, contados a partir da data da solicitação do titular (Art. 19, II da LGPD).
-- **Canal Oficial de Entrada:** `azfstick00@gmail.com`.
+- **Canal Oficial de Entrada:** `contato@raixtech.com`.
 - **Natureza do Atendimento:** Manual e rastreada.
+
+### 🏛️ 1.1. Bifurcação de Papéis: Operadora de Transporte vs. Controlador de Conteúdo Profissional (C7)
+
+Em conformidade com o Parecer Jurídico Especializado, o atendimento DSR deve distinguir claramente a natureza da solicitação:
+
+1. **Fluxo A — Dados Técnicos de Transporte (Raix como Operadora / Controladora de Infraestrutura):**
+   - **Objeto:** Identificador público de roteamento (`identities/{fingerprint}`), registros técnicos de conexão do Marco Civil (`connectionLogs`) e dados de sessão anônima.
+   - **Competência:** A equipe da **Raix** é diretamente responsável por confirmar, prestar informações sobre a infraestrutura ou efetuar a eliminação do registro de identidade do titular em até 15 dias.
+
+2. **Fluxo B — Conteúdo de Conversas Profissionais (O Profissional / Empresa como Controlador):**
+   - **Objeto:** Pedidos de acesso a histórico de conversas, registros de atendimento, prontuários ou mensagens trocadas entre clientes/pacientes e profissionais liberais (médicos, advogados, contadores, consultores) que utilizam o aplicativo.
+   - **Competência e Limitação Técnica:** A Raix opera sob o princípio estrito de **servidor cego (*Zero-Knowledge*)**, de modo que as mensagens cifradas não são armazenadas permanentemente e nunca são acessíveis ao servidor. O **Profissional interlocutor é o Controlador exclusivo** dos dados daquela relação profissional.
+   - **Ação do Atendente Raix:** Informar formalmente ao titular que a plataforma não custodia nem possui acesso ao conteúdo das comunicações, orientando-o a requerer tais informações diretamente ao profissional ou escritório com o qual interagiu.
 
 ---
 
 ## 2. Passo a Passo do Fluxo de Atendimento
 
 ```
-[E-mail recebido em azfstick00@gmail.com]
+[E-mail recebido em contato@raixtech.com]
                  │
                  ▼
-     Passo 1: Identificação
-(Validar o Fingerprint informado)
+     Passo 1: Identificação & Triagem
+(Bifurcação: Transporte vs. Conteúdo Profissional)
+                 │
+       ┌─────────┴─────────┐
+       ▼                   ▼
+  [Fluxo A:           [Fluxo B:
+   Transporte]         Conteúdo Profissional]
+       │                   │
+  Validar Fingerprint   Explicar Servidor Cego
+       │                e Direcionar ao
+  Executar Acesso/      Profissional (Controlador)
+  Deleção Técnica          │
+       │                   │
+       └─────────┬─────────┘
+                 ▼
+     Passo 4: Resposta Formal (≤ 15 dias)
                  │
                  ▼
-    Passo 2: Análise do Pedido
-(Acesso, Confirmação ou Eliminação)
-                 │
-                 ▼
-    Passo 3: Execução Técnica
-(Deleção do doc identities/{fingerprint})
-                 │
-                 ▼
-    Passo 4: Resposta ao Titular
-(Envio formal em ≤ 15 dias)
-                 │
-                 ▼
-    Passo 5: Registro no Log DSR
-(Documentação comprobatória)
+     Passo 5: Registro no Livro DSR
 ```
 
 ---
 
 ## 3. Passo 1: Identificação e Validação do Titular
 
-Como o Pmsg **não coleta nomes, e-mails, senhas nem telefones** para registro de conta (autenticação 100% anônima via Firebase Auth), a correlação técnica depende do **Fingerprint Criptográfico (Ed25519)** do titular.
+Como o Raix **não coleta nomes, e-mails, senhas nem telefones** para registro de conta (autenticação 100% anônima via Firebase Auth), a correlação técnica depende do **Fingerprint Criptográfico (Ed25519)** do titular.
 
 1. Se o titular enviou o e-mail mas **não forneceu o fingerprint**:
-   - Responder solicitando que abra o app Pmsg, acesse a tela *"Sobre seus dados"* ou *"Minha Identidade"*, copie o **Fingerprint Técnico** e envie em resposta.
+   - Responder solicitando que abra o app Raix, acesse a tela *"Sobre seus dados"* ou *"Minha Identidade"*, copie o **Fingerprint Técnico** e envie em resposta.
 2. Se o titular informou o fingerprint:
    - Validar se o formato corresponde a uma chave hexadecimal ou representação de 60 dígitos válida.
 
@@ -91,8 +106,8 @@ db.collection('identities').doc(fingerprint).delete().then(() => {
 - **DEKs envelopadas e ephemeralPubKeys (`messages/{messageId}/keys`):** Incineradas junto com as mensagens no TTL/Vanish (crypto-shredding).
 - **Contatos locais e chaves privadas:** Residem unicamente no aparelho do usuário. O servidor nunca possuiu esses dados. Para eliminá-los, basta ao usuário acionar a opção *Pânico (Panic Wipe)* no app ou desinstalar o aplicativo.
 
-### 4.3. Resíduos Técnicos em Logs:
-- **Cloud Logging:** Logs de auditoria do Google Cloud possuem ciclo de retenção fixo e imutável de **30 dias**, sendo expurgados automaticamente pela política do provedor (`us-central1`), conforme amparo legal no Marco Civil da Internet (Art. 16 da Lei nº 12.965/2014 — guarda obrigatória de logs).
+### 4.3. Registros Legais Isolados (MCI Art. 15):
+- **ConnectionLogs (`connectionLogs`):** Mantidos isoladamente sem identificador de usuário pelo prazo estrito de **180 dias** em estrito cumprimento do Art. 15 do Marco Civil da Internet (obrigação legal — Art. 7º, II da LGPD), findo o qual são expurgados automaticamente via política de TTL do banco.
 
 ---
 
@@ -100,17 +115,17 @@ db.collection('identities').doc(fingerprint).delete().then(() => {
 
 ### Modelo 1 — Resposta de Confirmação de Eliminação Efetuada (Art. 18, VI da LGPD)
 
-> **Assunto:** [Pmsg] Confirmação de Atendimento — Solicitação de Eliminação de Dados (LGPD)  
+> **Assunto:** [Raix] Confirmação de Atendimento — Solicitação de Eliminação de Dados (LGPD)  
 > **Para:** `<e-mail-do-solicitante>`  
 >
 > Olá,  
 >  
-> Em atenção à sua solicitação recebida em `[DATA_RECEBIMENTO]`, com fundamento no art. 18, inciso VI da Lei Geral de Proteção de Dados (Lei nº 13.709/2018 — LGPD), confirmo que foi realizada a **eliminação definitiva** do registro de sua identidade criptográfica (`identities/{fingerprint}`) de nossos servidores em nuvem.  
+> Em atenção à sua solicitação recebida em `[DATA_RECEBIMENTO]`, com fundamento no art. 18, inciso VI da Lei Geral de Proteção de Dados (Lei nº 13.709/2018 — LGPD), confirmo que foi realizada a **eliminação definitiva** do registro de sua identidade técnica de roteamento (`identities/{fingerprint}`) de nossos servidores em nuvem.  
 >  
 > Esclarecemos que:  
-> 1. O aplicativo Pmsg foi desenvolvido sob a arquitetura de servidor cego (*Zero-Knowledge*), não armazenando mensagens de forma permanente (as mensagens trocadas são autodestrutivas com tempo de vida máximo de 24 horas).  
+> 1. O aplicativo Raix foi desenvolvido sob a arquitetura de servidor cego (*Zero-Knowledge*), não armazenando mensagens de forma permanente (as mensagens trocadas são autodestrutivas com tempo de vida máximo de 24 horas).  
 > 2. O servidor nunca teve acesso ou posse do conteúdo de suas mensagens, de seus contatos, de sua frase mnemônica ou de suas chaves privadas, que residem exclusivamente na memória do seu dispositivo.  
-> 3. Registros técnicos de conexão e logs de sistema são retidos pelo prazo estrito de 30 dias para cumprimento de obrigação legal de segurança (art. 16 do Marco Civil da Internet), findo o qual são expurgados automaticamente.  
+> 3. Registros de conexão técnica são retidos pelo prazo estrito de 180 dias exclusivamente para cumprimento de obrigação legal (art. 15 do Marco Civil da Internet), em base isolada e desprovida de qualquer associação com sua identidade ou conteúdo.  
 >  
 > Caso deseje descartar os dados presentes em seu próprio dispositivo, recomendamos acionar o botão de Pânico (*Panic Wipe*) nas opções do aplicativo ou desinstalá-lo.  
 >  
@@ -119,32 +134,29 @@ db.collection('identities').doc(fingerprint).delete().then(() => {
 > Atenciosamente,  
 > **Filippe Andrade Sampaio**  
 > Controlador e Encarregado pelo Tratamento de Dados Pessoais  
-> Pmsg — `azfstick00@gmail.com`
+> Raix — `contato@raixtech.com`
 
 ---
 
-### Modelo 2 — Resposta de Solicitação de Confirmação de Existência ou Acesso (Art. 18, I e II da LGPD)
+### Modelo 2 — Resposta para Solicitação de Conteúdo de Conversas Profissionais (Bifurcação C7)
 
-> **Assunto:** [Pmsg] Resposta à Solicitação de Acesso / Informações sobre Tratamento de Dados (LGPD)  
+> **Assunto:** [Raix] Esclarecimento sobre Conteúdo de Comunicações Profissionais (LGPD)  
 > **Para:** `<e-mail-do-solicitante>`  
 >  
 > Olá,  
 >  
-> Em atenção à sua requisição formulada com base no art. 18 da LGPD, apresentamos o relatório dos dados vinculados ao fingerprint técnico `[FINGERPRINT]`:  
+> Em atenção à sua solicitação referente ao acesso a mensagens ou conteúdos trocados através do aplicativo Raix com `[NOME_DO_PROFISSIONAL_OU_EMPRESA]`, prestamos os seguintes esclarecimentos técnicos e jurídicos:  
 >  
-> - **Dados Existentes no Servidor:**  
->   - Registro de identidade pública de roteamento (chave pública X25519 e chave pública Ed25519).  
->   - Identificador técnico de sessão anônima gerado pelo Firebase Authentication.  
-> - **Dados Inexistentes no Servidor:**  
->   - Não possuímos seu nome, e-mail, telefone, lista de contatos, chaves privadas ou qualquer conteúdo de mensagens.  
-> - **Localização dos Servidores:** Google Cloud Platform, região `us-central1` (EUA), sob certificação ISO/IEC 27001.  
+> 1. **Arquitetura Servidor Cego (Zero-Knowledge):** O Raix atua unicamente como provedor da tecnologia de transporte e canal efêmero de mensagens com criptografia ponta a ponta. Os nossos servidores **não armazenam e não possuem a chave criptográfica** necessária para ler ou recuperar o conteúdo das conversas.  
+> 2. **Controlador do Conteúdo:** Para os fins da Lei Geral de Proteção de Dados (Lei nº 13.709/2018), o profissional ou organização com a qual você manteve interlocução atua como **Controlador dos dados e prontuários da relação profissional**, cabendo a ele, se aplicável, prestar informações sobre o histórico retido em seus próprios dispositivos ou sistemas locais.  
+> 3. Orientamos que a requisição de histórico ou cópia de atendimentos seja endereçada diretamente ao profissional ou entidade com quem manteve contato.  
 >  
-> Você poderá solicitar a exclusão desse registro a qualquer momento respondendo a este e-mail.  
+> Permanecemos à disposição para quaisquer esclarecimentos relativos à infraestrutura técnica do aplicativo.  
 >  
 > Atenciosamente,  
 > **Filippe Andrade Sampaio**  
-> Controlador e Encarregado pelo Tratamento de Dados Pessoais  
-> Pmsg — `azfstick00@gmail.com`
+> Encarregado pelo Tratamento de Dados Pessoais  
+> Raix — `contato@raixtech.com`
 
 ---
 
@@ -155,34 +167,3 @@ Para fins de prestação de contas (*Accountability* — Art. 6º, X da LGPD) e 
 | ID | Data Recebimento | Solicitante (E-mail) | Fingerprint Técnico | Tipo de Solicitação | Ação Executada | Data Resposta | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | DSR-001 | DD/MM/AAAA | usuario@exemplo.com | `0123456789abcdef...` | Eliminação (Art. 18, VI) | Doc identities deletado | DD/MM/AAAA | Concluído (≤15 dias) |
-
----
-
-## 7. Protocolo de Governança de Denúncias de Abuso (v1.3)
-
-### 7.1. Natureza do Sinal `abuseFlag` (Zero-Knowledge)
-
-A Cloud Function `reportAbuse` opera de forma estritamente comportamental e assíncrona, registrando métricas agregadas na coleção `abuseMetrics/{fingerprint}`. Quando o limiar de 3 denunciantes independentes é atingido na janela temporal, o campo `abuseFlag: true` é acionado no documento correspondente.
-
-> [!WARNING]
-> **DIRETRIZ MANDATÓRIA DE OPERAÇÃO: SINAL, NUNCA SANÇÃO AUTOMÁTICA**  
-> O `abuseFlag: true` é **EXCLUSIVAMENTE UM SINAL DE ALERTA PARA REVISÃO MANUAL DO OPERADOR**. É **TERMINANTEMENTE PROIBIDO** implementar punições, banimentos ou revogações automáticas de rota baseadas isoladamente neste indicador.
-
-### 7.2. Análise do Risco de Ataque Sybil (Autenticação Anônima)
-
-O Pmsg adota por premissa arquitetural a **autenticação 100% anônima**, sem atrelamento a número de telefone (SMS), CPF ou identificadores estatais. Embora essa decisão elimine riscos de vazamento de dados de identidade, ela introduz um vetor conhecido de **Ataque Sybil**:
-- Um único agente mal-intencionado pode gerar programaticamente múltiplos UIDs efêmeros anônimos e orquestrar denúncias coordenadas contra um fingerprint legítimo para tentar induzir uma sanção.
-- Por essa razão, sanções automáticas transformariam o sistema de denúncias em uma ferramenta de censura e assédio contra alvos legítimos.
-
-### 7.3. Camadas de Mitigação e Ação Operacional
-
-1. **Defesa em Profundidade Client-Side (Imediata e Soberana):**  
-   O usuário vítima de assédio ou spam não depende do servidor ou de moderação externa. O app oferece bloqueio client-side instantâneo com `auto-purge`: toda mensagem de contato bloqueado é descartada no dispositivo sem descriptografia e sem rastro.
-2. **Revisão Manual pelo Operador:**  
-   Periodicamente, o operador inspeciona a coleção `abuseMetrics` onde `abuseFlag == true`. A análise deve correlacionar:
-   - Dispersão de IPs / horários dos reporters (quando disponível via Cloud Logging);
-   - Reincidência de convites efêmeros (Modelo C) vinculados;
-   - Padrão de tráfego de mensagens associado ao fingerprint.
-3. **Ações Discricionárias Manuais:**  
-   Apenas após constatação manual cabal de abuso volumétrico ou conduta contrária aos Termos de Serviço, o operador poderá intervir manualmente deletando o registro em `identities/{fingerprint}`, impedindo novas resoluções de chave no diretório técnico.
-

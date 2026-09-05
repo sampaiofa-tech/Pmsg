@@ -318,7 +318,7 @@ fun IdentityScreen(
 
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
-                            "As 12 palavras em português são a única forma de restaurar sua identidade caso perca este dispositivo.",
+                            "As 12 palavras são a única forma de restaurar sua identidade caso perca este dispositivo. O servidor NÃO possui cópia nem mecanismo de recuperação.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
                         )
@@ -373,7 +373,7 @@ fun IdentityScreen(
                                 OutlinedButton(
                                     onClick = {
                                         val phrase = words.joinToString(" ")
-                                        clipboard.copySensitive(phrase, "Mnemônico Pmsg")
+                                        clipboard.copySensitive(phrase, "Mnemônico Raix")
                                         coroutineScope.launch {
                                             snackbarHostState.showSnackbar("Mnemônico copiado (auto-destruição em 30s) 🔒")
                                         }
@@ -434,7 +434,7 @@ fun IdentityScreen(
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            "Você precisa gerar uma identidade criptográfica para usar o Pmsg com segurança máxima.",
+                            "Você precisa gerar uma identidade criptográfica para usar o Raix com segurança máxima.",
                             style = MaterialTheme.typography.bodySmall,
                             textAlign = TextAlign.Center
                         )
@@ -501,7 +501,7 @@ fun IdentityScreen(
             icon = { Icon(Icons.Default.Warning, contentDescription = null, tint = Color(0xFFFFB300)) },
             title = { Text("Aviso de Segurança") },
             text = {
-                Text("Certifique-se de que está em um local privativo e que ninguém está observando sua tela. Suas 12 palavras dão acesso irrestrito à sua identidade.")
+                Text("ATENÇÃO: Os servidores do Raix NÃO possuem cópia do seu mnemônico (arquitetura Zero-Knowledge). A perda dessas palavras é irreversível e definitiva. Certifique-se de que está em um local privativo e que ninguém está observando sua tela.")
             },
             confirmButton = {
                 Button(
@@ -560,7 +560,7 @@ fun IdentityScreen(
                 ) {
                     if (step == 1) {
                         Text(
-                            "Anote as 12 palavras abaixo na ordem correta em um papel e guarde-o em local estritamente seguro.",
+                            "ATENÇÃO: Os servidores do Raix NÃO armazenam cópia do seu mnemônico. A perda dessas 12 palavras acarreta a perda definitiva e irreversível da sua identidade e de todos os seus contatos.\n\nAnote as 12 palavras abaixo na ordem correta em um papel físico e guarde-o em local estritamente seguro.",
                             style = MaterialTheme.typography.bodyMedium
                         )
 

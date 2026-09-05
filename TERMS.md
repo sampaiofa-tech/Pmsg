@@ -1,73 +1,77 @@
-# Termos de Uso — Pmsg (nome provisório)
+# Termos de Uso — Raix
 
-**Última atualização:** 4 de setembro de 2026  
-**Versão:** 1.0
+**Última atualização:** 05 de setembro de 2026  
+**Versão:** 2.0 (Conforme v1.4 da arquitetura do aplicativo)  
+**Marca:** Raix (Marca nominativa depositada no INPI sob protocolo nº 945109300)  
+**Canal Oficial:** `https://raixtech.com`
 
-Bem-vindo ao **Pmsg (nome provisório)**. Ao baixar, instalar, acessar ou utilizar este aplicativo e seus serviços correlatos, você concorda expressamente em vincular-se a estes Termos de Uso. Caso não concorde com qualquer termo aqui disposto, você não deve utilizar o aplicativo.
+Bem-vindo ao **Raix**. Ao baixar, instalar, acessar ou utilizar este aplicativo e seus serviços correlatos, você concorda expressamente em vincular-se a estes Termos de Uso. Caso não concorde com qualquer disposição aqui estabelecida, você não deve utilizar o aplicativo.
 
 ---
 
 ## 1. Classificação Etária Estrita (18+)
 
-O Pmsg é destinado **exclusivamente a maiores de 18 (dezoito) anos**. 
+O Raix é destinado **exclusivamente a maiores de 18 (dezoito) anos**. 
 
-- É **terminantemente proibido** o uso do aplicativo por crianças ou adolescentes menores de 18 anos.
-- Ao utilizar o aplicativo, você declara expressamente ser civilmente capaz e possuir idade igual ou superior a 18 anos.
-- Uma verificação formal de faixa etária (*Age-Gate*) poderá ser solicitada no primeiro acesso ao aplicativo.
-
----
-
-## 2. Natureza do Serviço e Disponibilidade ("Como Está")
-
-O Pmsg é um software de comunicação efêmera e segura, fornecido **"NO ESTADO EM QUE SE ENCONTRA" ("AS IS")** e **"CONFORME DISPONÍVEL" ("AS AVAILABLE")**, sem garantias de qualquer natureza, expressas ou implícitas.
-
-- O desenvolvedor e operador não garante que o serviço será ininterrupto, livre de erros, pontual, totalmente imune a ataques cibernéticos externos ou compatível com todos os dispositivos e sistemas operacionais.
-- Manutenções de infraestrutura, atualizações técnicas ou interrupções programadas podem ocorrer sem aviso prévio.
+- É **terminantemente vedado** o uso do aplicativo por crianças ou adolescentes menores de 18 anos.
+- Ao utilizar o aplicativo, você declara expressamente ser civilmente capaz sob as leis de seu domicílio e possuir idade igual ou superior a 18 anos.
+- Uma verificação formal de faixa etária (*Age-Gate*) é obrigatória no primeiro acesso ao aplicativo.
 
 ---
 
-## 3. Arquitetura de Sigilo e Limitação Técnica do Operador (Servidor Cego)
+## 2. Natureza do Serviço e Efemeridade Radical ("Como Está")
 
-O Pmsg foi construído sobre uma arquitetura criptográfica estrita de **servidor cego (*Zero-Knowledge*)**:
+O Raix é um software de comunicação efêmera e privativa, fornecido **"NO ESTADO EM QUE SE ENCONTRA" ("AS IS")** e **"CONFORME DISPONÍVEL" ("AS AVAILABLE")**, sem garantias implícitas ou explícitas de qualquer natureza.
 
-- **Impossibilidade Técnica de Acesso**: O operador dos servidores **NÃO possui os meios matemáticos ou criptográficos para visualizar, decifrar, interceptar ou recuperar o conteúdo textual das mensagens trocadas**, nem para reconstituir conversas apagadas.
-- **Denúncias e Abusos**: Em virtude dessa limitação arquitetural, relatórios ou notificações de abuso **não contemplam e não podem contemplar revisão de conteúdo de mensagens por parte do operador**, pois este material é tecnicamente inacessível a qualquer entidade externa aos dois dispositivos envolvidos.
-
----
-
-## 4. Condutas Proibidas e Mecanismo de Denúncia
-
-Você se compromete a utilizar o Pmsg em estrita conformidade com a legislação brasileira e internacional aplicável. É expressamente proibido:
-
-1. Praticar, incentivar, intermediar ou disseminar atividades criminosas, ilícitas, fraudulentas ou que violem direitos de terceiros.
-2. Utilizar o aplicativo para assédio, perseguição (*stalking*), ameaças, extorsão, disseminação de conteúdo de exploração sexual, pornografia infantil, terrorismo ou incitação à violência.
-3. Praticar ataques de negação de serviço (DoS/DDoS), exploração de vulnerabilidades ou envio massivo não solicitado (spam).
-4. Tentar quebrar a integridade criptográfica do roteamento ou forjar assinaturas de outros usuários.
-
-> **Mecanismo Comportamental de Denúncia (Roadmap v1.3)**: A partir da versão v1.3, o aplicativo disponibilizará um canal de denúncia estritamente comportamental e estatístico (reputação local ou bloqueio de fingerprint ofensivo), preservando a ausência de moderação invasiva de conteúdo. Usuários infratores identificados por comportamento abusivo sistemático de rede poderão ter seu acesso técnico bloqueado via *rate limiting* e revogação de sessão.
+- O desenvolvedor e operador não garante que o serviço será ininterrupto, livre de instabilidades ou compatível com todas as configurações de hardware.
+- As mensagens transitam de forma efêmera e autodestrutiva, possuindo tempo de vida máximo parametrizável de até **24 horas** (*Time-To-Live*), sendo incineradas imediatamente após a leitura (*Vanish-After-Read*).
+- O desenvolvedor e operador não se responsabiliza pela perda definitiva de mensagens após o encerramento regular de seu prazo de expiração ou pelo acionamento voluntário do botão de Pânico (*Panic Wipe*).
 
 ---
 
-## 5. Responsabilidade Exclusiva pela Frase Mnemônica e Chaves Privadas
+## 3. Arquitetura de Servidor Cego (Zero-Knowledge)
 
-O Pmsg não adota contas tradicionais com login, senha ou recuperação por e-mail:
+O Raix adota uma arquitetura criptográfica estrita de **servidor cego (*Zero-Knowledge*)**:
 
-- **Sua Frase Mnemônica (12 Palavras) é sua Identidade**: Todo o seu par de chaves criptográficas é derivado deterministicamente de sua semente mnemônica.
-- **Sem Custódia e Sem Recuperação**: O operador **NÃO armazena, NÃO conhece e NÃO custodia seu mnemônico ou suas chaves privadas**.
-- **Perda Irreversível**: Se você desinstalar o aplicativo, trocar de dispositivo ou esquecer sua frase de 12 palavras, **sua identidade criptográfica, seus contatos e seu histórico serão irremediavelmente perdidos**. O operador não possui qualquer capacidade técnica de recuperar, redefinir ou restaurar identidades perdidas.
+- **Impossibilidade Técnica de Acesso:** O operador dos servidores **não possui os meios matemáticos ou as chaves criptográficas para visualizar, decifrar, interceptar ou recuperar o conteúdo textual das mensagens trocadas**, nem para reconstituir conversas expurgadas.
+- **Custódia Local das Chaves:** Todo o par de chaves assimétricas e a semente mnemônica de 12 palavras residem unicamente nos cofres seguros do dispositivo do usuário (KeyStore, Keychain ou DPAPI), sem sincronização com a nuvem.
 
 ---
 
-## 6. Efemeridade Inerente e Limitação de Responsabilidade
+## 4. Condutas Proibidas, Moderação e Sanções Técnicas
 
-A **autodestruição e o descarte temporal de dados** constituem o propósito fundamental do Pmsg:
+Você se compromete a utilizar o Raix em estrita conformidade com a legislação brasileira e internacional aplicável. É expressamente proibido:
 
-- As mensagens possuem tempo de vida limitado (TTL de até 24 horas) e são incineradas imediatamente após o consumo (*Vanish-After-Read*).
-- O desenvolvedor e operador não se responsabiliza por:
-  - Perda de mensagens decorrente do encerramento regular de TTL ou acionamento voluntário/acidental do modo de Pânico (*Panic Wipe*);
-  - Falhas de hardware, corrupção de memória local do aparelho ou apreensão física do dispositivo do usuário;
-  - Decisões, ações ou omissões tomadas por usuários com base nas comunicações mantidas através do aplicativo;
-  - Danos indiretos, lucros cessantes, perdas financeiras ou prejuízos de qualquer ordem decorrentes da utilização ou impossibilidade de utilização do serviço.
+1. Praticar, incentivar, intermediar ou disseminar crimes, fraudes, assédio, ameaças, extorsão, material de exploração sexual, pornografia infantil ou incitação à violência.
+2. Praticar ataques cibernéticos de negação de serviço (DoS/DDoS), automações abusivas ou envio massivo não solicitado (spam).
+3. Tentar forjar assinaturas criptográficas ou quebrar a integridade do protocolo de roteamento.
+
+### 4.1. Mecanismos de Denúncia (Comportamental e Conteúdo Voluntário)
+- **Mecanismo Principal (Zero-Knowledge):** A aplicação disponibiliza canal de denúncia comportamental assíncrono (`reportAbuse`), baseado em reputação local e estatística de rede, sem análise de conteúdo.
+- **Fluxo Secundário Opcional com Consentimento Explícito:** Usuários que recebam assédio ou conteúdos ilícitos podem, voluntariamente e mediante consentimento informado, optar por decifrar e submeter a mensagem ofensiva selecionada para auditoria da moderação (`reportAbuseWithContent`).
+
+### 4.2. Sanções de Moderação: Revogação de Chave Ed25519 (Sem Bloqueio de IP)
+- Em respeito aos usuários que compartilham conexões móveis, Wi-Fi público ou faixas de CGNAT, a moderação do Raix **NUNCA aplica bloqueio por endereço IP**.
+- A penalidade técnica máxima aplicada a identidades infratoras consiste na **REVOGAÇÃO da chave pública Ed25519 de roteamento** (`identities/{fingerprint}` marcada como `revoked: true`), impedindo que o infrator continue utilizando o servidor como caixa postal.
+
+---
+
+## 5. Responsabilidade Exclusiva pela Frase Mnemônica (12 Palavras)
+
+O Raix não utiliza contas convencionais atreladas a e-mail, telefone, CPF ou senhas recuperáveis:
+
+- **Sua Frase de 12 Palavras é sua Identidade Única:** Todo o seu conjunto de chaves criptográficas é derivado deterministicamente de sua semente mnemônica.
+- **Sem Custódia:** O operador **NÃO conhece, NÃO armazena e NÃO custodia sua frase mnemônica**.
+- **Perda Irreversível:** Caso você desinstale o aplicativo, troque de dispositivo ou perca sua anotação das 12 palavras, **sua identidade criptográfica, seus contatos e seu histórico serão irremediavelmente perdidos**. O operador não possui capacidade técnica de redefinir ou restaurar dados perdidos.
+
+---
+
+## 6. Limitação de Responsabilidade
+
+O operador e desenvolvedor do Raix não será responsável por:
+- Danos indiretos, lucros cessantes, perdas financeiras ou prejuízos decorrentes do uso ou da impossibilidade de uso do mensageiro;
+- Decisões, condutas ou transações realizadas entre os interlocutores através do aplicativo;
+- Apreensão física, perda, roubo ou invasão do dispositivo do próprio usuário.
 
 ---
 
@@ -75,4 +79,6 @@ A **autodestruição e o descarte temporal de dados** constituem o propósito fu
 
 Estes Termos de Uso são regidos e interpretados de acordo com a legislação da República Federativa do Brasil, em especial o Marco Civil da Internet (Lei nº 12.965/2014) e a Lei Geral de Proteção de Dados (Lei nº 13.709/2018).
 
-Para a resolução de eventuais litígios oriundos deste instrumento, fica eleito o foro da comarca de domicílio do desenvolvedor, com renúncia expressa a qualquer outro, por mais privilegiado que seja.
+Fica eleito o foro da comarca de domicílio do desenvolvedor para dirimir quaisquer controvérsias oriundas deste instrumento, com renúncia a qualquer outro, por mais privilegiado que seja.
+
+Dúvidas ou solicitações devem ser encaminhadas para: `contato@raixtech.com`.

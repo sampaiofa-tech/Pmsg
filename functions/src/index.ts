@@ -11,3 +11,5 @@ export { createInvite } from "./createInvite";
 export { acceptInvite } from "./acceptInvite";
 export { updateIdentityRouting } from "./updateIdentityRouting";
 export { reportAbuse } from "./reportAbuse";
+export { reportAbuseWithContent } from "./reportAbuseWithContent";
+export { recordConnectionLog } from "./connectionLogs";

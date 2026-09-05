@@ -1,13 +1,13 @@
 <div align="center">
-  <h1>🔒 Pmsg - Zero-Trace Ephemeral Secure Messaging</h1>
-  <p><strong>Aplicativo Android de Mensagens Ultrasseguras com Autodestruição em 24h, Criptografia AES-256-GCM em Hardware e Zero Rastro.</strong></p>
+  <h1>🔒 Raix - Zero-Trace Ephemeral Secure Messaging</h1>
+  <p><strong>Aplicativo Android & Desktop de Mensagens Ultrasseguras com Autodestruição em 24h, Criptografia AES-256-GCM em Hardware e Zero Rastro.</strong></p>
 </div>
 
 ---
 
 ## 🌟 Visão Geral
 
-O **Pmsg** foi desenvolvido com um objetivo claro: **garantir privacidade absoluta e zero rastros** no dispositivo e em trânsito.
+O **Raix** foi desenvolvido com um objetivo claro: **garantir privacidade absoluta e zero rastros** no dispositivo e em trânsito.
 
 ### 🛡️ Pilares de Segurança
 
@@ -466,5 +466,5 @@ Este projeto é disponibilizado sob o modelo de **duplo licenciamento**:
    - Todas as contribuições externas ao repositório são regidas pelo Acordo de Contribuição Individual — consulte [`CLA.md`](CLA.md).
 
 > [!IMPORTANT]
-> **Nota sobre a Marca e Denominação do Produto**: O nome "Pmsg" adotado neste repositório e na documentação técnica é **estritamente provisório**. O registro de marca permanece **indefinido** perante os órgãos competentes (como o INPI) até a deliberação e homologação da denominação comercial definitiva do produto.
+> **Registro de Marca e Denominação Comercial**: A marca **RAIX** é marca nominativa depositada perante o Instituto Nacional da Propriedade Industrial (INPI) sob o protocolo nº **945109300** (Classes 09 e 42). Todos os direitos reservados. Canal oficial: [raixtech.com](https://raixtech.com).
 

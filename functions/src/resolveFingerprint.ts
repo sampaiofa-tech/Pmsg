@@ -1,6 +1,7 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import * as logger from "firebase-functions/logger";
+import { recordConnectionLog } from "./connectionLogs";
 
 const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 min
 const MAX_REQUESTS_PER_WINDOW = 30; // 30 requests / min per user
@@ -17,6 +18,9 @@ const MAX_REQUESTS_PER_WINDOW = 30; // 30 requests / min per user
  * 4. Zero PII: stores and returns only technical routing identifiers, zero names or contact graphs.
  */
 export const resolveFingerprint = onCall(async (request) => {
+  // 0. Marco Civil da Internet Art. 15 Connection Log
+  await recordConnectionLog(request, "resolveFingerprint");
+
   // 1. Enforce Authentication
   if (!request.auth || !request.auth.uid) {
     logger.warn("resolveFingerprint: Unauthenticated call rejected.");
@@ -78,6 +82,16 @@ export const resolveFingerprint = onCall(async (request) => {
   }
 
   const identityData = identityDoc.data()!;
+
+  // 5. Check moderation revocation status (Ed25519 routing revocation)
+  if (identityData.revoked === true || identityData.status === "revoked") {
+    logger.warn(`resolveFingerprint: Rejected revoked identity ${fingerprint.substring(0, 8)}...`);
+    throw new HttpsError(
+      "permission-denied",
+      "Esta identidade criptográfica foi revogada por moderação e não pode mais receber mensagens."
+    );
+  }
+
   return {
     currentAuthUid: identityData.currentAuthUid,
     pubKey: identityData.pubKey,

@@ -77,13 +77,13 @@ fun AgeGateScreen(
                         Icon(
                             imageVector = Icons.Default.Shield,
                             contentDescription = null,
-                            tint = Color(0xFF00FFC2),
+                            tint = Color(0xFF00E676),
                             modifier = Modifier.size(24.dp)
                         )
                         Spacer(modifier = Modifier.width(10.dp))
                         Column {
                             Text(
-                                text = "Pmsg (nome provisório)",
+                                text = "Raix",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White
@@ -91,13 +91,13 @@ fun AgeGateScreen(
                             Text(
                                 text = "Classificação 18+ & Termos de Serviço",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = Color(0xFF80CBC4)
+                                color = Color(0xFFD4AF37)
                             )
                         }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFF0D1B2A),
+                    containerColor = Color(0xFF0B1325),
                     titleContentColor = Color.White
                 )
             )
@@ -106,7 +106,7 @@ fun AgeGateScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xFF0A0E17))
+                .background(Color(0xFF0B1325))
                 .padding(padding)
                 .padding(horizontal = 20.dp)
                 .verticalScroll(rememberScrollState()),
@@ -119,13 +119,13 @@ fun AgeGateScreen(
                 modifier = Modifier
                     .size(72.dp)
                     .clip(CircleShape)
-                    .background(Color(0xFF1B263B))
-                    .border(2.dp, Color(0xFF00FFC2), CircleShape),
+                    .background(Color(0xFF131F37))
+                    .border(2.dp, Color(0xFF00E676), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = "18+",
-                    color = Color(0xFF00FFC2),
+                    color = Color(0xFF00E676),
                     fontSize = 24.sp,
                     fontWeight = FontWeight.Black,
                     fontFamily = FontFamily.Monospace
@@ -145,7 +145,7 @@ fun AgeGateScreen(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "O Pmsg é um mensageiro efêmero de comunicação privada entre adultos. Em conformidade com a legislação brasileira (ECA/LGPD) e as políticas de segurança de conteúdo, o uso por menores de 18 anos é expressamente vedado.",
+                text = "O Raix é um mensageiro efêmero de comunicação privada entre adultos. Em conformidade com a legislação brasileira (ECA/LGPD) e as políticas de segurança de conteúdo, o uso por menores de 18 anos é expressamente vedado.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = Color(0xFFB0BEC5),
                 textAlign = TextAlign.Center,
@@ -290,7 +290,7 @@ fun AgeGateScreen(
 
             Spacer(modifier = Modifier.height(28.dp))
 
-            // Botão Principal: Entrar no Pmsg
+            // Botão Principal: Entrar no Raix
             Button(
                 onClick = {
                     if (isFormValid) {
@@ -304,14 +304,14 @@ fun AgeGateScreen(
                     .height(52.dp),
                 shape = RoundedCornerShape(10.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF00FFC2),
-                    contentColor = Color(0xFF0A1128),
+                    containerColor = Color(0xFF00E676),
+                    contentColor = Color(0xFF0B1325),
                     disabledContainerColor = Color(0xFF1E293B),
                     disabledContentColor = Color(0xFF64748B)
                 )
             ) {
                 Text(
-                    text = "Entrar no Pmsg",
+                    text = "Entrar no Raix",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -351,7 +351,7 @@ fun AgeGateScreen(
             },
             text = {
                 Text(
-                    text = "Sem a confirmação de maioridade (18+) e o aceite formal dos Termos de Uso e da Política de Privacidade, o acesso às funcionalidades do Pmsg permanece terminantemente bloqueado.\n\nVocê pode fechar o aplicativo ou retornar para aceitar quando atingir a maioridade legal.",
+                    text = "Sem a confirmação de maioridade (18+) e o aceite formal dos Termos de Uso e da Política de Privacidade, o acesso às funcionalidades do Raix permanece terminantemente bloqueado.\n\nVocê pode fechar o aplicativo ou retornar para aceitar quando atingir a maioridade legal.",
                     color = Color(0xFFCFD8DC),
                     fontSize = 14.sp,
                     lineHeight = 20.sp

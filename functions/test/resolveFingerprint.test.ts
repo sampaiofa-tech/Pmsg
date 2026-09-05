@@ -99,4 +99,27 @@ describe("resolveFingerprint Cloud Function Test Suite", () => {
       updatedAt: 1725390000000,
     });
   });
+
+  it("should reject resolution of revoked identity with permission-denied (Ed25519 moderation sanction)", async () => {
+    mockDocGet.mockResolvedValue({
+      exists: true,
+      data: () => ({
+        currentAuthUid: "user_banned",
+        pubKey: "dGVzdC1wdWJsaWMta2V5LTMyeHh4eHh4eHh4eHh4eHg=",
+        signingPubKey: "dGVzdC1zaWduaW5nLXB1YmtleS0zMnh4eHg=",
+        revoked: true,
+      }),
+    });
+
+    const request: any = {
+      auth: { uid: "user_alice" },
+      data: {
+        fingerprint: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+      },
+    };
+
+    await expect((resolveFingerprint as any).run(request)).rejects.toThrow(
+      /Esta identidade criptográfica foi revogada por moderação/
+    );
+  });
 });

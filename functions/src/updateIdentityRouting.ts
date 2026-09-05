@@ -3,6 +3,7 @@ import * as admin from "firebase-admin";
 import { FieldValue } from "firebase-admin/firestore";
 import * as logger from "firebase-functions/logger";
 import * as crypto from "crypto";
+import { recordConnectionLog } from "./connectionLogs";
 
 const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
 const MAX_UPDATES_PER_WINDOW = 5; // Max 5 recovery updates per 10 min
@@ -38,6 +39,9 @@ export interface UpdateIdentityRoutingData {
  * 5. Sliding window rate limiting prevents abuse.
  */
 export const updateIdentityRouting = onCall(async (request) => {
+  // 0. Marco Civil da Internet Art. 15 Connection Log
+  await recordConnectionLog(request, "updateIdentityRouting");
+
   // 1. Enforce Authentication
   if (!request.auth || !request.auth.uid) {
     logger.warn("updateIdentityRouting: Unauthenticated call rejected.");
@@ -121,6 +125,13 @@ export const updateIdentityRouting = onCall(async (request) => {
 
   if (identityDoc.exists) {
     const existingData = identityDoc.data()!;
+    if (existingData.revoked === true || existingData.status === "revoked") {
+      logger.warn(`updateIdentityRouting: Attempt to update revoked identity ${fingerprint.substring(0, 8)}...`);
+      throw new HttpsError(
+        "permission-denied",
+        "Esta identidade criptográfica foi revogada por moderação e não pode ser atualizada."
+      );
+    }
     if (existingData.signingPubKey) {
       targetSigningPubKey = existingData.signingPubKey;
     } else if (data.signingPubKey) {

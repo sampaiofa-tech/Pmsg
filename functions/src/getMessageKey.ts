@@ -1,6 +1,7 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import * as logger from "firebase-functions/logger";
+import { recordConnectionLog } from "./connectionLogs";
 
 export interface GetMessageKeyData {
   messageId: string;
@@ -29,6 +30,9 @@ export interface GetMessageKeyResult {
  *    which permanently shreds the wrapped DEK in 'messageKeys'.
  */
 export const getMessageKey = onCall(async (request): Promise<GetMessageKeyResult> => {
+  // 0. Marco Civil da Internet Art. 15 Connection Log
+  await recordConnectionLog(request, "getMessageKey");
+
   // 1. Enforce Authentication
   if (!request.auth || !request.auth.uid) {
     logger.warn("getMessageKey: Unauthenticated call rejected.");

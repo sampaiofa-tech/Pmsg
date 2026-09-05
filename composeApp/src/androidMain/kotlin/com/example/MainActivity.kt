@@ -52,6 +52,11 @@ class MainActivity : FragmentActivity() {
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
+    // Enforce fail-secure screen protection immediately to prevent any leak in recents/snapshots
+    window.setFlags(
+      WindowManager.LayoutParams.FLAG_SECURE,
+      WindowManager.LayoutParams.FLAG_SECURE
+    )
     com.example.util.AndroidContextHolder.appContext = applicationContext
     enableEdgeToEdge()
 

@@ -2,6 +2,7 @@ import { onCall, HttpsError } from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import { Timestamp, FieldValue } from "firebase-admin/firestore";
 import * as logger from "firebase-functions/logger";
+import { recordConnectionLog } from "./connectionLogs";
 
 const MIN_TTL_MILLIS = 10 * 1000; // 10s
 const MAX_TTL_MILLIS = 24 * 60 * 60 * 1000; // 24h
@@ -25,6 +26,9 @@ export interface StoreMessageKeyData {
  * The server never sees the plaintext DEK or recipient private key.
  */
 export const storeMessageKey = onCall(async (request) => {
+  // 0. Marco Civil da Internet Art. 15 Connection Log
+  await recordConnectionLog(request, "storeMessageKey");
+
   // 1. Enforce Authentication
   if (!request.auth || !request.auth.uid) {
     logger.warn("storeMessageKey: Unauthenticated call rejected.");

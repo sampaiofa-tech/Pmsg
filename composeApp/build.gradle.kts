@@ -256,11 +256,14 @@ compose.desktop {
         mainClass = "com.example.MainKt"
         nativeDistributions {
             targetFormats(TargetFormat.Msi, TargetFormat.AppImage)
-            packageName = "Pmsg"
-            packageVersion = "1.3.0"
-            description = "Pmsg - Mensageiro Efêmero e Criptografado (Zero-Trace)"
-            copyright = "© 2026 Pmsg"
-            vendor = "Pmsg"
+            packageName = "Raix"
+            packageVersion = "1.4.0"
+            description = "Raix - Mensageiro Efêmero e Criptografado (Zero-Trace)"
+            copyright = "© 2026 Raix"
+            vendor = "Raix"
+            windows {
+                iconFile.set(project.file("src/desktopMain/resources/icon.ico"))
+            }
         }
     }
 }

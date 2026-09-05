@@ -68,9 +68,9 @@ import kotlinx.coroutines.launch
 
 object LegalConstants {
     const val DPO_NAME = "Filippe Andrade Sampaio"
-    const val DPO_EMAIL = "azfstick00@gmail.com"
-    const val POLICY_URL = "https://sampaiofa-tech.github.io/Pmsg/privacidade.html"
-    const val TERMS_URL = "https://sampaiofa-tech.github.io/Pmsg/termos.html"
+    const val DPO_EMAIL = "contato@raixtech.com"
+    const val POLICY_URL = "https://raixtech.com/privacidade.html"
+    const val TERMS_URL = "https://raixtech.com/termos.html"
     const val SERVER_REGION = "us-central1 (EUA)"
     const val LOG_RETENTION_DAYS = 30
 }

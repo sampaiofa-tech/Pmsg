@@ -1,6 +1,6 @@
-# Licenciamento Comercial — Pmsg (nome provisório)
+# Licenciamento Comercial — Raix
 
-Esta página apresenta as opções e termos gerais de oferta de licenciamento comercial para o aplicativo **Pmsg (nome provisório)**.
+Esta página apresenta as opções e termos gerais de oferta de licenciamento comercial para o aplicativo **Raix**.
 
 > [!NOTE]
 > Este documento é uma **página pública de oferta e esclarecimento**, não constituindo, por si só, um contrato vinculante de licença. Termos comerciais e contratuais específicos são formalizados diretamente entre as partes mediante instrumento próprio.
@@ -26,5 +26,6 @@ Para organizações que não desejam ou não podem cumprir as obrigações da AG
 
 Para solicitar propostas comerciais, esclarecer dúvidas contratuais ou obter cotações para sua empresa ou escritório, entre em contato:
 
-- **E-mail / Canal Comercial**: `azfstick00@gmail.com`
-- **Assunto Recomendado**: `[Pmsg Comercial] Solicitação de Licença Corporativa`
+- **E-mail / Canal Comercial**: `contato@raixtech.com`
+- **Assunto Recomendado**: `[Raix Comercial] Solicitação de Licença Corporativa`
+
