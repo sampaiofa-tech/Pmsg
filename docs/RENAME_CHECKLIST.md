@@ -15,7 +15,7 @@ Este checklist consolida as ações técnicas, regulatórias e operacionais da t
 | 05/09/2026 | **Canal de E-mail Institucional** | Usuário | ✅ **Concluído** | `contato@raixtech.com` redirecionado via Cloudflare |
 | 05/09/2026 | **Rename do Repositório GitHub** | Usuário | ✅ **Concluído** | `sampaiofa-tech/Pmsg` ➔ `sampaiofa-tech/Raix` |
 | 05/09/2026 | **Atualização do Remote Git Local** | Agente | ✅ **Concluído** | `https://github.com/sampaiofa-tech/Raix.git` |
-| 05/09/2026 | **Decisão de `applicationId` / `bundleId`** | Gestão/Agente | ✅ **Registrado** | Mantido `com.aistudio.vanishchat.zr7k` nesta fase |
+| 05/09/2026 | **Decisão de `applicationId` / `bundleId`** | Gestão/Agente | ✅ **Migrado (v1.5)** | `tech.sampaiofa.raix` registrado no Firebase e Gradle |
 | 05/09/2026 | **Importação de Ativos de Marca (Logos)** | Usuário/Agente | ✅ **Concluído** | `branding/logo-app.png` e `branding/logo-empresa.png` |
 | 05/09/2026 | **Atualização dos Documentos Legais** | Agente | ✅ **Concluído** | `LICENSE-COMMERCIAL.md`, `CLA.md`, `PRIVACY.md`, `TERMS.md` |
 
@@ -50,10 +50,13 @@ Este checklist consolida as ações técnicas, regulatórias e operacionais da t
 ## 3. Decisões Estruturais CRÍTICAS (Pré-Publicação em Loja)
 
 ### a. `applicationId` / `bundleIdentifier`
-- [x] **Decisão Consciente de Manutenção Temporária (v1.4)**:
-  - **Valor atual confirmado via `aapt dump badging`:** `com.aistudio.vanishchat.zr7k`
-  - **Deliberação:** **NÃO alterar** na versão v1.4 para preservar compatibilidade com instalações existentes em testes e assinaturas keystore de release locais.
-  - ⚠️ **Decisão Pendente para a Publicação Oficial em Loja**: Antes do primeiro deploy público na Google Play Store e Apple App Store, a gestão deverá deliberar se o package final será mantido como `com.aistudio.vanishchat.zr7k` ou se será migrado para um namespace dedicado (ex: `tech.raix.app`). Se for alterado, um novo `google-services.json` deverá ser provisionado.
+- [x] **Migração Oficial Concluída (v1.5)**:
+  - **Identificador Oficial:** `tech.sampaiofa.raix` (anterior: `com.aistudio.vanishchat.zr7k`).
+  - **Motivo da Decisão:** O package anterior expunha a origem provisória "aistudio". Para um produto de alta segurança vendido a escritórios de advocacia, a credibilidade comercial e governança institucional exigem o namespace proprietário do desenvolvedor (`tech.sampaiofa.raix`). A migração foi executada antes da submissão na Google Play Store (onde o ID se torna perpétuo e imutável).
+  - **Ações Realizadas:**
+    1. Registrado o novo app Android `tech.sampaiofa.raix` no projeto Firebase (`gen-lang-client-0858445711`, App ID `1:713364678037:android:5841d6002c3957ce1a829c`).
+    2. Atualizado `composeApp/google-services.json` contendo ambos os clientes para transição limpa sem quebra de serviços.
+    3. Atualizado `composeApp/build.gradle.kts` com `applicationId = "tech.sampaiofa.raix"`.
 
 ### b. Deep Link Custom Scheme (`URI Protocol`)
 - [ ] **Esquema de Protocolo**:

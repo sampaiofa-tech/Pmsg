@@ -166,11 +166,11 @@ extensions.configure<com.android.build.api.dsl.ApplicationExtension> {
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.aistudio.vanishchat.zr7k"
+        applicationId = "tech.sampaiofa.raix"
         minSdk = 24
         targetSdk = 36
-        versionCode = 4
-        versionName = "1.3.0"
+        versionCode = 5
+        versionName = "1.5.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
