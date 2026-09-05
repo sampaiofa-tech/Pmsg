@@ -10,7 +10,7 @@ describe("F0 Security Fix: updateIdentityRouting with Ed25519 Proof-of-Possessio
   // Alice's legitimate X25519 and Ed25519 keys
   const aliceX25519PubKeyBytes = crypto.randomBytes(32);
   const aliceX25519PubKeyBase64 = aliceX25519PubKeyBytes.toString("base64");
-  const aliceFingerprint = crypto.createHash("sha256").update(aliceX25519PubKeyBytes).digest("hex");
+  const aliceFingerprint = crypto.createHash("sha256").update(new Uint8Array(aliceX25519PubKeyBytes)).digest("hex");
 
   const aliceEd25519 = crypto.generateKeyPairSync("ed25519");
   const aliceSigningPubKeyRaw = aliceEd25519.publicKey.export({ type: "spki", format: "der" }).subarray(12);
@@ -22,7 +22,7 @@ describe("F0 Security Fix: updateIdentityRouting with Ed25519 Proof-of-Possessio
   const eveSigningPubKeyBase64 = eveSigningPubKeyRaw.toString("base64");
 
   function createSignature(payload: string, privateKey: crypto.KeyObject): string {
-    return crypto.sign(null, Buffer.from(payload, "utf8"), privateKey).toString("base64");
+    return crypto.sign(null, new Uint8Array(Buffer.from(payload, "utf8")), privateKey).toString("base64");
   }
 
   beforeEach(() => {

@@ -13,7 +13,7 @@ describe("Modelo C: createInvite and acceptInvite Test Suite", () => {
   // Generate 32 bytes valid pubKey and its sha256 fingerprint
   const validPubKeyBytes = crypto.randomBytes(32);
   const validPubKeyBase64 = validPubKeyBytes.toString("base64");
-  const validFingerprint = crypto.createHash("sha256").update(validPubKeyBytes).digest("hex");
+  const validFingerprint = crypto.createHash("sha256").update(new Uint8Array(validPubKeyBytes)).digest("hex");
 
   beforeEach(() => {
     mockDocSet = jest.fn().mockResolvedValue(undefined);

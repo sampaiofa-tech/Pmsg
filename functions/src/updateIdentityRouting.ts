@@ -95,7 +95,7 @@ export const updateIdentityRouting = onCall(async (request) => {
     if (pubKeyBytes.length !== 32) {
       throw new Error("Invalid public key length");
     }
-    const computedFp = crypto.createHash("sha256").update(pubKeyBytes).digest("hex");
+    const computedFp = crypto.createHash("sha256").update(new Uint8Array(pubKeyBytes)).digest("hex");
     if (computedFp.toLowerCase() !== fingerprint) {
       throw new HttpsError(
         "invalid-argument",
@@ -168,10 +168,10 @@ export const updateIdentityRouting = onCall(async (request) => {
       throw new Error("Invalid signature length (must be 64 bytes)");
     }
 
-    const spkiBuffer = Buffer.concat([ED25519_SPKI_PREFIX, rawSigningPubKey]);
+    const spkiBuffer = Buffer.concat([new Uint8Array(ED25519_SPKI_PREFIX), new Uint8Array(rawSigningPubKey)]);
     const keyObject = crypto.createPublicKey({ key: spkiBuffer, format: "der", type: "spki" });
 
-    const isValid = crypto.verify(null, messageBytes, keyObject, signatureBytes);
+    const isValid = crypto.verify(null, new Uint8Array(messageBytes), keyObject, new Uint8Array(signatureBytes));
     if (!isValid) {
       logger.warn(`updateIdentityRouting: Invalid Ed25519 signature for fingerprint ${fingerprint.substring(0, 8)}...`);
       throw new HttpsError(

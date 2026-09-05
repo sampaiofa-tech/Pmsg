@@ -62,7 +62,7 @@ export const createInvite = onCall(async (request) => {
     if (pubKeyBytes.length !== 32) {
       throw new Error("Invalid public key length");
     }
-    const computedFp = crypto.createHash("sha256").update(pubKeyBytes).digest("hex");
+    const computedFp = crypto.createHash("sha256").update(new Uint8Array(pubKeyBytes)).digest("hex");
     if (computedFp.toLowerCase() !== fingerprint) {
       throw new HttpsError(
         "invalid-argument",
