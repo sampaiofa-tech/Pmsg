@@ -174,10 +174,22 @@ extensions.configure<com.android.build.api.dsl.ApplicationExtension> {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    val keystorePropertiesFile = rootProject.file("keystore.properties")
+    val hasReleaseKeystore = keystorePropertiesFile.exists()
+    val isReleaseTaskRequested = gradle.startParameter.taskNames.any {
+        it.contains("release", ignoreCase = true)
+    }
+
+    if (!hasReleaseKeystore && isReleaseTaskRequested) {
+        throw GradleException(
+            "ERRO CRÍTICO DE SEGURANÇA: 'keystore.properties' não encontrado na raiz do projeto! " +
+            "A compilação de release foi bloqueada para impedir assinatura acidental com debug."
+        )
+    }
+
     signingConfigs {
-        create("release") {
-            val keystorePropertiesFile = rootProject.file("keystore.properties")
-            if (keystorePropertiesFile.exists()) {
+        if (hasReleaseKeystore) {
+            create("release") {
                 val properties = Properties()
                 keystorePropertiesFile.reader(Charsets.UTF_8).use { reader ->
                     properties.load(reader)
@@ -193,11 +205,6 @@ extensions.configure<com.android.build.api.dsl.ApplicationExtension> {
                 storePassword = getProp("storePassword")
                 keyAlias = getProp("keyAlias")
                 keyPassword = getProp("keyPassword")
-            } else {
-                throw GradleException(
-                    "ERRO CRÍTICO DE SEGURANÇA: 'keystore.properties' não encontrado na raiz do projeto! " +
-                    "A compilação de release foi bloqueada para impedir assinatura acidental com debug."
-                )
             }
         }
         val customDebugKeystore = file("${rootDir}/debug.keystore")
@@ -216,7 +223,9 @@ extensions.configure<com.android.build.api.dsl.ApplicationExtension> {
             isCrunchPngs = false
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            signingConfig = signingConfigs.getByName("release")
+            if (hasReleaseKeystore) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
         debug {
             signingConfigs.findByName("debugConfig")?.let {
