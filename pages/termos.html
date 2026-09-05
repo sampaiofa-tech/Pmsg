@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Raix — Termos de Uso e Condições Gerais do Serviço">
-  <title>Termos de Uso — Raix (v2.0)</title>
+  <meta name="description" content="Raix — Termos de Uso e Condições Gerais do Serviço (v3.0)">
+  <title>Termos de Uso — Raix (v3.0)</title>
   <style>
     :root {
       --bg: #0b1325;
@@ -30,7 +30,7 @@
       justify-content: center;
     }
     .container {
-      max-width: 820px;
+      max-width: 840px;
       width: 100%;
     }
     nav.breadcrumbs {
@@ -67,6 +67,12 @@
       margin-top: 2rem;
       margin-bottom: 0.75rem;
     }
+    h3 {
+      font-size: 1.15rem;
+      color: var(--accent-gold);
+      margin-top: 1.25rem;
+      margin-bottom: 0.5rem;
+    }
     p, ul {
       margin-bottom: 1.25rem;
       color: #cbd5e1;
@@ -87,6 +93,13 @@
       margin: 1.5rem 0;
       border-radius: 0 8px 8px 0;
     }
+    .box-warning {
+      background-color: rgba(19, 28, 51, 0.7);
+      border-left: 4px solid var(--accent-gold);
+      padding: 1.25rem;
+      margin: 1.5rem 0;
+      border-radius: 0 8px 8px 0;
+    }
     footer {
       text-align: center;
       font-size: 0.85rem;
@@ -96,6 +109,12 @@
       padding-top: 2rem;
     }
     footer a { color: var(--primary); text-decoration: none; }
+    code {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 0.2rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.85em;
+    }
   </style>
 </head>
 <body>
@@ -107,12 +126,12 @@
     <header>
       <img src="logo-empresa.png" alt="Marca da Controladora" class="header-logo">
       <h1>Termos de Uso — Raix</h1>
-      <p class="meta">Versão 2.0 (Conforme arquitetura v1.4) • Última atualização: 05 de setembro de 2026 • Depósito de marca no INPI agendado para 08/09/2026 (guia/protocolo preparatório nº <strong>945109300</strong>)</p>
+      <p class="meta">Versão 3.0 (Conforme arquitetura v1.5) • Última atualização: 05 de setembro de 2026 • Depósito de marca no INPI agendado para 08/09/2026 (guia/protocolo preparatório nº <strong>945109300</strong>)</p>
     </header>
 
     <section>
       <div class="box">
-        <strong>Aviso Prévio Obrigatório:</strong> Ao utilizar o <strong>Raix</strong>, você concorda com estes Termos de Uso e com a nossa Política de Privacidade. O serviço é destinado <strong>estritamente a maiores de 18 anos</strong>.
+        <strong>Aviso Prévio Obrigatório:</strong> Ao utilizar o <strong>Raix</strong>, você concorda expressamente com estes Termos de Uso e com a nossa Política de Privacidade. O serviço é destinado <strong>estritamente a maiores de 18 anos</strong>.
       </div>
 
       <h2>1. Classificação Etária Estrita (18+)</h2>
@@ -122,36 +141,42 @@
         <li>O usuário declara possuir plena capacidade civil e idade igual ou superior a 18 anos ao aceitar os termos na inicialização do aplicativo (<em>Age-Gate</em>).</li>
       </ul>
 
-      <h2>2. Natureza Efêmera e Limitação Técnica do Servidor (Zero-Knowledge)</h2>
+      <h2>2. Natureza Efêmera e Limitação Técnica do Servidor ("Como Está")</h2>
       <p>O Raix opera sob uma premissa criptográfica estrita:</p>
       <ul>
-        <li><strong>Servidor Cego:</strong> O operador dos servidores <strong>não possui capacidade matemática ou chaves para decifrar mensagens</strong>. Todo o texto decifrado existe apenas na memória volátil dos dispositivos interlocutores.</li>
-        <li><strong>Autodestruição (TTL):</strong> As mensagens possuem ciclo de vida máximo de 24 horas e são incineradas atômica e irreversivelmente no consumo (<em>Vanish-After-Read</em>) ou por expiração de tempo.</li>
-        <li><strong>Timeout de Não-Entrega (≤ 24h) — Feature de Privacidade:</strong> Caso o destinatário permaneça desconectado por mais de 24 horas, a mensagem retida em fila no servidor é definitivamente incinerada pelo <code>scheduledMessageShredder</code>. Esta perda de mensagem após 24h offline é uma <em>feature</em> deliberada de privacidade radical e minimização de dados, impedindo o acúmulo de dados na nuvem.</li>
-        <li><strong>Sem Custódia de Mnemônico:</strong> A semente de 12 palavras e as chaves privadas são de posse e guarda <strong>exclusiva do usuário</strong>. O operador não pode recuperar senhas ou restaurar contas em caso de perda.</li>
+        <li><strong>Servidor Cego (Zero-Knowledge):</strong> O operador dos servidores <strong>não possui capacidade matemática ou chaves para decifrar mensagens</strong>. Todo o texto decifrado existe apenas na memória volátil dos dispositivos interlocutores.</li>
+        <li><strong>Autodestruição (TTL):</strong> As mensagens possuem ciclo de vida máximo de 24 horas e são incineradas atômica e irreversivelmente no consumo (<em>Vanish-After-Read</em>) ou por expiração horária (<em>Crypto-Shredder</em>).</li>
+        <li><strong>Timeout de Não-Entrega (≤ 24h) — Feature Deliberada de Privacidade:</strong> Caso o destinatário permaneça desconectado por mais de 24 horas, a mensagem retida em fila no servidor é definitivamente incinerada pelo <code>scheduledMessageShredder</code>. Esta perda de mensagem após 24h offline é uma <em>feature</em> deliberada de privacidade radical e minimização de dados, impedindo o acúmulo de dados na nuvem.</li>
+        <li><strong>Custódia Local das Chaves:</strong> As chaves privadas e a semente de 12 palavras permanecem <strong>custodiadas exclusivamente no dispositivo do Usuário, sob proteção do sistema operacional</strong> (DPAPI no Windows, KeyStore no Android). O operador não possui capacidade de recuperar senhas ou restaurar contas em caso de perda.</li>
       </ul>
 
-      <h2>3. Condutas Proibidas e Sanções de Moderação</h2>
-      <p>É expressamente proibido utilizar o serviço para práticas ilícitas, incluindo assédio, extorsão, distribuição de material de abuso ou exploração sexual, spam ou tentativas de burlar a infraestrutura técnica.</p>
+      <h2>3. Condutas Proibidas e Sanções Técnicas de Moderação</h2>
+      <p>É expressamente proibido utilizar o serviço para práticas ilícitas, incluindo assédio, extorsão, distribuição de material de exploração sexual, spam ou tentativas de burlar a infraestrutura técnica.</p>
 
       <div class="box-danger">
         <strong>Sanção de Moderação — Revogação de Chave Ed25519 (Sem Bloqueio de IP):</strong>
-        <p>Infratores confirmados sofrem <strong>revogação de sua chave pública de roteamento Ed25519</strong> no diretório técnico (<code>revoked: true</code>), ficando impedidos de receber ou rotear mensagens na rede. Em respeito à neutralidade e aos usuários legítimos em redes móveis ou CGNAT, <strong>a aplicação NUNCA adota bloqueio por endereço IP</strong>.</p>
+        <p>Infratores confirmados sofrem <strong>revogação de sua chave pública de roteamento Ed25519</strong> no diretório técnico (<code>identities/{fingerprint}</code> com <code>revoked: true</code>), ficando impedidos de receber ou rotear mensagens na rede. Em respeito à neutralidade e aos usuários legítimos em redes móveis ou faixas de CGNAT, <strong>a aplicação NUNCA adota bloqueio por endereço IP</strong>.</p>
       </div>
 
       <h2>4. Mecanismos de Denúncia de Abuso</h2>
       <p>Disponibilizamos dois mecanismos transparentes de denúncia:</p>
       <ul>
-        <li><strong>Canal Comportamental Padrão (Zero-Knowledge):</strong> Permite sinalizar assédio ou spam através da função <code>reportAbuse</code> sem exposição de mensagens.</li>
-        <li><strong>Canal Voluntário com Conteúdo:</strong> Caso o usuário sofra ameaça ou conteúdo ilícito e decida voluntariamente submeter a mensagem à análise, o app solicita consentimento formal antes de descriptografar localmente e encaminhar o material (<code>reportAbuseWithContent</code>).</li>
+        <li><strong>Canal Comportamental Padrão (Zero-Knowledge):</strong> Permite sinalizar assédio ou abusos através da função <code>reportAbuse</code> sem exposição de mensagens.</li>
+        <li><strong>Canal Voluntário com Conteúdo:</strong> Caso o usuário sofra ameaça ou conteúdo ilícito e decida voluntariamente submeter a mensagem à análise, o app solicita consentimento formal antes de descriptografar localmente e encaminhar o material (<code>reportAbuseWithContent</code>). O conteúdo é mantido por <strong>no máximo 90 dias após o encerramento da apuração</strong>, sendo submetido a <strong>exclusão definitiva (hard-delete)</strong>.</li>
       </ul>
 
-      <h2>5. Foro e Legislação Aplicável</h2>
-      <p>Estes Termos são regidos pelas leis da República Federativa do Brasil (Marco Civil da Internet e LGPD). Fica eleito o foro da comarca de domicílio do desenvolvedor para dirimir eventuais litígios.</p>
+      <h2>5. Verificação da Integridade da Conexão Mútua (Safety Number / QR)</h2>
+      <div class="box-warning">
+        <strong>Dever do Usuário (§8):</strong>
+        <p>O Usuário obriga-se a <strong>verificar a integridade da conexão mútua</strong> ao estabelecer comunicação. O aplicativo expõe na tela de detalhes de cada contato o <strong>Número de Segurança de 60 dígitos</strong> (fingerprint mútuo derivado das chaves públicas). O usuário deve conferir visualmente os dígitos por canal alternativo seguro ou leitura presencial de QR Code e acionar o botão <strong>"Marcar como Verificado"</strong> no aplicativo para atestar a autenticidade da conexão contra ataques de personificação.</p>
+      </div>
+
+      <h2>6. Foro e Legislação Aplicável</h2>
+      <p>Estes Termos são regidos pelas leis da República Federativa do Brasil (Marco Civil da Internet e LGPD). Fica eleito o foro da comarca da sede da <strong>Cat Tech</strong> para dirimir eventuais litígios oriundos deste instrumento.</p>
     </section>
 
     <footer>
-      <p>Controlador e Encarregado de Dados (DPO): Filippe Andrade Sampaio (<a href="mailto:contato@raixtech.com">contato@raixtech.com</a>)</p>
+      <p>Operadora: <strong>Cat Tech</strong> (CNPJ 67.497.085/0001-36) • Encarregado de Dados (DPO): Filippe Andrade Sampaio (<a href="mailto:contato@raixtech.com">contato@raixtech.com</a>)</p>
       <p style="margin-top: 0.5rem; font-size: 0.75rem; color: #64748b;">© 2026 Raix. Todos os direitos reservados. Código livre sob licença AGPL-3.0.</p>
     </footer>
   </div>

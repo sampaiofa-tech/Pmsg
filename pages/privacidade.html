@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Raix — Política de Privacidade e Tratamento de Dados (LGPD v2.0)">
-  <title>Política de Privacidade — Raix (v2.0)</title>
+  <meta name="description" content="Raix — Política de Privacidade e Tratamento de Dados (LGPD v3.0)">
+  <title>Política de Privacidade — Raix (v3.0)</title>
   <style>
     :root {
       --bg: #0b1325;
@@ -29,7 +29,7 @@
       justify-content: center;
     }
     .container {
-      max-width: 820px;
+      max-width: 840px;
       width: 100%;
     }
     nav.breadcrumbs {
@@ -138,50 +138,51 @@
     <header>
       <img src="logo-empresa.png" alt="Marca da Controladora" class="header-logo">
       <h1>Política de Privacidade — Raix</h1>
-      <p class="meta">Versão 2.0 (Conforme arquitetura v1.4) • Última atualização: 05 de setembro de 2026 • Depósito de marca no INPI agendado para 08/09/2026 (guia/protocolo preparatório nº <strong>945109300</strong>)</p>
+      <p class="meta">Versão 3.0 (Conforme arquitetura v1.5) • Última atualização: 05 de setembro de 2026 • Depósito de marca no INPI agendado para 08/09/2026 (guia/protocolo preparatório nº <strong>945109300</strong>)</p>
     </header>
 
     <section>
       <div class="box">
-        <strong>Compromisso Fundamental:</strong> O aplicativo <strong>Raix</strong> opera sob o princípio da minimização extrema de dados (<em>Privacy by Design</em>). Nossos servidores operam como uma entidade matematicamente cega (<em>Zero-Knowledge</em>): o conteúdo de suas mensagens e seus contatos nunca são acessíveis ou armazenados por nós de forma legível.
+        <strong>Compromisso Fundamental:</strong> O aplicativo <strong>Raix</strong> opera sob o princípio da minimização extrema de dados (<em>Privacy by Design</em> e <em>Privacy by Default</em>). Nossos servidores operam como uma entidade matematicamente cega (<em>Zero-Knowledge</em>): o conteúdo de suas mensagens e seus contatos nunca são acessíveis ou armazenados por nós de forma legível.
       </div>
 
-      <h2>1. Identificação do Controlador e do Encarregado (DPO)</h2>
-      <p>Em consonância com a Lei Geral de Proteção de Dados (Lei nº 13.709/2018 — LGPD):</p>
+      <h2>1. Identificação da Controladora e do Encarregado (DPO)</h2>
+      <p>Em estrita consonância com a Lei Geral de Proteção de Dados (Lei nº 13.709/2018 — LGPD):</p>
       <ul>
-        <li><strong>Controlador de Dados Técnicos de Infraestrutura:</strong> Filippe Andrade Sampaio, desenvolvedor independente.</li>
-        <li><strong>Encarregado pelo Tratamento de Dados Pessoais (DPO):</strong> Filippe Andrade Sampaio (Pessoa Natural).</li>
-        <li><strong>Canal Oficial de Atendimento:</strong> <a href="mailto:contato@raixtech.com" style="color: var(--primary);">contato@raixtech.com</a></li>
+        <li><strong>Controladora dos Dados Técnicos de Infraestrutura:</strong> <strong>Cat Tech</strong>, pessoa jurídica de direito privado, inscrita no CNPJ sob o nº <strong>67.497.085/0001-36</strong>.</li>
+        <li><strong>Encarregado pelo Tratamento de Dados Pessoais (DPO):</strong> Filippe Andrade Sampaio.</li>
+        <li><strong>Canal Oficial de Atendimento e DSR:</strong> <a href="mailto:contato@raixtech.com" style="color: var(--primary);">contato@raixtech.com</a></li>
         <li><strong>Portal Oficial:</strong> <a href="https://raixtech.com/" style="color: var(--primary);">https://raixtech.com</a></li>
       </ul>
 
-      <h2>2. Dados Tratados pelo Servidor</h2>
-      <p>O servidor em nuvem (Google Cloud Platform) trata exclusivamente os seguintes elementos técnicos e efêmeros:</p>
+      <h2>2. Dados Tratados pelo Servidor (Inventário Exato)</h2>
+      <p>O servidor em nuvem (Google Cloud Platform) trata exclusivamente os seguintes dados técnicos e transitórios:</p>
       <ul>
         <li><strong>UID Anônimo de Sessão:</strong> Identificador técnico gerado pelo Firebase Authentication. Não vinculado a CPF, e-mail, telefone, biometria ou redes sociais.</li>
-        <li><strong>Identidade Pública de Roteamento (<code>identities</code>):</strong> Fingerprint SHA-256 de sua chave pública, chave pública X25519 (usada para empacotar mensagens) e chave pública Ed25519 (usada para validar assinatura da prova de posse de roteamento).</li>
-        <li><strong>Registros de Conexão à Aplicação (MCI Art. 15 — Base Legal Art. 7º, II da LGPD):</strong> Gravados no armazém isolado <code>accessLogs</code>: exclusivamente endereço IP de origem, timestamp UTC, porta lógica de origem e endpoint acionado. Retidos por 180 dias em cumprimento estrito à obrigação legal. Totalmente desprovidos de vínculo com UIDs, contas, payloads, mensagens, chaves ou mnemônicos.</li>
+        <li><strong>Identidade Pública de Roteamento (<code>identities</code>):</strong> Fingerprint SHA-256 de sua chave pública, chave pública X25519 (usada para envelopar mensagens) e chave pública Ed25519 (usada para validar assinatura da prova de posse de roteamento).</li>
+        <li><strong>Registros de Conexão à Aplicação (MCI Art. 15 — Base Legal Art. 7º, II da LGPD):</strong> <strong>registros de conexão (IP, porta, timestamp UTC e nome do endpoint) retidos por até 180 dias em datastore isolado, sem associação com identidade, payload ou chave pública Ed25519</strong>. Gravados na coleção segregada <code>accessLogs</code>, destinam-se exclusivamente ao cumprimento de obrigação legal de segurança da informação (Art. 15 do Marco Civil da Internet).</li>
         <li><strong>Ciphertext Efêmero da Mensagem:</strong> Payload estritamente cifrado via AES-256-GCM. O servidor não possui a chave privada para ler este conteúdo.</li>
-        <li><strong>Metadados Técnicos de Roteamento (<code>senderId</code> e <code>recipientId</code>):</strong> Identificadores criptográficos anexados ao envelope em <code>messages</code> e <code>messageKeys</code>. Constituem o metadado técnico mais sensível retido temporariamente pelo servidor, sendo estritamente necessários para autorização de resgate da chave e entrega de mensagens em fila. São incinerados de forma irreversível em até 24 horas juntamente com o envelope (<em>Vanish-After-Read</em> ou <em>Crypto-Shredder</em>).</li>
-        <li><strong>DEK Envelopada (Sealed-Box):</strong> Chave de sessão cifrada com a chave pública do destinatário. O servidor armazena unicamente bytes opacos.</li>
-        <li><strong>Timestamps de Ciclo de Vida:</strong> Utilizados exclusivamente para o mecanismo de autodestruição programada (TTL de até 24h).</li>
+        <li><strong>Metadados Técnicos de Roteamento (<code>senderId</code> e <code>recipientId</code>):</strong> Identificadores criptográficos gravados temporariamente junto ao envelope em <code>messages</code> e <code>messageKeys</code>. Constituem o metadado técnico mais sensível retido temporariamente pelo servidor, sendo estritamente necessários para autorização de resgate da chave e entrega de mensagens em fila. A aplicação <strong>não mantém logs relacionais persistentes; identificadores de roteamento (remetente/destinatário) existem apenas até a entrega ou no máximo 24 horas, sendo incinerados irreversivelmente após esse período</strong> (<em>Vanish-After-Read</em> ou <em>Crypto-Shredder</em>).</li>
+        <li><strong>DEK Envelopada (Sealed-Box):</strong> Chave de sessão cifrada com a chave pública do destinatário (X25519 + HKDF-SHA256 + AES-256-GCM). O servidor armazena unicamente bytes opacos, sem acesso à chave em claro.</li>
+        <li><strong>Chave Efêmera por Mensagem (<code>ephemeralPubKey</code>):</strong> Chave temporária X25519 gerada pelo remetente exclusivamente para aquela mensagem específica.</li>
+        <li><strong>Conteúdo Voluntário de Denúncia (Fluxo Secundário Opcional com Consentimento Explícito):</strong> Caso um usuário receba conteúdo ilícito, assédio ou ameaças e opte deliberadamente por denunciar com evidência, o aplicativo solicita <strong>consentimento prévio e expresso (Art. 7º, I da LGPD)</strong>. Apenas a mensagem selecionada é decifrada localmente no aparelho do denunciante e enviada ao backend de moderação (<code>reportAbuseWithContent</code>). Conteúdo retido por <strong>no máximo 90 dias após o encerramento da apuração</strong>, com <strong>exclusão definitiva (hard-delete)</strong>.</li>
       </ul>
 
-      <h2>3. Dados que NUNCA são Coletados</h2>
+      <h2>3. Dados que NUNCA são Coletados pelo Servidor</h2>
       <ul>
         <li>❌ <strong>Conteúdo legível de conversas:</strong> O texto decifrado existe unicamente na memória volátil dos dispositivos durante o tempo do timer efêmero.</li>
         <li>❌ <strong>Livro de contatos:</strong> Seus contatos e apelidos ficam salvos exclusivamente no armazenamento local cifrado do seu próprio aparelho.</li>
-        <li>❌ <strong>Chaves privadas e semente de 12 palavras:</strong> Permanecem confinadas no cofre de hardware do seu dispositivo e jamais trafegam na rede.</li>
+        <li>❌ <strong>Chaves privadas e semente de 12 palavras:</strong> Permanecem <strong>custodiadas exclusivamente no dispositivo do Usuário, sob proteção do sistema operacional</strong> (DPAPI no Windows, Keystore no Android) e <strong>jamais trafegam na rede</strong>.</li>
         <li>❌ <strong>Imagens ou transmissões da câmera:</strong> A leitura de QR Code é 100% offline e processada no chip do dispositivo.</li>
+        <li>❌ <strong>Dados Cadastrais Identificáveis (PII):</strong> Não solicitamos nome civil, e-mail, telefone ou documentos para utilização do mensageiro.</li>
       </ul>
 
-      <h2>4. Denúncia com Conteúdo Opcional (Fluxo Secundário Voluntário)</h2>
-      <p>O mecanismo padrão de denúncia é comportamental e Zero-Knowledge (<code>reportAbuse</code>). Contudo, caso um usuário sofra assédio, ameaça ou violação flagrante e deseje submeter a evidência para moderação, o app oferece um fluxo voluntário de denúncia com conteúdo (<code>reportAbuseWithContent</code>):</p>
+      <h2>4. Fluxos de Denúncia e Moderação (Transparência Radical)</h2>
+      <p>Disponibilizamos dois mecanismos transparentes de moderação:</p>
       <ul>
-        <li>Exige consentimento inequívoco e explícito da vítima antes de qualquer envio.</li>
-        <li>A mensagem selecionada é decifrada localmente no aparelho do denunciante e enviada aos auditores do serviço.</li>
-        <li><strong>Prazo e Destino:</strong> Retido por <strong>até 90 dias após a conclusão da apuração interna</strong>, com posterior <strong>exclusão definitiva e cripto-incineração irreversível (hard-delete)</strong>.</li>
-        <li><strong>Sanção de Moderação:</strong> Infratores confirmados sofrem revogação da chave Ed25519 no diretório de roteamento (<code>revoked: true</code>), cessando a entrega de mensagens. <strong>NUNCA aplicamos bloqueio de endereço IP</strong> para não prejudicar usuários legítimos em redes compartilhadas.</li>
+        <li><strong>Denúncia Comportamental Zero-Knowledge (Padrão):</strong> Acionada via <code>reportAbuse</code>, operando por reputação técnica e estatística de rede, sem análise de conteúdo.</li>
+        <li><strong>Denúncia com Anexo Voluntário de Conteúdo:</strong> Acionada via <code>reportAbuseWithContent</code> com consentimento explícito (Art. 7º, I da LGPD). Conteúdo retido por <strong>no máximo 90 dias após o encerramento da apuração</strong>, com posterior <strong>exclusão definitiva e cripto-incineração irreversível (hard-delete)</strong>.</li>
+        <li><strong>Sanção de Moderação:</strong> Infratores confirmados sofrem revogação da chave Ed25519 no diretório de roteamento (<code>identities/{fingerprint}</code> com <code>revoked: true</code>), cessando o roteamento. <strong>NUNCA aplicamos bloqueio de endereço IP</strong> para não prejudicar usuários legítimos em redes compartilhadas ou CGNAT.</li>
       </ul>
 
       <h2>5. Prazos de Retenção e Descarte</h2>
@@ -209,21 +210,27 @@
           </tr>
           <tr>
             <td>Identidade de Roteamento</td>
-            <td>Firestore</td>
+            <td>Firestore (<code>identities</code>)</td>
             <td>Até exclusão voluntária</td>
             <td>Exclusão pelo usuário no app ou via requisição formal ao Encarregado.</td>
           </tr>
           <tr>
             <td>Registros de Conexão (MCI Art. 15)</td>
-            <td>Firestore (<code>connectionLogs</code> / <code>accessLogs</code>)</td>
+            <td>Firestore (<code>accessLogs</code> / <code>connectionLogs</code>)</td>
             <td>180 dias (obrigação legal)</td>
             <td>Expurgo automático via política TTL do banco + purga ativa redundante pelo <em>Crypto-Shredder</em>.</td>
           </tr>
           <tr>
             <td>Denúncias com Conteúdo Voluntário</td>
             <td>Firestore (<code>abuseReports</code>)</td>
-            <td>Até 90 dias após conclusão da apuração</td>
+            <td>No máximo 90 dias após encerramento da apuração</td>
             <td>Exclusão definitiva e cripto-incineração irreversível (<em>hard-delete</em> do Firestore).</td>
+          </tr>
+          <tr>
+            <td>Logs Técnicos de Diagnóstico</td>
+            <td>Google Cloud Logging</td>
+            <td>30 dias</td>
+            <td>Sobrescrita automática padrão do Cloud Logging.</td>
           </tr>
           <tr>
             <td>Contatos e Chaves Privadas</td>
@@ -234,7 +241,15 @@
         </tbody>
       </table>
 
-      <h2>6. Direitos do Titular (Art. 18 da LGPD) e Bifurcação DSR</h2>
+      <h2>6. Segurança da Informação e Custódia de Chaves</h2>
+      <p>A segurança criptográfica do Raix está estruturada sob parâmetros de estado da arte:</p>
+      <ul>
+        <li><strong>Derivação de Chaves:</strong> Derivação determinística a partir do mnemônico de 12 palavras em software utilizando <strong>Argon2id</strong> e primitivas criptográficas auditadas (Ed25519 / X25519).</li>
+        <li><strong>Custódia em Repouso:</strong> As chaves derivadas permanecem <strong>custodiadas exclusivamente no dispositivo do Usuário, sob proteção do sistema operacional</strong> (DPAPI no Windows, KeyStore no Android).</li>
+        <li><strong>Trânsito em Rede:</strong> Comunicações seguras via <strong>TLS 1.2+ com preferência 1.3</strong>.</li>
+      </ul>
+
+      <h2>7. Direitos do Titular (Art. 18 da LGPD) e Canal DPO</h2>
       <p>Você pode solicitar a confirmação de tratamento, acesso ou eliminação do registro de sua chave pública de roteamento (<code>identities/{fingerprint}</code>):</p>
       <div class="box">
         <p><strong>Canal Oficial de Atendimento DSR:</strong></p>
@@ -245,7 +260,7 @@
     </section>
 
     <footer>
-      <p>Controlador e Encarregado de Dados (DPO): Filippe Andrade Sampaio (<a href="mailto:contato@raixtech.com">contato@raixtech.com</a>)</p>
+      <p>Controladora: <strong>Cat Tech</strong> (CNPJ 67.497.085/0001-36) • Encarregado de Dados (DPO): Filippe Andrade Sampaio (<a href="mailto:contato@raixtech.com">contato@raixtech.com</a>)</p>
       <p style="margin-top: 0.5rem; font-size: 0.75rem; color: #64748b;">© 2026 Raix. Todos os direitos reservados. Código livre sob licença AGPL-3.0.</p>
     </footer>
   </div>

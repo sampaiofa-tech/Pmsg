@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Raix — Acordo de Processamento de Dados (DPA) sob a LGPD">
+  <title>Acordo de Processamento de Dados (DPA) — Raix</title>
+  <style>
+    :root {
+      --bg: #0b1325;
+      --surface: #131c33;
+      --card-bg: #1c2744;
+      --text: #f3f4f6;
+      --text-muted: #94a3b8;
+      --primary: #00e676;
+      --primary-hover: #00c853;
+      --accent-gold: #d4af37;
+      --border: #233154;
+      --danger: #ef4444;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      padding: 2.5rem 1.25rem;
+      display: flex;
+      justify-content: center;
+    }
+    .container {
+      max-width: 840px;
+      width: 100%;
+    }
+    nav.breadcrumbs {
+      margin-bottom: 2rem;
+      font-size: 0.9rem;
+    }
+    nav.breadcrumbs a {
+      color: var(--primary);
+      text-decoration: none;
+    }
+    header {
+      margin-bottom: 2.5rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .header-logo {
+      max-width: 110px;
+      border-radius: 12px;
+      margin-bottom: 1rem;
+      border: 1px solid rgba(212, 175, 55, 0.3);
+    }
+    h1 {
+      font-size: 2.2rem;
+      color: #ffffff;
+      margin-bottom: 0.5rem;
+    }
+    .meta {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+    h2 {
+      font-size: 1.35rem;
+      color: var(--primary);
+      margin-top: 2rem;
+      margin-bottom: 0.75rem;
+    }
+    h3 {
+      font-size: 1.15rem;
+      color: var(--accent-gold);
+      margin-top: 1.25rem;
+      margin-bottom: 0.5rem;
+    }
+    p, ul {
+      margin-bottom: 1.25rem;
+      color: #cbd5e1;
+    }
+    ul { padding-left: 1.5rem; }
+    li { margin-bottom: 0.5rem; }
+    .box {
+      background-color: rgba(19, 28, 51, 0.7);
+      border-left: 4px solid var(--primary);
+      padding: 1.25rem;
+      margin: 1.5rem 0;
+      border-radius: 0 8px 8px 0;
+    }
+    footer {
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      border-top: 1px solid var(--border);
+      margin-top: 3rem;
+      padding-top: 2rem;
+    }
+    footer a { color: var(--primary); text-decoration: none; }
+    code {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 0.2rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.85em;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <nav class="breadcrumbs">
+      <a href="index.html">← Voltar ao Portal Legal</a>
+    </nav>
+
+    <header>
+      <img src="logo-empresa.png" alt="Marca da Controladora" class="header-logo">
+      <h1>Acordo de Processamento de Dados (DPA) — Raix</h1>
+      <p class="meta">Versão 1.0 (Conforme arquitetura v1.5) • Última atualização: 05 de setembro de 2026 • Em conformidade com o Art. 39 da LGPD</p>
+    </header>
+
+    <section>
+      <div class="box">
+        <strong>Finalidade do Acordo:</strong> Este DPA (<em>Data Processing Agreement</em>) disciplina formalmente a relação de tratamento de dados técnicos entre o usuário ou empresa cliente (Controlador) e a operadora do software (<strong>Cat Tech</strong>), estabelecendo salvaguardas técnicas, criptográficas e contratuais sob a LGPD.
+      </div>
+
+      <h2>Parte I — Objeto e Escopo</h2>
+      <p>O presente instrumento regulamenta o tratamento de dados pessoais e técnicos no fornecimento da infraestrutura de roteamento do mensageiro privativo <strong>Raix</strong>, em rigorosa conformidade com a Lei Geral de Proteção de Dados Pessoais (Lei nº 13.709/2018 — LGPD) e o Marco Civil da Internet (Lei nº 12.965/2014 — MCI).</p>
+
+      <h2>Parte II — Papéis e Responsabilidades (Servidor Cego)</h2>
+      <ul>
+        <li><strong>Controlador:</strong> O usuário individual ou a pessoa jurídica contratante que utiliza a aplicação para interagir com seus contatos. Em relações profissionais liberais (medicina, advocacia, contabilidade), o respectivo profissional atua na condição exclusiva de Controlador sobre os conteúdos de suas conversas.</li>
+        <li><strong>Operadora:</strong> A <strong>Cat Tech</strong>, responsável pela disponibilização da infraestrutura lógica sem servidor (<em>serverless</em>) e dos canais técnicos efêmeros de entrega.</li>
+        <li><strong>Servidor Cego (Zero-Knowledge):</strong> A Operadora opera sob impossibilidade matemática de decifração. O conteúdo trafega sob criptografia ponta-a-ponta (E2EE), sem que a Operadora detenha acesso às chaves privadas de decodificação.</li>
+      </ul>
+
+      <h2>Parte III — Identificação das Partes e Qualificação</h2>
+      <div class="box">
+        <p><strong>Operadora da Plataforma e Infraestrutura:</strong></p>
+        <p><strong>Razão Social:</strong> Cat Tech</p>
+        <p><strong>CNPJ:</strong> 67.497.085/0001-36</p>
+        <p><strong>Encarregado pelo Tratamento de Dados (DPO):</strong> Filippe Andrade Sampaio (<a href="mailto:contato@raixtech.com" style="color: var(--primary);">contato@raixtech.com</a>)</p>
+      </div>
+
+      <h2>Parte IV — Medidas Técnicas e Segurança da Informação</h2>
+      <p>A Operadora implementa e audita de forma contínua as seguintes garantias técnicas:</p>
+      <ul>
+        <li><strong>Criptografia em Repouso Transitório:</strong> Cifragem de envelopes via <strong>AES-256-GCM</strong> e envelopamento de chaves de sessão com <strong>Sealed-Box X25519 + HKDF-SHA256</strong>.</li>
+        <li><strong>Custódia Local de Chaves:</strong> As chaves criptográficas privadas e a semente mnemônica de 12 palavras permanecem <strong>custodiadas exclusivamente no dispositivo do Usuário, sob proteção do sistema operacional</strong> (DPAPI no Windows, KeyStore no Android).</li>
+        <li><strong>Registros de Conexão (MCI Art. 15):</strong> <strong>registros de conexão (IP, porta, timestamp UTC e nome do endpoint) retidos por até 180 dias em datastore isolado, sem associação com identidade, payload ou chave pública Ed25519</strong>. Armazenados na coleção <code>accessLogs</code> com acesso restrito via Admin SDK e regra <code>read, write: if false;</code> para clientes.</li>
+        <li><strong>Ausência de Logs Relacionais Persistentes:</strong> A aplicação <strong>não mantém logs relacionais persistentes; identificadores de roteamento (remetente/destinatário) existem apenas até a entrega ou no máximo 24 horas, sendo incinerados irreversivelmente após esse período</strong> (<em>Vanish-After-Read</em> ou <em>Crypto-Shredder</em> horário).</li>
+        <li><strong>Moderação e Denúncias:</strong> O canal padrão é comportamental Zero-Knowledge (<code>reportAbuse</code>). Em denúncias voluntárias com anexo de conteúdo (<code>reportAbuseWithContent</code>), o material permanece retido por <strong>no máximo 90 dias após o encerramento da apuração</strong>, sendo em seguida submetido a <strong>exclusão definitiva (hard-delete)</strong>. A sanção técnica é a revogação da chave pública Ed25519, vedando-se bloqueios de endereço IP.</li>
+        <li><strong>Segurança em Trânsito:</strong> Conexões restritas a <strong>TLS 1.2+ com preferência TLS 1.3</strong>.</li>
+        <li><strong>Sub-operadores Autorizados:</strong> Google Cloud Platform (região <code>us-central1</code>) para execução e banco de dados; Cloudflare Inc. para proteção DNS de borda.</li>
+      </ul>
+
+      <h2>Parte V — Transferência Internacional de Dados</h2>
+      <p>A infraestrutura de servidores opera na região <code>us-central1</code> (Estados Unidos) da Google Cloud Platform, respaldada no Art. 33 da LGPD por Cláusulas Contratuais Padrão e certificações internacionais de proteção de dados (ISO/IEC 27001/27017/27018 e relatórios SOC).</p>
+
+      <h2>Parte VI — Cooperação e Atendimento a Direitos (DSR)</h2>
+      <p>A Operadora responderá a solicitações legítimas de confirmação e exclusão de identificadores públicos de roteamento no prazo legal de até <strong>15 (quinze) dias</strong> através do canal <a href="mailto:contato@raixtech.com" style="color: var(--primary);">contato@raixtech.com</a>.</p>
+    </section>
+
+    <footer>
+      <p>Operadora: <strong>Cat Tech</strong> (CNPJ 67.497.085/0001-36) • Encarregado de Dados (DPO): Filippe Andrade Sampaio (<a href="mailto:contato@raixtech.com">contato@raixtech.com</a>)</p>
+      <p style="margin-top: 0.5rem; font-size: 0.75rem; color: #64748b;">© 2026 Raix. Todos os direitos reservados. Código livre sob licença AGPL-3.0.</p>
+    </footer>
+  </div>
+</body>
+</html>

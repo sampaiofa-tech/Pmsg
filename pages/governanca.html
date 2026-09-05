@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Raix — Governança e Registro das Operações de Tratamento (ROPA - Art. 37 LGPD)">
+  <title>Governança & ROPA — Raix</title>
+  <style>
+    :root {
+      --bg: #0b1325;
+      --surface: #131c33;
+      --card-bg: #1c2744;
+      --text: #f3f4f6;
+      --text-muted: #94a3b8;
+      --primary: #00e676;
+      --primary-hover: #00c853;
+      --accent-gold: #d4af37;
+      --border: #233154;
+      --danger: #ef4444;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      padding: 2.5rem 1.25rem;
+      display: flex;
+      justify-content: center;
+    }
+    .container {
+      max-width: 980px;
+      width: 100%;
+    }
+    nav.breadcrumbs {
+      margin-bottom: 2rem;
+      font-size: 0.9rem;
+    }
+    nav.breadcrumbs a {
+      color: var(--primary);
+      text-decoration: none;
+    }
+    header {
+      margin-bottom: 2.5rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .header-logo {
+      max-width: 110px;
+      border-radius: 12px;
+      margin-bottom: 1rem;
+      border: 1px solid rgba(212, 175, 55, 0.3);
+    }
+    h1 {
+      font-size: 2.2rem;
+      color: #ffffff;
+      margin-bottom: 0.5rem;
+    }
+    .meta {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+    h2 {
+      font-size: 1.35rem;
+      color: var(--primary);
+      margin-top: 2rem;
+      margin-bottom: 0.75rem;
+    }
+    p, ul {
+      margin-bottom: 1.25rem;
+      color: #cbd5e1;
+    }
+    ul { padding-left: 1.5rem; }
+    li { margin-bottom: 0.5rem; }
+    .table-wrapper {
+      width: 100%;
+      overflow-x: auto;
+      margin: 1.5rem 0;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background-color: var(--surface);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 760px;
+      font-size: 0.85rem;
+    }
+    th, td {
+      padding: 0.75rem 0.9rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    th {
+      background-color: var(--card-bg);
+      color: #ffffff;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .box {
+      background-color: rgba(19, 28, 51, 0.7);
+      border-left: 4px solid var(--primary);
+      padding: 1.25rem;
+      margin: 1.5rem 0;
+      border-radius: 0 8px 8px 0;
+    }
+    footer {
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      border-top: 1px solid var(--border);
+      margin-top: 3rem;
+      padding-top: 2rem;
+    }
+    footer a { color: var(--primary); text-decoration: none; }
+    code {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 0.2rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.85em;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <nav class="breadcrumbs">
+      <a href="index.html">← Voltar ao Portal Legal</a>
+    </nav>
+
+    <header>
+      <img src="logo-empresa.png" alt="Marca da Controladora" class="header-logo">
+      <h1>Governança de Dados & ROPA — Raix</h1>
+      <p class="meta">Registro das Operações de Tratamento de Dados Pessoais (Art. 37 da LGPD) • Versão 1.0 (Arquitetura v1.5) • Última atualização: 05 de setembro de 2026</p>
+    </header>
+
+    <section>
+      <div class="box">
+        <strong>Transparência Regulatória (Art. 37 LGPD):</strong> O presente documento discrimina publicamente as 13 operações técnicas de tratamento de dados realizadas pela infraestrutura do mensageiro <strong>Raix</strong>, mantida pela controladora <strong>Cat Tech</strong>.
+      </div>
+
+      <h2>Identificação da Controladora e do Encarregado (DPO)</h2>
+      <ul>
+        <li><strong>Razão Social:</strong> <strong>Cat Tech</strong></li>
+        <li><strong>CNPJ:</strong> <strong>67.497.085/0001-36</strong></li>
+        <li><strong>Encarregado pelo Tratamento de Dados (DPO):</strong> Filippe Andrade Sampaio</li>
+        <li><strong>Canal Oficial de Atendimento:</strong> <a href="mailto:contato@raixtech.com" style="color: var(--primary);">contato@raixtech.com</a></li>
+        <li><strong>Portal Oficial:</strong> <a href="https://raixtech.com/" style="color: var(--primary);">https://raixtech.com</a></li>
+      </ul>
+
+      <h2>Registro Estruturado das Operações de Tratamento (ROPA)</h2>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Operação</th>
+              <th>Dados Tratados</th>
+              <th>Finalidade</th>
+              <th>Base Legal</th>
+              <th>Retenção</th>
+              <th>Medidas de Segurança</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>1</strong></td>
+              <td>Autenticação Anônima</td>
+              <td>UID anônimo do Firebase Auth</td>
+              <td>Validação de sessão e transporte técnico de APIs</td>
+              <td>Art. 7º, IX (Legítimo Interesse)</td>
+              <td>Duração da sessão ativa</td>
+              <td>Token efêmero; sem vínculo cadastral ou biométrico</td>
+            </tr>
+            <tr>
+              <td><strong>2</strong></td>
+              <td>Identidade de Roteamento</td>
+              <td>Fingerprint SHA-256, chave X25519 e chave Ed25519</td>
+              <td>Localização técnica e validação de prova de posse</td>
+              <td>Art. 7º, V (Execução de Contrato)</td>
+              <td>Até exclusão voluntária pelo usuário ou DSR</td>
+              <td>Assinatura Ed25519 obrigatória em cada alteração de rota</td>
+            </tr>
+            <tr>
+              <td><strong>3</strong></td>
+              <td>Roteamento Efêmero</td>
+              <td>Ciphertext da mensagem (AES-256-GCM)</td>
+              <td>Fila transitória de entrega ao destinatário</td>
+              <td>Art. 7º, V (Execução de Contrato)</td>
+              <td>Máx 24h (TTL) ou destruição no consumo</td>
+              <td>Servidor matematicamente cego (Zero-Knowledge)</td>
+            </tr>
+            <tr>
+              <td><strong>4</strong></td>
+              <td>Envelopamento de Chave</td>
+              <td>DEK envelopada via Sealed-Box X25519</td>
+              <td>Permitir decifração simétrica pelo destinatário</td>
+              <td>Art. 7º, V (Execução de Contrato)</td>
+              <td>Máx 24h (TTL) ou destruição no consumo</td>
+              <td>Criptografia assimétrica opaca; chave privada inacessível</td>
+            </tr>
+            <tr>
+              <td><strong>5</strong></td>
+              <td>Metadados de Roteamento</td>
+              <td><code>senderId</code> e <code>recipientId</code> em envelopes</td>
+              <td>Autorização de resgate de chave e entrega</td>
+              <td>Art. 7º, V (Execução de Contrato)</td>
+              <td>Máx 24h (junto ao envelope)</td>
+              <td>Não mantém logs relacionais persistentes; incinerados em ≤24h</td>
+            </tr>
+            <tr>
+              <td><strong>6</strong></td>
+              <td>Purga e Incineração</td>
+              <td>Envelopes e chaves expiradas</td>
+              <td>Eliminação definitiva de mensagens de destinatários offline</td>
+              <td>Art. 7º, IX (Legítimo Interesse)</td>
+              <td>Ciclo horário (<code>scheduledMessageShredder</code>)</td>
+              <td>Destruição atômica redundante ao TTL nativo</td>
+            </tr>
+            <tr>
+              <td><strong>7</strong></td>
+              <td>Registros de Conexão (MCI)</td>
+              <td>IP de origem, porta, timestamp UTC e endpoint</td>
+              <td>Cumprimento de obrigação legal (Art. 15 MCI)</td>
+              <td>Art. 7º, II (Obrigação Legal)</td>
+              <td>180 dias (MCI Art. 15)</td>
+              <td>Datastore isolado em <code>accessLogs</code>, sem vínculo com UIDs, chaves ou mensagens</td>
+            </tr>
+            <tr>
+              <td><strong>8</strong></td>
+              <td>Criptografia em Trânsito</td>
+              <td>Tráfego de rede e pacotes HTTPS</td>
+              <td>Proteção perimetral contra interceptação</td>
+              <td>Art. 7º, II c/c Art. 46 (Segurança)</td>
+              <td>Transitório em voo</td>
+              <td><strong>TLS 1.2+ com preferência 1.3</strong> e cabeçalhos estritos de proteção</td>
+            </tr>
+            <tr>
+              <td><strong>9</strong></td>
+              <td>Moderação e Denúncias</td>
+              <td>Telemetria de rede (<code>reportAbuse</code>) ou anexo voluntário (<code>reportAbuseWithContent</code>)</td>
+              <td>Apuração de condutas ilícitas e assédio sem expor inocentes</td>
+              <td>Art. 7º, I (Consentimento explícito) c/c Art. 7º, IX</td>
+              <td>No máximo 90 dias após encerramento da apuração</td>
+              <td>Sanção exclusiva de revogação de chave Ed25519 (<code>revoked: true</code>). Sem bloqueio de IP. Exclusão definitiva (hard-delete)</td>
+            </tr>
+            <tr>
+              <td><strong>10</strong></td>
+              <td>Diagnóstico de Infraestrutura</td>
+              <td>Logs técnicos de execução de runtime (sem mensagens)</td>
+              <td>Monitoramento de integridade e estabilidade</td>
+              <td>Art. 7º, II c/c Art. 16 MCI</td>
+              <td>30 dias (Google Cloud Logging)</td>
+              <td>Acesso restrito via IAM na região <code>us-central1</code></td>
+            </tr>
+            <tr>
+              <td><strong>11</strong></td>
+              <td>Proteção Perimetral e DNS</td>
+              <td>Requisições HTTPS e consultas DNS</td>
+              <td>Mitigação de ataques distribuídos de negação de serviço</td>
+              <td>Art. 7º, IX (Legítimo Interesse)</td>
+              <td>Transitório de borda</td>
+              <td>Infraestrutura perimetral Cloudflare Inc.</td>
+            </tr>
+            <tr>
+              <td><strong>12</strong></td>
+              <td>Atendimento DSR (Titulares)</td>
+              <td>Fingerprint e prova de posse da chave</td>
+              <td>Atendimento a pedidos de confirmação e exclusão (Art. 18)</td>
+              <td>Art. 7º, II (Obrigação Legal)</td>
+              <td>5 anos (registro de conformidade)</td>
+              <td>Resposta formal no prazo legal de até 15 dias corridos</td>
+            </tr>
+            <tr>
+              <td><strong>13</strong></td>
+              <td>Canal Oficial de DPO</td>
+              <td>Comunicações com titulares e ANPD</td>
+              <td>Governança contínua e reporte regulatório</td>
+              <td>Art. 41 da LGPD</td>
+              <td>Permanente durante a operação</td>
+              <td>Canal oficial exclusivo: <code>contato@raixtech.com</code></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2>Salvaguardas de Custódia Local</h2>
+      <p>As chaves criptográficas privadas e a semente mnemônica de 12 palavras permanecem <strong>custodiadas exclusivamente no dispositivo do Usuário, sob proteção do sistema operacional</strong> (DPAPI no Windows, KeyStore no Android), não constituindo base de dados do servidor.</p>
+    </section>
+
+    <footer>
+      <p>Controladora: <strong>Cat Tech</strong> (CNPJ 67.497.085/0001-36) • Encarregado de Dados (DPO): Filippe Andrade Sampaio (<a href="mailto:contato@raixtech.com">contato@raixtech.com</a>)</p>
+      <p style="margin-top: 0.5rem; font-size: 0.75rem; color: #64748b;">© 2026 Raix. Todos os direitos reservados. Código livre sob licença AGPL-3.0.</p>
+    </footer>
+  </div>
+</body>
+</html>

@@ -68,7 +68,7 @@ class LegalConsentManagerTest {
             "Versão desatualizada dos termos deve invalidar o consentimento e exigir re-aceite."
         )
 
-        // Usuário aceita a nova versão v1.0
+        // Usuário aceita a nova versão v3.0
         LegalConsentManager.recordConsent(confirmedAge18 = true)
         assertTrue(
             LegalConsentManager.isConsentValid(),

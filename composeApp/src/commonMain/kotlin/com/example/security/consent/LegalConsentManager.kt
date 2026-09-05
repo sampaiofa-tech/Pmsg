@@ -7,7 +7,7 @@ package com.example.security.consent
  */
 object LegalConsentManager {
 
-    const val CURRENT_LEGAL_VERSION = "1.0"
+    const val CURRENT_LEGAL_VERSION = "3.0"
 
     fun isConsentValid(): Boolean {
         val record = LegalConsentStorage.getConsent() ?: return false
