@@ -1,3 +1,21 @@
+# Raix v1.4 — Transição de Marca, Domínio Próprio e Conformidade Regulatória (C1-C7)
+
+## 🛡️ Resumo da Versão v1.4
+A versão **v1.4** conclui a maturação corporativa e regulatória do aplicativo, efetuando a transição definitiva da marca provisória (Pmsg) para **RAIX**:
+1. **Transição de Marca & Branding**: Nome definitivo **RAIX** adotado em todas as camadas (Android, Desktop, Web, iOS). Incorporação dos ativos oficiais de marca (`branding/logo-app.png` e `branding/logo-empresa.png`), extração vetorial limpa do escudo para ícones Android Adaptive e Desktop `.ico`/`.png`, paleta corporativa Verde Esmeralda (`#00E676`), Dourado (`#D4AF37`) e Azul-Marinho Profundo (`#0B1325`).
+2. **Infraestrutura Própria**: Domínio oficial `raixtech.com` configurado com Cloudflare DNS (DNSSEC ativo, proxy CNAME), GitHub Pages integrado via `pages/CNAME`, e canal de governança `contato@raixtech.com`.
+3. **Registro de Propriedade Intelectual**: Protocolo de registro de marca nominativa no INPI sob o **nº 945109300** nas classes 09 e 42.
+4. **Parecer Jurídico & Conformidade (C1–C7)**:
+   - **C1**: Módulo de registro de conexões nos termos do Marco Civil da Internet (Art. 15) na coleção isolada `connectionLogs` com retenção estrita de 180 dias (TTL). Isolamento absoluto de dados sensíveis (sem UID, sem fingerprint, sem payload).
+   - **C2**: Certificação de ciclo de vida transitório com expiração $\le 24$h para mensagens não consumidas (TTL + shredder horário + vanish local).
+   - **C3**: Proteção contra captura de tela (`FLAG_SECURE`) ativada no Android (`MainActivity`).
+   - **C4**: Avisos explícitos e destacados sobre a perda irreversível do mnemônico BIP-39 de 12 palavras na criação de identidade.
+   - **C5**: Política de Privacidade v2.0 e Termos de Uso v2.0 publicados no domínio `raixtech.com`.
+   - **C6**: Denúncia com conteúdo voluntário (`reportAbuseWithContent`) mediante consentimento explícito e decodificação client-side de trecho ofensivo, mantendo o mecanismo Zero-Knowledge como padrão. Moderação via revogação Ed25519 no roteamento (`identities/{fp}.revoked = true`), **nunca** bloqueio de IP.
+   - **C7**: Runbook de atendimento a direitos de titulares (DSR) bifurcado entre dados de transporte (Raix como operadora) e conteúdo de mensagens profissionais (profissional como controlador).
+
+---
+
 # Pmsg v1.2 — E2E DE DEK (Zero-Knowledge) + QR Presencial
 
 ## 🛡️ Resumo da Versão v1.2
