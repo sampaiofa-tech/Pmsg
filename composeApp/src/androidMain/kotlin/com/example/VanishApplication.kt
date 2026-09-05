@@ -12,6 +12,7 @@ class VanishApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        com.example.util.AndroidContextHolder.appContext = this
 
         try {
             // Initialize notification channels

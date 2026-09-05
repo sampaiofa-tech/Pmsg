@@ -52,6 +52,7 @@ class MainActivity : FragmentActivity() {
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
+    com.example.util.AndroidContextHolder.appContext = applicationContext
     enableEdgeToEdge()
 
     // Initialize notification channels

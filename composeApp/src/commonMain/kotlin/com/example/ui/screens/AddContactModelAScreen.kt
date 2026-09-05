@@ -119,7 +119,13 @@ fun AddContactModelAScreen(
     LaunchedEffect(Unit) {
         val identity = IdentityManager.getOrGenerateIdentity()
         myFingerprint = identity.fingerprintHex
-        myUri = IdentityManager.createContactUri("user_${identity.fingerprintHex.take(8)}") ?: ""
+        val uid = com.example.security.DeviceAuthManager.getUserId()
+        myUri = IdentityManager.createContactUri(uid) ?: ""
+        try {
+            com.example.security.DeviceAuthManager.getIdToken()
+            val authedUid = com.example.security.DeviceAuthManager.getUserId()
+            myUri = IdentityManager.createContactUri(authedUid) ?: ""
+        } catch (_: Exception) {}
     }
 
     Scaffold(
@@ -651,10 +657,11 @@ fun AddContactModelAScreen(
                                         val identity = IdentityManager.getOrGenerateIdentity()
                                         val pubKeyB64 = Base64.encode(identity.publicKey)
                                         val signingPubKeyB64 = Base64.encode(identity.signingPublicKey)
+                                        val myToken = com.example.security.DeviceAuthManager.getIdToken() ?: "anonymous_token"
                                         val result = IdentityNetworkClient.createInvite(
                                             creatorFingerprint = identity.fingerprintHex,
                                             creatorPubKey = pubKeyB64,
-                                            idToken = "anonymous_token",
+                                            idToken = myToken,
                                             creatorSigningPubKey = signingPubKeyB64
                                         )
                                         isCreatingInvite = false
@@ -898,7 +905,8 @@ fun AddContactModelAScreen(
                                     isAcceptingInvite = true
                                     remoteInviteError = null
                                     coroutineScope.launch {
-                                        val acceptResult = IdentityNetworkClient.acceptInvite(token, "anonymous_token")
+                                        val myToken = com.example.security.DeviceAuthManager.getIdToken() ?: "anonymous_token"
+                                        val acceptResult = IdentityNetworkClient.acceptInvite(token, myToken)
                                         if (acceptResult.isFailure) {
                                             isAcceptingInvite = false
                                             remoteInviteError = acceptResult.exceptionOrNull()?.message ?: "Falha ao aceitar convite."
@@ -916,7 +924,7 @@ fun AddContactModelAScreen(
                                         }
 
                                         // Resolve routing UID
-                                        val resolveResult = IdentityNetworkClient.resolveFingerprint(creatorData.creatorFingerprint, "anonymous_token")
+                                        val resolveResult = IdentityNetworkClient.resolveFingerprint(creatorData.creatorFingerprint, myToken)
                                         val targetUid = if (resolveResult.isSuccess) {
                                             resolveResult.getOrThrow().currentAuthUid
                                         } else {

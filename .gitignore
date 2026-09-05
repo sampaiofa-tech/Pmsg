@@ -19,6 +19,8 @@ debug.keystore
 *.apk
 *.aab
 *.ap_
+*.msi
+dist/
 .navigation
 captures/
 output.json

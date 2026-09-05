@@ -16,7 +16,8 @@ actual object IdentityStorage {
     }
 
     private fun getPrefs(): SharedPreferences? {
-        return appContext?.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val ctx = appContext ?: com.example.util.AndroidContextHolder.appContext
+        return ctx?.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     }
 
     actual fun hasIdentity(): Boolean {

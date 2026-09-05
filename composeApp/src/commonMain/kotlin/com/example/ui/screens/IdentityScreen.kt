@@ -771,7 +771,7 @@ fun IdentityScreen(
                                 pubKey = pubKeyB64,
                                 signature = signatureB64,
                                 timestamp = timestamp,
-                                idToken = "anonymous_token",
+                                idToken = com.example.security.DeviceAuthManager.getIdToken() ?: "anonymous_token",
                                 signingPubKey = signingPubKeyB64
                             )
 

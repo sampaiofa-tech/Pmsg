@@ -1,6 +1,19 @@
 package com.example.ui.screens
 
 import com.example.data.network.PlatformEnvironment
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import kotlin.io.encoding.Base64
+import kotlin.io.encoding.ExperimentalEncodingApi
+import kotlin.random.Random
+import com.example.data.model.FirestoreMessage
+import com.example.data.network.FirestoreRestClient
+import com.example.data.network.KeyStoreClient
+import com.example.security.DeviceAuthManager
+import com.example.security.identity.AesGcm
+import com.example.security.identity.IdentityManager
+import com.example.security.identity.SealedBox
+import com.example.security.identity.SealedBoxEnvelope
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
@@ -105,6 +118,7 @@ fun ContactChatScreen(
     onReportContact: ((ContactItem) -> Unit)? = null
 ) {
     val coroutineScope = rememberCoroutineScope()
+    var activeContact by remember(contact) { mutableStateOf(contact) }
     var inputText by remember { mutableStateOf("") }
     var selectedTtlSeconds by remember { mutableStateOf(60L) } // Default 1 min
     var currentTime by remember { mutableStateOf(0L) }
@@ -116,12 +130,14 @@ fun ContactChatScreen(
     var reportStatusMessage by remember { mutableStateOf<String?>(null) }
     var isReporting by remember { mutableStateOf(false) }
     var isBlocked by remember { mutableStateOf(false) }
+    var isSending by remember { mutableStateOf(false) }
     var pendingMessageToSend by remember { mutableStateOf<String?>(null) }
     val listState = rememberLazyListState()
+    val snackbarHostState = remember { SnackbarHostState() }
 
     // Query blocklist state client-side
-    LaunchedEffect(contact.fingerprint) {
-        isBlocked = contactRepository.isContactBlocked(contact.fingerprint)
+    LaunchedEffect(activeContact.fingerprint) {
+        isBlocked = contactRepository.isContactBlocked(activeContact.fingerprint)
     }
 
     // In-memory ephemeral message queue for this contact session
@@ -129,10 +145,10 @@ fun ContactChatScreen(
         mutableStateListOf(
             EphemeralUiMessage(
                 id = "welcome_msg",
-                senderId = contact.fingerprint,
-                senderName = contact.displayName,
+                senderId = activeContact.fingerprint,
+                senderName = activeContact.displayName,
                 isMe = false,
-                text = "Conversa efêmera iniciada com ${contact.displayName}. Criptografada com chaves X25519 locais.",
+                text = "Conversa efêmera iniciada com ${activeContact.displayName}. Criptografada com chaves X25519 locais.",
                 timestamp = 0L,
                 ttlMillis = 300_000L,
                 expiresAt = 300_000L
@@ -143,10 +159,9 @@ fun ContactChatScreen(
     // Active real-time countdown timer tick (1 second loop)
     LaunchedEffect(Unit) {
         val startEpoch = PlatformEnvironment.currentTimeMillis()
-        if (contactRepository.isContactBlocked(contact.fingerprint)) {
-            // Auto-purge initial incoming welcome message if contact is blocked
-            contactRepository.recordBlockedPurge(contact.fingerprint)
-            messages.removeAll { !it.isMe && it.senderId == contact.fingerprint }
+        if (contactRepository.isContactBlocked(activeContact.fingerprint)) {
+            contactRepository.recordBlockedPurge(activeContact.fingerprint)
+            messages.removeAll { !it.isMe && it.senderId == activeContact.fingerprint }
         } else if (messages.isNotEmpty() && messages[0].timestamp == 0L) {
             messages[0] = messages[0].copy(
                 timestamp = startEpoch,
@@ -155,13 +170,170 @@ fun ContactChatScreen(
         }
         while (true) {
             currentTime = PlatformEnvironment.currentTimeMillis()
-            // Auto-incinerate expired messages in real time
             messages.removeAll { it.expiresAt <= currentTime }
             delay(1000)
         }
     }
 
+    // Active real-time Firestore message receiver loop (every 2.5s)
+    LaunchedEffect(activeContact.fingerprint) {
+        try {
+            val token = DeviceAuthManager.getIdToken()
+            if (token != null) {
+                val resolveRes = IdentityNetworkClient.resolveFingerprint(activeContact.fingerprint, token)
+                if (resolveRes.isSuccess) {
+                    val resolved = resolveRes.getOrThrow()
+                    if (resolved.currentAuthUid.isNotBlank() && resolved.currentAuthUid != activeContact.currentAuthUid) {
+                        activeContact = activeContact.copy(currentAuthUid = resolved.currentAuthUid)
+                        contactRepository.updateAuthUid(activeContact.fingerprint, resolved.currentAuthUid)
+                    }
+                }
+            }
+        } catch (_: Exception) {}
+
+        while (true) {
+            try {
+                val myUid = DeviceAuthManager.getUserId()
+                val myToken = DeviceAuthManager.getIdToken()
+                if (myToken != null) {
+                    val pendingResult = FirestoreRestClient.fetchPendingMessages(recipientId = myUid, idToken = myToken)
+                    if (pendingResult.isSuccess) {
+                        val pending = pendingResult.getOrThrow()
+                        for (msg in pending) {
+                            val senderMatches = msg.senderId == activeContact.currentAuthUid ||
+                                    msg.senderId == activeContact.fingerprint
+                            if (senderMatches) {
+                                if (contactRepository.isContactBlocked(activeContact.fingerprint)) {
+                                    contactRepository.recordBlockedPurge(activeContact.fingerprint)
+                                    FirestoreRestClient.deleteMessage(msg.id, myToken)
+                                    continue
+                                }
+                                if (messages.any { it.id == msg.id }) continue
+
+                                val keyResult = KeyStoreClient.getMessageKey(msg.id, myToken)
+                                if (keyResult.success && keyResult.ephemeralPubKey != null && keyResult.wrappedDek != null) {
+                                    val myPrivKey = IdentityManager.getIdentity()?.privateKey
+                                    if (myPrivKey != null) {
+                                        val env = SealedBoxEnvelope(
+                                            ephemeralPubKeyHex = keyResult.ephemeralPubKey,
+                                            wrappedDekBase64 = keyResult.wrappedDek
+                                        )
+                                        val dek = SealedBox.unseal(env, myPrivKey)
+                                        val cipherBytes = Base64.decode(msg.ciphertext)
+                                        val ivBytes = Base64.decode(msg.iv)
+                                        val decryptedBytes = AesGcm.decrypt(ciphertext = cipherBytes, key = dek, iv = ivBytes)
+                                        val decryptedText = decryptedBytes.decodeToString()
+
+                                        // Vanish-after-read: delete doc immediately from Firestore (triggers onDeleteMessage shredder)
+                                        FirestoreRestClient.deleteMessage(msg.id, myToken)
+
+                                        val now = PlatformEnvironment.currentTimeMillis()
+                                        val remainingTtl = (msg.expiresAt - now).coerceAtLeast(10_000L)
+                                        messages.add(
+                                            EphemeralUiMessage(
+                                                id = msg.id,
+                                                senderId = activeContact.fingerprint,
+                                                senderName = activeContact.displayName,
+                                                isMe = false,
+                                                text = decryptedText,
+                                                timestamp = now,
+                                                ttlMillis = remainingTtl,
+                                                expiresAt = msg.expiresAt
+                                            )
+                                        )
+                                        listState.animateScrollToItem(messages.size)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (_: Exception) {}
+            delay(2500)
+        }
+    }
+
+    val doSend: (String) -> Unit = { textToSend ->
+        val now = PlatformEnvironment.currentTimeMillis()
+        val ttlMs = selectedTtlSeconds * 1000L
+        val expiresAt = now + ttlMs
+        val localMsgId = "msg_${now}_${Random.nextInt(1000, 9999)}"
+
+        messages.add(
+            EphemeralUiMessage(
+                id = localMsgId,
+                senderId = "me",
+                senderName = "Você",
+                isMe = true,
+                text = textToSend,
+                timestamp = now,
+                ttlMillis = ttlMs,
+                expiresAt = expiresAt
+            )
+        )
+        coroutineScope.launch {
+            listState.animateScrollToItem(messages.size)
+            isSending = true
+            try {
+                val (myUid, myIdToken) = DeviceAuthManager.ensureAuthenticated()
+                val recipientPubKey = Base64.decode(activeContact.pubKey)
+                val dek = ByteArray(32).also { Random.nextBytes(it) }
+                val iv = ByteArray(12).also { Random.nextBytes(it) }
+
+                // 1. Encrypt payload with AES-256-GCM
+                val cipherBytes = AesGcm.encrypt(
+                    plaintext = textToSend.encodeToByteArray(),
+                    key = dek,
+                    iv = iv
+                )
+                val ciphertextB64 = Base64.encode(cipherBytes)
+                val ivB64 = Base64.encode(iv)
+
+                // 2. Wrap DEK via SealedBox with recipient public key
+                val envelope = SealedBox.seal(dek = dek, recipientPubKey = recipientPubKey)
+
+                // 3. Store wrapped DEK in KeyStore
+                val storeKeyResult = KeyStoreClient.storeMessageKey(
+                    messageId = localMsgId,
+                    senderId = myUid,
+                    recipientId = activeContact.currentAuthUid,
+                    ephemeralPubKey = envelope.ephemeralPubKeyHex,
+                    wrappedDek = envelope.wrappedDekBase64,
+                    expiresAtMillis = expiresAt,
+                    idToken = myIdToken
+                )
+
+                if (!storeKeyResult.success) {
+                    val err = storeKeyResult.errorMessage ?: "Falha ao registrar chave no servidor."
+                    snackbarHostState.showSnackbar(err)
+                    isSending = false
+                    return@launch
+                }
+
+                // 4. Publish encrypted message to Firestore
+                val firestoreMsg = FirestoreMessage(
+                    id = localMsgId,
+                    ciphertext = ciphertextB64,
+                    iv = ivB64,
+                    senderId = myUid,
+                    recipientId = activeContact.currentAuthUid,
+                    expiresAt = expiresAt
+                )
+                val createResult = FirestoreRestClient.createMessage(firestoreMsg, myIdToken)
+                if (createResult.isFailure) {
+                    val err = createResult.exceptionOrNull()?.message ?: "Falha ao enviar mensagem ao Firestore."
+                    snackbarHostState.showSnackbar(err)
+                }
+            } catch (e: Exception) {
+                snackbarHostState.showSnackbar(e.message ?: "Erro ao transmitir mensagem.")
+            } finally {
+                isSending = false
+            }
+        }
+    }
+
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = {
@@ -277,52 +449,14 @@ fun ContactChatScreen(
                 onSelectTtlSeconds = { selectedTtlSeconds = it },
                 isBlocked = isBlocked,
                 onSend = {
-                    if (inputText.isNotBlank() && !isBlocked) {
+                    if (inputText.isNotBlank() && !isBlocked && !isSending) {
                         val textToSend = inputText.trim()
                         inputText = ""
-                        if (!contact.verified) {
+                        if (!activeContact.verified) {
                             pendingMessageToSend = textToSend
                             showUnverifiedWarningDialog = true
                         } else {
-                            val now = PlatformEnvironment.currentTimeMillis()
-                            val ttlMs = selectedTtlSeconds * 1000L
-                            messages.add(
-                                EphemeralUiMessage(
-                                    id = "msg_${now}",
-                                    senderId = "me",
-                                    senderName = "Você",
-                                    isMe = true,
-                                    text = textToSend,
-                                    timestamp = now,
-                                    ttlMillis = ttlMs,
-                                    expiresAt = now + ttlMs
-                                )
-                            )
-                            coroutineScope.launch {
-                                listState.animateScrollToItem(messages.size)
-                                if (onSimulateIncomingReply) {
-                                    delay(2500)
-                                    val replyNow = PlatformEnvironment.currentTimeMillis()
-                                    if (contactRepository.isContactBlocked(contact.fingerprint)) {
-                                        // Auto-purge enforcement on incoming message fetch/receive
-                                        contactRepository.recordBlockedPurge(contact.fingerprint)
-                                    } else {
-                                        messages.add(
-                                            EphemeralUiMessage(
-                                                id = "reply_${replyNow}",
-                                                senderId = contact.fingerprint,
-                                                senderName = contact.displayName,
-                                                isMe = false,
-                                                text = "Resposta segura de ${contact.displayName}: mensagem recebida e chave destruída após decifração.",
-                                                timestamp = replyNow,
-                                                ttlMillis = ttlMs,
-                                                expiresAt = replyNow + ttlMs
-                                            )
-                                        )
-                                        listState.animateScrollToItem(messages.size)
-                                    }
-                                }
-                            }
+                            doSend(textToSend)
                         }
                     }
                 }
@@ -519,22 +653,8 @@ fun ContactChatScreen(
                         val textToSend = pendingMessageToSend ?: ""
                         showUnverifiedWarningDialog = false
                         pendingMessageToSend = null
-                        val now = PlatformEnvironment.currentTimeMillis()
-                        val ttlMs = selectedTtlSeconds * 1000L
-                        messages.add(
-                            EphemeralUiMessage(
-                                id = "msg_${now}",
-                                senderId = "me",
-                                senderName = "Você",
-                                isMe = true,
-                                text = textToSend,
-                                timestamp = now,
-                                ttlMillis = ttlMs,
-                                expiresAt = now + ttlMs
-                            )
-                        )
-                        coroutineScope.launch {
-                            listState.animateScrollToItem(messages.size)
+                        if (textToSend.isNotBlank()) {
+                            doSend(textToSend)
                         }
                     }
                 ) {

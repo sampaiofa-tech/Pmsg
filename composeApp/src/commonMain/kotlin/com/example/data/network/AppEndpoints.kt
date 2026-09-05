@@ -24,8 +24,11 @@ object AppEndpoints {
     const val PROD_CREATE_INVITE_URL: String = "https://$REGION-$DEFAULT_PROJECT_ID.cloudfunctions.net/createInvite"
     const val PROD_ACCEPT_INVITE_URL: String = "https://$REGION-$DEFAULT_PROJECT_ID.cloudfunctions.net/acceptInvite"
     const val PROD_UPDATE_IDENTITY_ROUTING_URL: String = "https://$REGION-$DEFAULT_PROJECT_ID.cloudfunctions.net/updateIdentityRouting"
+    const val DEFAULT_WEB_API_KEY: String = "AIzaSyDpVykwTzWXMqYQFpKGebyBW979nlcaL1Y"
     const val PROD_REPORT_ABUSE_URL: String = "https://$REGION-$DEFAULT_PROJECT_ID.cloudfunctions.net/reportAbuse"
     const val PROD_IDENTITY_TOOLKIT_URL: String = "https://identitytoolkit.googleapis.com/v1"
+    const val PROD_SECURE_TOKEN_URL: String = "https://securetoken.googleapis.com/v1"
+    const val PROD_FIRESTORE_URL: String = "https://firestore.googleapis.com/v1"
 
     val isDebug: Boolean
         get() = PlatformEnvironment.isDebug
@@ -133,5 +136,26 @@ object AppEndpoints {
             "http://127.0.0.1:9099/identitytoolkit.googleapis.com/v1"
         } else {
             PROD_IDENTITY_TOOLKIT_URL
+        }
+
+    val secureTokenBaseUrl: String
+        get() = if (isDebug && isEmulator) {
+            "http://127.0.0.1:9099/securetoken.googleapis.com/v1"
+        } else {
+            PROD_SECURE_TOKEN_URL
+        }
+
+    val firestoreBaseUrl: String
+        get() = if (isDebug && isEmulator) {
+            "http://127.0.0.1:8080/v1/projects/$projectId/databases/(default)/documents"
+        } else {
+            "$PROD_FIRESTORE_URL/projects/$projectId/databases/(default)/documents"
+        }
+
+    val webApiKey: String
+        get() = if (isDebug) {
+            PlatformEnvironment.getEnv("FIREBASE_WEB_API_KEY") ?: DEFAULT_WEB_API_KEY
+        } else {
+            DEFAULT_WEB_API_KEY
         }
 }
