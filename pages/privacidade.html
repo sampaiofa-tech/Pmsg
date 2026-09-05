@@ -162,6 +162,7 @@
         <li><strong>Identidade Pública de Roteamento (<code>identities</code>):</strong> Fingerprint SHA-256 de sua chave pública, chave pública X25519 (usada para empacotar mensagens) e chave pública Ed25519 (usada para validar assinatura da prova de posse de roteamento).</li>
         <li><strong>Registros de Conexão à Aplicação (MCI Art. 15 — Base Legal Art. 7º, II da LGPD):</strong> Gravados no armazém isolado <code>accessLogs</code>: exclusivamente endereço IP de origem, timestamp UTC, porta lógica de origem e endpoint acionado. Retidos por 180 dias em cumprimento estrito à obrigação legal. Totalmente desprovidos de vínculo com UIDs, contas, payloads, mensagens, chaves ou mnemônicos.</li>
         <li><strong>Ciphertext Efêmero da Mensagem:</strong> Payload estritamente cifrado via AES-256-GCM. O servidor não possui a chave privada para ler este conteúdo.</li>
+        <li><strong>Metadados Técnicos de Roteamento (<code>senderId</code> e <code>recipientId</code>):</strong> Identificadores criptográficos anexados ao envelope em <code>messages</code> e <code>messageKeys</code>. Constituem o metadado técnico mais sensível retido temporariamente pelo servidor, sendo estritamente necessários para autorização de resgate da chave e entrega de mensagens em fila. São incinerados de forma irreversível em até 24 horas juntamente com o envelope (<em>Vanish-After-Read</em> ou <em>Crypto-Shredder</em>).</li>
         <li><strong>DEK Envelopada (Sealed-Box):</strong> Chave de sessão cifrada com a chave pública do destinatário. O servidor armazena unicamente bytes opacos.</li>
         <li><strong>Timestamps de Ciclo de Vida:</strong> Utilizados exclusivamente para o mecanismo de autodestruição programada (TTL de até 24h).</li>
       </ul>
@@ -179,6 +180,7 @@
       <ul>
         <li>Exige consentimento inequívoco e explícito da vítima antes de qualquer envio.</li>
         <li>A mensagem selecionada é decifrada localmente no aparelho do denunciante e enviada aos auditores do serviço.</li>
+        <li><strong>Prazo e Destino:</strong> Retido por <strong>até 90 dias após a conclusão da apuração interna</strong>, com posterior <strong>exclusão definitiva e cripto-incineração irreversível (hard-delete)</strong>.</li>
         <li><strong>Sanção de Moderação:</strong> Infratores confirmados sofrem revogação da chave Ed25519 no diretório de roteamento (<code>revoked: true</code>), cessando a entrega de mensagens. <strong>NUNCA aplicamos bloqueio de endereço IP</strong> para não prejudicar usuários legítimos em redes compartilhadas.</li>
       </ul>
 
@@ -200,6 +202,12 @@
             <td>Deleção atômica no consumo (<em>Vanish-After-Read</em>) ou purga horária (<em>Crypto-Shredder</em>).</td>
           </tr>
           <tr>
+            <td>Metadados de Roteamento (<code>senderId</code> e <code>recipientId</code>)</td>
+            <td>Firestore (<code>messages</code>, <code>messageKeys</code>)</td>
+            <td>Máx 24 horas (junto ao envelope)</td>
+            <td>Expurgo simultâneo irreversível no consumo ou no <em>Crypto-Shredder</em>. Dado mais sensível retido pelo servidor.</td>
+          </tr>
+          <tr>
             <td>Identidade de Roteamento</td>
             <td>Firestore</td>
             <td>Até exclusão voluntária</td>
@@ -210,6 +218,12 @@
             <td>Firestore (<code>accessLogs</code>)</td>
             <td>180 dias (obrigação legal)</td>
             <td>Expurgo automático via política de TTL do banco.</td>
+          </tr>
+          <tr>
+            <td>Denúncias com Conteúdo Voluntário</td>
+            <td>Firestore (<code>abuseReports</code>)</td>
+            <td>Até 90 dias após conclusão da apuração</td>
+            <td>Exclusão definitiva e cripto-incineração irreversível (<em>hard-delete</em> do Firestore).</td>
           </tr>
           <tr>
             <td>Contatos e Chaves Privadas</td>

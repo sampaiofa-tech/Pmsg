@@ -33,12 +33,14 @@ O Raix foi projetado sob o princípio da **minimização extrema de dados** (*Pr
    - **Regra Absoluta de Isolamento**: Estes registros **NÃO** possuem vínculo com UIDs, fingerprints, mensagens, payloads, contatos, mnemônicos ou chaves criptográficas (zero campos associativos), destinando-se exclusivamente ao cumprimento de obrigação legal de segurança da informação (Art. 15 do Marco Civil da Internet). Retidos pelo prazo estrito de 180 dias com expurgo automático.
 4. **Ciphertext Efêmero da Mensagem**:
    - Texto cifrado através de **AES-256-GCM**. O servidor **não possui** a chave necessária para decifrar este conteúdo, tratando-o unicamente como sequência opaca de bytes.
-5. **DEK Envelopada (*Sealed-Box*)**:
+5. **Metadados Técnicos de Roteamento (`senderId` e `recipientId`)**:
+   - Identificadores criptográficos gravados temporariamente junto ao envelope em `messages` e `messageKeys`. Representam o **dado mais sensível que o servidor retém temporariamente**, sendo estritamente necessários para viabilizar a entrega técnica de caixas postais efêmeras e autorizar o resgate da DEK pelo destinatário correto. São **irreversivelmente expurgados em até 24 horas** juntamente com o envelope (*Vanish-After-Read* ou *Crypto-Shredder*).
+6. **DEK Envelopada (*Sealed-Box*)**:
    - A Chave de Criptografia de Dados (DEK) é envelopada no dispositivo do remetente através de **Sealed-Box X25519 + HKDF-SHA256 + AES-256-GCM**. O servidor armazena exclusivamente bytes opacos (`wrappedDek`). O servidor **não aprende, não vê e não armazena a DEK em claro**.
-6. **Chave Efêmera por Mensagem (`ephemeralPubKey`)**:
+7. **Chave Efêmera por Mensagem (`ephemeralPubKey`)**:
    - Chave pública temporária X25519 gerada pelo remetente exclusivamente para aquela mensagem específica, garantindo anonimato criptográfico do remetente perante o servidor.
-7. **Conteúdo Voluntário de Denúncia (Fluxo Secundário Opcional com Consentimento Explícito)**:
-   - Caso um usuário receba conteúdo ilícito, assédio ou ameaças e opte voluntariamente por denunciar com evidência, o aplicativo solicita **consentimento prévio e expresso**. Apenas a mensagem selecionada é descriptografada no dispositivo do denunciante e enviada ao backend de moderação (`reportAbuseWithContent`). Este procedimento **nunca** é o padrão e depende de ato deliberado e inequívoco da vítima.
+8. **Conteúdo Voluntário de Denúncia (Fluxo Secundário Opcional com Consentimento Explícito)**:
+   - Caso um usuário receba conteúdo ilícito, assédio ou ameaças e opte voluntariamente por denunciar com evidência, o aplicativo solicita **consentimento prévio e expresso**. Apenas a mensagem selecionada é descriptografada no dispositivo do denunciante e enviada ao backend de moderação (`reportAbuseWithContent`). Este procedimento **nunca** é o padrão e depende de ato deliberado e inequívoco da vítima. Retido por **até 90 dias após o fechamento da apuração interna**, com destino exclusivo de **exclusão definitiva e cripto-incineração irreversível**.
 
 ---
 
@@ -87,9 +89,10 @@ A infraestrutura de servidores do Raix está alocada na região **`us-central1` 
 | Tipo de Dado | Local de Armazenamento | Prazo de Retenção | Mecanismo de Expurgo |
 |---|---|---|---|
 | **Mensagens e DEKs Envelopadas** | Firestore (`messages`, `messageKeys`) | **Máximo de 24 horas** (ou menos, conforme TTL) | Destruição no consumo (*Vanish-After-Read*) ou purga horária pelo *Crypto-Shredder*. |
+| **Metadados de Roteamento (`senderId` e `recipientId`)** | Firestore (`messages`, `messageKeys`) | **Máximo de 24 horas** (junto ao envelope) | Expurgo simultâneo irreversível no consumo ou no *Crypto-Shredder*. Dado mais sensível retido pelo servidor. |
 | **Identidade de Roteamento** | Firestore (`identities`) | Enquanto a identidade existir | Exclusão voluntária pelo usuário ou solicitação formal ao Encarregado. |
 | **Registros de Conexão (MCI Art. 15)** | Firestore (`accessLogs`) | **180 dias** (Art. 15 MCI) | Expurgo automático via política de TTL do banco. |
-| **Denúncias com Conteúdo** | Firestore (`abuseReportsWithContent`) | **90 dias** ou conclusão da auditoria | Expurgo programado após análise e eventual revogação da chave ofensora. |
+| **Denúncias com Conteúdo Voluntário** | Firestore (`abuseReportsWithContent`) | **Até 90 dias após o encerramento da apuração** | Exclusão definitiva e cripto-incineração irreversível (*hard-delete* do Firestore). |
 | **Logs Técnicos de Diagnóstico** | Google Cloud Logging | **30 dias** | Sobrescrita automática padrão do Cloud Logging. |
 | **Contatos e Chaves Privadas** | Dispositivo Local do Usuário | Permanente até remoção local | Controle exclusivo do usuário pelo aplicativo ou botão de Pânico (*Panic Wipe*). |
 

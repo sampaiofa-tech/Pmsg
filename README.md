@@ -372,7 +372,7 @@ npx firebase-tools functions:secrets:get GEMINI_API_KEY
 Por se tratar de um repositório público voltado à privacidade, o arquivo `google-services.json` está explicitamente ignorado pelo `.gitignore`.
 Para compilar o cliente Android localmente:
 1. Acesse o **Firebase Console** no projeto `gen-lang-client-0858445711`.
-2. Vá em **Configurações do Projeto > Seus aplicativos > Android** (`com.aistudio.vanishchat.zr7k`).
+2. Vá em **Configurações do Projeto > Seus aplicativos > Android** (`tech.sampaiofa.raix`).
 3. Baixe o arquivo `google-services.json` e posicione-o no diretório `composeApp/`.
 4. O build Gradle está configurado com `MissingGoogleServicesStrategy.ERROR` para impedir compilações acidentais sem a configuração correta.
 
