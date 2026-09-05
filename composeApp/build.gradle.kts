@@ -257,7 +257,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Msi, TargetFormat.AppImage)
             packageName = "Raix"
-            packageVersion = "1.4.0"
+            packageVersion = "1.5.0"
             description = "Raix - Mensageiro Efêmero e Criptografado (Zero-Trace)"
             copyright = "© 2026 Raix"
             vendor = "Raix"
