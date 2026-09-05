@@ -410,6 +410,12 @@ Para as diretrizes completas e regras permanentes do agente de IA, consulte [`AG
 #### 6.5 Visibilidade do Repositório e Auditoria Pública
 O repositório é PÚBLICO por decisão de arquitetura (AGPL-3.0): todo o código, documentos legais e o histórico de homologação são auditáveis publicamente. Documentos internos de operação (DSR, runbooks) são controlados fora do versionamento público. O inventário de segurança confirma que nenhuma chave privada, segredo de infraestrutura ou mnemônico BIP-39 jamais existiu no histórico de commits (conforme auditorias rigorosas v1.0–v1.2 e regras em [`AGENTS.md`](AGENTS.md)).
 
+#### 6.6 Política de Expiração e TTL Redundante (v1.5)
+- **TTL de messages reduzido de 180d para 24h — alinhado com a política de expiração autoritativa do parecer jurídico (mensagens não entregues são o dado mais sensível que o servidor retém)**.
+- **Camada Primária Ativa (Shredder Horário)**: O Cloud Scheduler aciona o `scheduledMessageShredder` a cada 1 hora (`0 * * * *`), destruindo de forma atômica e irreversível tanto a chave de cifragem em `messageKeys` quanto o envelope em `messages` onde `expiresAt <= now`.
+- **Camada Secundária Passiva (TTL Nativo do Firestore)**: A política de TTL nativo atrelada ao campo `messages.expiresAt` (`ttl: true`) atua como garantia redundante e fail-safe, assegurando a deleção automática em segundo plano pelo motor do Firestore.
+- **Isolamento de Logs de Conexão**: Os registros de auditoria e conexão em `accessLogs` (Art. 15 do Marco Civil da Internet) mantêm retenção de 180 dias sem interferir na efemeridade radical de $\le 24$h dos envelopes de mensagem.
+
 ---
 
 ## 🛡️ Segurança de Usuários & Conformidade Google Play (v1.3)
