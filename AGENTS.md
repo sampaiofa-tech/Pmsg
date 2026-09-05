@@ -27,3 +27,12 @@ Este documento estabelece as regras mandatórias e permanentes de segurança, go
      b. Capturar a credencial via `git credential fill` diretamente em variável volátil de memória (zero eco no console);
      c. Utilizar a variável exclusivamente nos headers da requisição em memória;
      d. Descartar a variável imediatamente após o uso.
+
+6. **Varredura Ativa e Padrões de Bloqueio de Segredos**:
+   - O agente deve inspecionar ativamente arquivos, diffs e saídas para garantir a ausência absoluta dos seguintes padrões e assinaturas de credenciais:
+     - **Tokens GitHub**: `gho_`, `ghp_`, `github_pat_`
+     - **Chaves de API Google/Firebase**: `AIzaSy`
+     - **Parâmetros e Tokens de Autenticação**: `password=`, `refresh_token`, `client_email`
+     - **Chaves Privadas e Certificados**: `"BEGIN PRIVATE KEY"`, `"BEGIN RSA PRIVATE KEY"`, `"BEGIN EC PRIVATE KEY"`
+   - É expressamente proibido commitar, logar ou exibir qualquer valor correspondente a esses padrões.
+
