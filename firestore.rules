@@ -90,10 +90,14 @@ service cloud.firestore {
     }
 
     // =========================================================================
-    // COLEÇÃO: connectionLogs (Marco Civil da Internet Art. 15 - 180 dias TTL)
+    // COLEÇÃO: accessLogs & connectionLogs (Marco Civil Art. 15 - 180 dias TTL)
     // =========================================================================
     // ISOLAMENTO TOTAL: Leitura e escrita NEGADAS para todos os clientes SDK.
-    // Registro estrito de IP, porta e timestamp via Cloud Functions Admin SDK.
+    // Registro estrito de IP, porta e timestamp UTC via Cloud Functions Admin SDK.
+    match /accessLogs/{logId} {
+      allow read, write: if false;
+    }
+
     match /connectionLogs/{logId} {
       allow read, write: if false;
     }

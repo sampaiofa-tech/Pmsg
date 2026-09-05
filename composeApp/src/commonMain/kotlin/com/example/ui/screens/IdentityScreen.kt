@@ -36,6 +36,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -536,6 +538,7 @@ fun IdentityScreen(
     if (showProvisioningDialog && provisionedDraft != null) {
         val draft = provisionedDraft!!
         var step by remember { mutableStateOf(1) } // 1: show words, 2: test 3 words
+        var acknowledgedIrreversibleLoss by remember { mutableStateOf(false) }
 
         // Pick 3 distinct random indices for verification (1-based: 1..12)
         val testIndices = remember(draft) {
@@ -559,10 +562,39 @@ fun IdentityScreen(
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     if (step == 1) {
-                        Text(
-                            "ATENÇÃO: Os servidores do Raix NÃO armazenam cópia do seu mnemônico. A perda dessas 12 palavras acarreta a perda definitiva e irreversível da sua identidade e de todos os seus contatos.\n\nAnote as 12 palavras abaixo na ordem correta em um papel físico e guarde-o em local estritamente seguro.",
-                            style = MaterialTheme.typography.bodyMedium
-                        )
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFF2D1600)),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .border(1.dp, Color(0xFFFF9800), RoundedCornerShape(8.dp))
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.Top
+                            ) {
+                                Icon(
+                                    Icons.Default.Warning,
+                                    contentDescription = null,
+                                    tint = Color(0xFFFF9800),
+                                    modifier = Modifier.size(24.dp).padding(top = 2.dp)
+                                )
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Column {
+                                    Text(
+                                        "AVISO MANDATÓRIO DE PERDA IRREVERSÍVEL",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 12.sp,
+                                        color = Color(0xFFFF9800)
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        "Os servidores do Raix operam sob arquitetura Zero-Knowledge e NÃO possuem cópia, backup ou mecanismo de recuperação deste mnemônico. A perda dessas 12 palavras acarreta a perda definitiva e irreversível da sua identidade e de todos os seus contatos criptográficos. Anote-as fisicamente em papel e guarde em cofre seguro.",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = Color(0xFFFFE0B2)
+                                    )
+                                }
+                            }
+                        }
 
                         Spacer(modifier = Modifier.height(4.dp))
 
@@ -590,6 +622,31 @@ fun IdentityScreen(
                                     )
                                 }
                             }
+                        }
+
+                        Spacer(modifier = Modifier.height(6.dp))
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { acknowledgedIrreversibleLoss = !acknowledgedIrreversibleLoss }
+                                .padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Checkbox(
+                                checked = acknowledgedIrreversibleLoss,
+                                onCheckedChange = { acknowledgedIrreversibleLoss = it },
+                                colors = CheckboxDefaults.colors(
+                                    checkedColor = Color(0xFF00FFC2),
+                                    checkmarkColor = Color.Black
+                                )
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                "Estou ciente de que os servidores Raix operam em arquitetura Zero-Knowledge, não possuem cópia deste mnemônico e que a perda dessas 12 palavras acarretará a perda definitiva e irreversível da minha identidade criptográfica e contatos.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.White
+                            )
                         }
                     } else {
                         Text(
@@ -628,7 +685,10 @@ fun IdentityScreen(
             },
             confirmButton = {
                 if (step == 1) {
-                    Button(onClick = { step = 2 }) {
+                    Button(
+                        onClick = { step = 2 },
+                        enabled = acknowledgedIrreversibleLoss
+                    ) {
                         Text("Já Anotei, Continuar")
                     }
                 } else {

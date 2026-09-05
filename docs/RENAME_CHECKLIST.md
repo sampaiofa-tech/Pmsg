@@ -9,7 +9,7 @@ Este checklist consolida as ações técnicas, regulatórias e operacionais da t
 | Data | Componente / Ação | Responsável | Status | Referência / Evidência |
 | :--- | :--- | :--- | :--- | :--- |
 | 05/09/2026 | **Aprovação do Nome Definitivo: RAIX** | Gestão | ✅ **Concluído** | Decisão homologada no ciclo v1.4 |
-| 05/09/2026 | **Depósito de Marca INPI** | Usuário | ✅ **Concluído** | **Protocolo nº 945109300** (Classes 9 e 42) |
+| 08/09/2026 | **Depósito de Marca INPI** | Usuário | ⏳ **Agendado** (08/09/2026) | Guia/protocolo preparatório nº 945109300 (Classes 9 e 42) |
 | 05/09/2026 | **Aquisição de Domínio e DNS** | Usuário/Agente | ✅ **Concluído** | `raixtech.com` ativo no Cloudflare |
 | 05/09/2026 | **Configuração CNAME GitHub Pages** | Agente | ✅ **Concluído** | CNAME `raixtech.com` via API e `pages/CNAME` |
 | 05/09/2026 | **Canal de E-mail Institucional** | Usuário | ✅ **Concluído** | `contato@raixtech.com` redirecionado via Cloudflare |
@@ -63,14 +63,15 @@ Este checklist consolida as ações técnicas, regulatórias e operacionais da t
 
 ## 4. Registro de Propriedade Intelectual e Marca (INPI)
 - [x] **Busca de Anterioridade no INPI**: Realizada nas classes 09 e 42.
-- [x] **Depósito de Pedido de Registro de Marca**:
-  - **Número de Protocolo INPI:** `945109300`
+- [ ] **Depósito de Pedido de Registro de Marca**:
+  - **Status:** Agendado para 08/09/2026
+  - **Guia / Protocolo Preparatório INPI:** `945109300`
   - **Natureza:** Marca de Produto / Serviço
   - **Apresentação:** NOMINATIVA (`RAIX`)
   - **Classes:** 9 (softwares e aplicativos) e 42 (serviços de tecnologia e SaaS)
   - **Titular:** Filippe Andrade Sampaio (Pessoa Física)
 - [ ] **Acompanhamento na RPI**:
-  - Acompanhar despachos e deferimento no portal do INPI.
+  - Acompanhar despachos e deferimento no portal do INPI após o depósito.
 
 ---
 

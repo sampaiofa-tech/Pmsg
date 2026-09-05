@@ -138,7 +138,7 @@
     <header>
       <img src="logo-empresa.png" alt="Marca da Controladora" class="header-logo">
       <h1>Política de Privacidade — Raix</h1>
-      <p class="meta">Versão 2.0 (Conforme arquitetura v1.4) • Última atualização: 05 de setembro de 2026 • Marca depositada no INPI sob nº <strong>945109300</strong></p>
+      <p class="meta">Versão 2.0 (Conforme arquitetura v1.4) • Última atualização: 05 de setembro de 2026 • Depósito de marca no INPI agendado para 08/09/2026 (guia/protocolo preparatório nº <strong>945109300</strong>)</p>
     </header>
 
     <section>
@@ -160,7 +160,7 @@
       <ul>
         <li><strong>UID Anônimo de Sessão:</strong> Identificador técnico gerado pelo Firebase Authentication. Não vinculado a CPF, e-mail, telefone, biometria ou redes sociais.</li>
         <li><strong>Identidade Pública de Roteamento (<code>identities</code>):</strong> Fingerprint SHA-256 de sua chave pública, chave pública X25519 (usada para empacotar mensagens) e chave pública Ed25519 (usada para validar assinatura da prova de posse de roteamento).</li>
-        <li><strong>Registros de Conexão (Art. 15 do Marco Civil da Internet):</strong> Registrados na coleção segregada <code>connectionLogs</code>: endereço IP de origem, timestamp UTC e endpoint acionado. Retidos por 180 dias em cumprimento à obrigação legal (Art. 7º, II da LGPD), sem qualquer correlação com o conteúdo ou identidade do usuário.</li>
+        <li><strong>Registros de Conexão à Aplicação (MCI Art. 15 — Base Legal Art. 7º, II da LGPD):</strong> Gravados no armazém isolado <code>accessLogs</code>: exclusivamente endereço IP de origem, timestamp UTC, porta lógica de origem e endpoint acionado. Retidos por 180 dias em cumprimento estrito à obrigação legal. Totalmente desprovidos de vínculo com UIDs, contas, payloads, mensagens, chaves ou mnemônicos.</li>
         <li><strong>Ciphertext Efêmero da Mensagem:</strong> Payload estritamente cifrado via AES-256-GCM. O servidor não possui a chave privada para ler este conteúdo.</li>
         <li><strong>DEK Envelopada (Sealed-Box):</strong> Chave de sessão cifrada com a chave pública do destinatário. O servidor armazena unicamente bytes opacos.</li>
         <li><strong>Timestamps de Ciclo de Vida:</strong> Utilizados exclusivamente para o mecanismo de autodestruição programada (TTL de até 24h).</li>
@@ -207,7 +207,7 @@
           </tr>
           <tr>
             <td>Registros de Conexão (MCI Art. 15)</td>
-            <td>Firestore (<code>connectionLogs</code>)</td>
+            <td>Firestore (<code>accessLogs</code>)</td>
             <td>180 dias (obrigação legal)</td>
             <td>Expurgo automático via política de TTL do banco.</td>
           </tr>

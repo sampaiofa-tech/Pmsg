@@ -9,7 +9,7 @@ describe("v1.4: connectionLogs Helper (Marco Civil da Internet Art. 15)", () => 
 
     jest.spyOn(admin, "firestore").mockReturnValue({
       collection: (name: string) => {
-        if (name === "connectionLogs") {
+        if (name === "accessLogs" || name === "connectionLogs") {
           return { add: mockAdd };
         }
         return { doc: jest.fn() };
@@ -21,7 +21,7 @@ describe("v1.4: connectionLogs Helper (Marco Civil da Internet Art. 15)", () => 
     jest.restoreAllMocks();
   });
 
-  it("should extract client IP and port from headers and store with 180-day TTL", async () => {
+  it("should extract client IP and port from headers and store in accessLogs with 180-day TTL", async () => {
     const mockRequest: any = {
       rawRequest: {
         headers: {
@@ -41,6 +41,14 @@ describe("v1.4: connectionLogs Helper (Marco Civil da Internet Art. 15)", () => 
     expect(loggedData.porta).toBe(49152);
     expect(loggedData.functionName).toBe("testCallable");
     expect(loggedData.expiresAt).toBeInstanceOf(Date);
+
+    // REGRA ABSOLUTA DO PARECER: Zero campos de conta, payload, chave ou mnemônico
+    expect((loggedData as any).uid).toBeUndefined();
+    expect((loggedData as any).fingerprint).toBeUndefined();
+    expect((loggedData as any).messageId).toBeUndefined();
+    expect((loggedData as any).payload).toBeUndefined();
+    expect((loggedData as any).dek).toBeUndefined();
+    expect((loggedData as any).mnemonic).toBeUndefined();
 
     // Verify TTL is approximately 180 days in future
     const diffDays = Math.round((loggedData.expiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24));

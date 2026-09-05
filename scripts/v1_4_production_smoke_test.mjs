@@ -115,15 +115,21 @@ async function runV14SmokeTests() {
     }
 
     // ------------------------------------------------------------------------
-    // TESTE 2: Isolamento da coleção connectionLogs no Firestore
+    // TESTE 2: Isolamento da coleção accessLogs no Firestore (MCI Art. 15)
     // ------------------------------------------------------------------------
-    console.log("\n--- 2. Segurança Firestore Rules — Isolamento de connectionLogs ---");
+    console.log("\n--- 2. Segurança Firestore Rules — Isolamento de accessLogs ---");
     const alice = await createTestUser("Alice");
-    const readLogsRes = await readFirestoreDoc("connectionLogs", "sample_log_test", alice.idToken);
+    const readLogsRes = await readFirestoreDoc("accessLogs", "sample_log_test", alice.idToken);
     assert(
-      "Leitura direta de /connectionLogs/{id} rejeitada com 403 Forbidden",
+      "Leitura direta de /accessLogs/{id} rejeitada com 403 Forbidden",
       readLogsRes.status === 403 || readLogsRes.status === 404,
       `(Recebido: ${readLogsRes.status})`
+    );
+    const readConnLogsRes = await readFirestoreDoc("connectionLogs", "sample_log_test", alice.idToken);
+    assert(
+      "Leitura direta de /connectionLogs/{id} rejeitada com 403 Forbidden",
+      readConnLogsRes.status === 403 || readConnLogsRes.status === 404,
+      `(Recebido: ${readConnLogsRes.status})`
     );
 
     // ------------------------------------------------------------------------

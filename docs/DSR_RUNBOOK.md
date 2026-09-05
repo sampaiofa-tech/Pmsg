@@ -3,7 +3,7 @@
 > **CONFIDENCIAL — DOCUMENTAÇÃO INTERNA DO CONTROLADOR**  
 > **NÃO PUBLICAR NO GITHUB PAGES OU RECURSOS PÚBLICOS**  
 > **Controlador & DPO:** Filippe Andrade Sampaio (`contato@raixtech.com`)  
-> **Aplicação:** Raix (Marca nominativa depositada no INPI sob nº 945109300)  
+> **Aplicação:** Raix (Depósito de marca nominativa agendado para 08/09/2026 junto ao INPI — guia/protocolo preparatório nº 945109300)  
 > **Legislação Base:** Lei Geral de Proteção de Dados (Lei nº 13.709/2018), Arts. 18 e 19
 
 ---
@@ -21,7 +21,7 @@ Como desenvolvedor e controlador independente da infraestrutura **Raix**, você 
 Em conformidade com o Parecer Jurídico Especializado, o atendimento DSR deve distinguir claramente a natureza da solicitação:
 
 1. **Fluxo A — Dados Técnicos de Transporte (Raix como Operadora / Controladora de Infraestrutura):**
-   - **Objeto:** Identificador público de roteamento (`identities/{fingerprint}`), registros técnicos de conexão do Marco Civil (`connectionLogs`) e dados de sessão anônima.
+   - **Objeto:** Identificador público de roteamento (`identities/{fingerprint}`), registros técnicos de conexão do Marco Civil (`accessLogs`) e dados de sessão anônima.
    - **Competência:** A equipe da **Raix** é diretamente responsável por confirmar, prestar informações sobre a infraestrutura ou efetuar a eliminação do registro de identidade do titular em até 15 dias.
 
 2. **Fluxo B — Conteúdo de Conversas Profissionais (O Profissional / Empresa como Controlador):**
@@ -107,7 +107,7 @@ db.collection('identities').doc(fingerprint).delete().then(() => {
 - **Contatos locais e chaves privadas:** Residem unicamente no aparelho do usuário. O servidor nunca possuiu esses dados. Para eliminá-los, basta ao usuário acionar a opção *Pânico (Panic Wipe)* no app ou desinstalar o aplicativo.
 
 ### 4.3. Registros Legais Isolados (MCI Art. 15):
-- **ConnectionLogs (`connectionLogs`):** Mantidos isoladamente sem identificador de usuário pelo prazo estrito de **180 dias** em estrito cumprimento do Art. 15 do Marco Civil da Internet (obrigação legal — Art. 7º, II da LGPD), findo o qual são expurgados automaticamente via política de TTL do banco.
+- **AccessLogs (`accessLogs`):** Mantidos isoladamente sem identificador de usuário pelo prazo estrito de **180 dias** em estrito cumprimento do Art. 15 do Marco Civil da Internet (obrigação legal — Art. 7º, II da LGPD), findo o qual são expurgados automaticamente via política de TTL do banco.
 
 ---
 

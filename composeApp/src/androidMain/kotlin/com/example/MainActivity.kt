@@ -100,16 +100,12 @@ class MainActivity : FragmentActivity() {
         }
       }
 
-      // Dynamically toggle FLAG_SECURE to prevent screenshots and screen recordings
-      LaunchedEffect(screenProtectionEnabled) {
-        if (screenProtectionEnabled) {
-          window.setFlags(
-            WindowManager.LayoutParams.FLAG_SECURE,
-            WindowManager.LayoutParams.FLAG_SECURE
-          )
-        } else {
-          window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
-        }
+      // Fail-secure permanent enforcement of FLAG_SECURE to prevent screenshots, recordings and recents leaks
+      LaunchedEffect(Unit) {
+        window.setFlags(
+          WindowManager.LayoutParams.FLAG_SECURE,
+          WindowManager.LayoutParams.FLAG_SECURE
+        )
       }
 
       // Dynamically start/stop real-time screenshot detector
@@ -161,16 +157,10 @@ class MainActivity : FragmentActivity() {
 
   override fun onResume() {
     super.onResume()
-    val screenProtection = viewModel.screenProtectionEnabled.value
-    val curtain = com.example.util.security.SecurePrefsHelper.isPrivacyCurtainEnabled(this)
-    if (screenProtection || curtain) {
-      window.setFlags(
-        WindowManager.LayoutParams.FLAG_SECURE,
-        WindowManager.LayoutParams.FLAG_SECURE
-      )
-    } else {
-      window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
-    }
+    window.setFlags(
+      WindowManager.LayoutParams.FLAG_SECURE,
+      WindowManager.LayoutParams.FLAG_SECURE
+    )
   }
 
   override fun onStart() {

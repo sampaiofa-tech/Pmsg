@@ -2,7 +2,7 @@
 
 **Última atualização:** 05 de setembro de 2026  
 **Versão:** 2.0 (Conforme v1.4 da arquitetura do aplicativo)  
-**Marca:** Raix (Marca nominativa depositada no INPI sob protocolo nº 945109300)  
+**Marca:** Raix (Depósito de marca nominativa agendado para 08/09/2026 junto ao INPI — guia/protocolo preparatório nº 945109300)  
 **Canal Oficial:** `https://raixtech.com`
 
 Bem-vindo ao **Raix**. Ao baixar, instalar, acessar ou utilizar este aplicativo e seus serviços correlatos, você concorda expressamente em vincular-se a estes Termos de Uso. Caso não concorde com qualquer disposição aqui estabelecida, você não deve utilizar o aplicativo.
@@ -26,6 +26,10 @@ O Raix é um software de comunicação efêmera e privativa, fornecido **"NO EST
 - O desenvolvedor e operador não garante que o serviço será ininterrupto, livre de instabilidades ou compatível com todas as configurações de hardware.
 - As mensagens transitam de forma efêmera e autodestrutiva, possuindo tempo de vida máximo parametrizável de até **24 horas** (*Time-To-Live*), sendo incineradas imediatamente após a leitura (*Vanish-After-Read*).
 - O desenvolvedor e operador não se responsabiliza pela perda definitiva de mensagens após o encerramento regular de seu prazo de expiração ou pelo acionamento voluntário do botão de Pânico (*Panic Wipe*).
+
+### 2.1. Timeout Estrito de Não-Entrega (≤ 24h) como Funcionalidade de Privacidade
+- **Destinatário Offline por Mais de 24 Horas:** Caso o destinatário permaneça desconectado ou inacessível por período superior a 24 (vinte e quatro) horas a contar do envio, a mensagem retida em fila no servidor é **definitiva e irreversivelmente incinerada** pelo rotina automatizada (`scheduledMessageShredder`).
+- **Feature Deliberada de Privacidade:** Essa perda de mensagens não entregues dentro do intervalo de 24 horas não constitui falha ou interrupção de serviço, mas sim uma **funcionalidade deliberada de privacidade radical e minimização de dados** (*Zero-Trace Privacy Feature*), garantindo que dados criptografados jamais permaneçam estacionados indefinidamente em servidores de trânsito.
 
 ---
 

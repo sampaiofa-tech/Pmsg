@@ -107,7 +107,7 @@
     <header>
       <img src="logo-empresa.png" alt="Marca da Controladora" class="header-logo">
       <h1>Termos de Uso — Raix</h1>
-      <p class="meta">Versão 2.0 (Conforme arquitetura v1.4) • Última atualização: 05 de setembro de 2026 • Marca depositada no INPI sob nº <strong>945109300</strong></p>
+      <p class="meta">Versão 2.0 (Conforme arquitetura v1.4) • Última atualização: 05 de setembro de 2026 • Depósito de marca no INPI agendado para 08/09/2026 (guia/protocolo preparatório nº <strong>945109300</strong>)</p>
     </header>
 
     <section>
@@ -127,6 +127,7 @@
       <ul>
         <li><strong>Servidor Cego:</strong> O operador dos servidores <strong>não possui capacidade matemática ou chaves para decifrar mensagens</strong>. Todo o texto decifrado existe apenas na memória volátil dos dispositivos interlocutores.</li>
         <li><strong>Autodestruição (TTL):</strong> As mensagens possuem ciclo de vida máximo de 24 horas e são incineradas atômica e irreversivelmente no consumo (<em>Vanish-After-Read</em>) ou por expiração de tempo.</li>
+        <li><strong>Timeout de Não-Entrega (≤ 24h) — Feature de Privacidade:</strong> Caso o destinatário permaneça desconectado por mais de 24 horas, a mensagem retida em fila no servidor é definitivamente incinerada pelo <code>scheduledMessageShredder</code>. Esta perda de mensagem após 24h offline é uma <em>feature</em> deliberada de privacidade radical e minimização de dados, impedindo o acúmulo de dados na nuvem.</li>
         <li><strong>Sem Custódia de Mnemônico:</strong> A semente de 12 palavras e as chaves privadas são de posse e guarda <strong>exclusiva do usuário</strong>. O operador não pode recuperar senhas ou restaurar contas em caso de perda.</li>
       </ul>
 

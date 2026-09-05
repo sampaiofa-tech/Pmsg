@@ -3,7 +3,7 @@
 **Data da Auditoria:** 05 de setembro de 2026  
 **Controlador:** Filippe Andrade Sampaio (desenvolvedor independente)  
 **Encarregado (DPO):** Filippe Andrade Sampaio (`contato@raixtech.com`)  
-**Aplicação:** Raix (Marca nominativa depositada no INPI sob nº 945109300)  
+**Aplicação:** Raix (Depósito de marca nominativa agendado para 08/09/2026 junto ao INPI — guia/protocolo preparatório nº 945109300)  
 **Baseline de Código Auditado:** v1.4 (`composeApp`, Cloud Functions v1.4)
 
 ---
@@ -18,7 +18,7 @@ A tabela a seguir discrimina de forma taxativa e exaustiva todas as informaçõe
 | **Fingerprint Criptográfico (Ed25519)** | Firestore (`identities/{fingerprint}`) | Até remoção explícita pelo titular ou revogação de identidade | Usuários com o link/QR code de convite; Servidor (validação de roteamento) | Art. 7º, V — Execução de contrato / Termos de Uso |
 | **Chave Pública de Roteamento (Ed25519)** | Firestore (`identities/{fingerprint}`) | Até remoção explícita pelo titular ou revogação | Público aos portadores do fingerprint; Servidor | Art. 7º, V — Execução de contrato |
 | **Chave Pública de Criptografia (X25519)** | Firestore (`identities/{fingerprint}`) | Até remoção explícita pelo titular | Público aos portadores do fingerprint (usado para empacotar a DEK) | Art. 7º, V — Execução de contrato |
-| **Registros de Conexão (MCI Art. 15)** | Firestore (`connectionLogs/{logId}`) | **180 dias** (TTL estrito com descarte automático) | **Admin SDK apenas** (read/write: false para clients). **SEM UID, SEM FINGERPRINT, SEM MESSAGEID**. | Art. 7º, II da LGPD c/c Art. 15 da Lei nº 12.965/2014 (MCI) |
+| **Registros de Conexão (MCI Art. 15)** | Firestore (`accessLogs/{logId}`) | **180 dias** (TTL estrito com descarte automático) | **Admin SDK apenas** (read/write: false para clients). **SEM UID, SEM FINGERPRINT, SEM MESSAGEID, SEM PAYLOAD, SEM CHAVE, SEM MNEMÔNICO**. | Art. 7º, II da LGPD c/c Art. 15 da Lei nº 12.965/2014 (MCI) |
 | **Ciphertext Efêmero da Mensagem** | Firestore (`messages/{messageId}`) | **Máximo de 24 horas** (TTL estrito) ou destruição imediata após leitura (*Vanish*) | Remetente e Destinatário (apenas bytes opacos ilegíveis pelo servidor) | Art. 7º, V — Execução de contrato |
 | **DEK Envelopada (bytes opacos)** | Firestore (`messages/{messageId}/keys`) | **Máximo de 24 horas** (TTL estrito) ou destruição imediata após leitura (*Vanish*) | Destinatário detentor da chave privada correspondente. O servidor **não possui a chave privada e não tem acesso aos bytes em claro** | Art. 7º, V — Execução de contrato |
 | **Chave Efêmera Pública (ephemeralPubKey)** | Firestore (`messages/{messageId}/keys`) | **Máximo de 24 horas** (TTL estrito) ou destruição imediata após leitura | Destinatário e Servidor (armazenamento estritamente temporário para derivação ECDH) | Art. 7º, V — Execução de contrato |
@@ -33,7 +33,7 @@ A tabela a seguir discrimina de forma taxativa e exaustiva todas as informaçõe
 
 ## 2. Implementação e Segregação dos Logs de Conexão (MCI Art. 15 / Parecer C1)
 
-Em cumprimento ao Art. 15 da Lei nº 12.965/2014 (Marco Civil da Internet) e às determinações do Parecer Jurídico Especializado, a aplicação **Raix** mantém uma coleção segregada denominada `connectionLogs`:
+Em cumprimento ao Art. 15 da Lei nº 12.965/2014 (Marco Civil da Internet) e às determinações do Parecer Jurídico Especializado, a aplicação **Raix** mantém uma coleção segregada e isolada denominada `accessLogs`:
 
 1. **Campos Registrados no Momento da Chamada:**
    - `ip`: Endereço IP do requisitante extraído do cabeçalho `x-forwarded-for` ou do raw request.
@@ -43,11 +43,11 @@ Em cumprimento ao Art. 15 da Lei nº 12.965/2014 (Marco Civil da Internet) e às
    - `expiresAt`: Timestamp configurado para exatamente **180 dias** após a criação (`now + 180d`).
 
 2. **Isolamento Absoluto (Zero Rastreabilidade com Conteúdo ou Identidade):**
-   - Os documentos de `connectionLogs` **NÃO CONTÊM**: `uid`, `fingerprint`, `messageId`, nomes de contato, payloads criptografados, mnemônicos ou chaves públicas Ed25519.
+   - Os documentos de `accessLogs` **NÃO CONTÊM**: `uid`, `fingerprint`, `messageId`, nomes de contato, payloads criptografados, mnemônicos ou chaves públicas Ed25519 (Regra Absoluta do Parecer Jurídico).
    - É **tecnicamente impossível** correlacionar um registro de log de conexão com o remetente, destinatário ou conteúdo de qualquer mensagem.
 
 3. **Regras de Segurança e Acesso:**
-   - O arquivo `firestore.rules` define expressamente `allow read, write: if false;` para a coleção `connectionLogs`. Somente o Firebase Admin SDK (Cloud Functions backend) tem permissão de escrita, e nenhum cliente pode listar ou consultar os registros.
+   - O arquivo `firestore.rules` define expressamente `allow read, write: if false;` para a coleção `accessLogs`. Somente o Firebase Admin SDK (Cloud Functions backend) tem permissão de escrita, e nenhum cliente pode listar ou consultar os registros.
 
 4. **Nota sobre Prazos Legais e Fundamentação do Parecer:**
    - *Ponto de Atenção*: O Art. 13 do Marco Civil da Internet estipula 1 ano para provedores de **conexão à internet**. Para **provedores de aplicações de internet** (categoria na qual o Raix se insere), o Art. 15 da mesma lei estabelece o dever de guarda pelo prazo de **6 meses (180 dias)**. Prevalece a orientação técnica do parecerista pelo prazo de 180 dias com expiração automatizada via política de TTL do Firestore.

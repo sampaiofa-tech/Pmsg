@@ -417,7 +417,7 @@ O repositório é PÚBLICO por decisão de arquitetura (AGPL-3.0): todo o códig
 O ciclo **v1.3** implementa os requisitos técnicos mandatórios da Google Play Store (Políticas de Dados do Usuário e Conteúdo Gerado pelo Usuário - UGC) para mensageria anônima:
 
 ### 1. Age-Gate 18+ & Aceite Legal Versionado
-- **Barreira Bloqueante de Primeira Execução**: O aplicativo não avança para nenhuma tela operacional sem que o usuário confirme explicitamente ter 18 anos ou mais e assinale o aceite formal da [Política de Privacidade](https://sampaiofa-tech.github.io/Pmsg/privacidade.html) e dos [Termos de Uso](https://sampaiofa-tech.github.io/Pmsg/termos.html).
+- **Barreira Bloqueante de Primeira Execução**: O aplicativo não avança para nenhuma tela operacional sem que o usuário confirme explicitamente ter 18 anos ou mais e assinale o aceite formal da [Política de Privacidade](https://sampaiofa-tech.github.io/Raix/privacidade.html) e dos [Termos de Uso](https://sampaiofa-tech.github.io/Raix/termos.html).
 - **Armazenamento Seguro de Consentimento**: Registrado localmente em cofre isolado com carimbo de data/hora e versão canônica do documento (ex: `1.0`).
 - **Invalidação por Atualização de Versão**: Caso uma nova versão dos termos ou política seja publicada, o aplicativo invalida o consentimento anterior e exige novo aceite imediato antes de liberar o acesso.
 
@@ -427,7 +427,7 @@ O ciclo **v1.3** implementa os requisitos técnicos mandatórios da Google Play 
 - **Enforçamento no Fetch (Auto-Purge)**: Mensagens originadas de fingerprints bloqueados são descartadas e incineradas sumariamente no momento do recebimento, sem decifração em memória nem renderização visual na UI, mantendo registro local do total de mensagens expurgadas.
 - **Limitação Técnica Honesta (Client-Enforced)**:
   > [!NOTE]
-  > O servidor Pmsg opera sob a premissa fundamental de **Zero-Knowledge** e não armazena nem tem visibilidade sobre a lista de contatos bloqueados pelos usuários. Portanto, o bloqueio é **estritamente client-enforced** (executado no dispositivo do destinatário).
+  > O servidor Raix opera sob a premissa fundamental de **Zero-Knowledge** e não armazena nem tem visibilidade sobre a lista de contatos bloqueados pelos usuários. Portanto, o bloqueio é **estritamente client-enforced** (executado no dispositivo do destinatário).
   > O remetente bloqueado ainda pode gerar tráfego efêmero e custo de escrita transitório no Firestore até que a mensagem seja purgada na chegada pelo destinatário ou destruída pelo TTL máximo de 24 horas. Esse custo é estritamente contido pelos rate limits por UID e autenticação do Firebase.
 
 ### 3. Denúncia de Abuso Zero-Knowledge (`reportAbuse`)
@@ -443,7 +443,7 @@ O ciclo **v1.3** implementa os requisitos técnicos mandatórios da Google Play 
 | # | Requisito Play Store / UGC | Status | Implementação Técnica & Evidências |
 |---|---|:---:|---|
 | 1 | **Classificação 18+ (Age-Gate)** | ✅ APROVADO | Gate bloqueante de primeira execução (`AgeGateScreen.kt`) exigindo duplo aceite (idade 18+ e Termos/Política) antes de renderizar qualquer função do app. Consentimento persistido e versionado via `LegalConsentManager.kt`. |
-| 2 | **Termos e Política Públicos** | ✅ NO AR | Política de Privacidade e Termos de Uso publicados e acessíveis via HTTPS no GitHub Pages: [privacidade.html](https://sampaiofa-tech.github.io/Pmsg/privacidade.html) e [termos.html](https://sampaiofa-tech.github.io/Pmsg/termos.html). |
+| 2 | **Termos e Política Públicos** | ✅ NO AR | Política de Privacidade e Termos de Uso publicados e acessíveis via HTTPS no GitHub Pages: [privacidade.html](https://sampaiofa-tech.github.io/Raix/privacidade.html) e [termos.html](https://sampaiofa-tech.github.io/Raix/termos.html). |
 | 3 | **Bloqueio de Usuários (Block)** | ✅ APROVADO | Blocklist local criptografada em Room (`blocked_contacts`). Descarte instantâneo client-side (`auto-purge`) no momento do recebimento, sem decifração em RAM. Tela dedicada `BlockedContactsScreen.kt` para auditoria e desbloqueio. |
 | 4 | **Denúncia de Conteúdo/Abuso (Report)** | ✅ APROVADO | Diálogo de denúncia comportamental em `ContactChatScreen.kt` com aviso explícito de servidor cego e seleção categorizada (Spam, Assédio, Ilegal, Outro), integrada ao bloqueio local opcional simultâneo. |
 | 5 | **Blindagem Zero-Knowledge & Allow-List** | ✅ APROVADO | Cloud Function `reportAbuse` em produção com validação por allow-list estrita. Qualquer injeção de mensagens, texto ou campos extras é barrada com HTTP 400 (`invalid-argument`). |
@@ -466,5 +466,5 @@ Este projeto é disponibilizado sob o modelo de **duplo licenciamento**:
    - Todas as contribuições externas ao repositório são regidas pelo Acordo de Contribuição Individual — consulte [`CLA.md`](CLA.md).
 
 > [!IMPORTANT]
-> **Registro de Marca e Denominação Comercial**: A marca **RAIX** é marca nominativa depositada perante o Instituto Nacional da Propriedade Industrial (INPI) sob o protocolo nº **945109300** (Classes 09 e 42). Todos os direitos reservados. Canal oficial: [raixtech.com](https://raixtech.com).
+> **Registro de Marca e Denominação Comercial**: O depósito de marca nominativa para **RAIX** está agendado para 08/09/2026 perante o Instituto Nacional da Propriedade Industrial (INPI) — guia/protocolo preparatório nº **945109300** (Classes 09 e 42). Todos os direitos reservados. Canal oficial: [raixtech.com](https://raixtech.com).
 

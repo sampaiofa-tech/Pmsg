@@ -2,7 +2,7 @@
 
 **Última atualização:** 05 de setembro de 2026  
 **Versão:** 2.0 (Conforme v1.4 da arquitetura do aplicativo)  
-**Marca:** Raix (Marca nominativa depositada no INPI sob protocolo nº 945109300)  
+**Marca:** Raix (Depósito de marca nominativa agendado para 08/09/2026 junto ao INPI — guia/protocolo preparatório nº 945109300)  
 **Canal Oficial:** `https://raixtech.com`
 
 Esta Política de Privacidade descreve, com transparência e rigor técnico, como o aplicativo **Raix** trata dados e preserva a privacidade e a segurança absoluta dos usuários, em estrita conformidade com a **Lei Geral de Proteção de Dados Pessoais do Brasil (Lei nº 13.709/2018 - LGPD)** e o **Marco Civil da Internet (Lei nº 12.965/2014 - MCI)**.
@@ -29,8 +29,8 @@ O Raix foi projetado sob o princípio da **minimização extrema de dados** (*Pr
    - `currentAuthUid`: UID anônimo da sessão ativa associada ao fingerprint para entrega técnica de mensagens.
    - `revoked`: Flag booleano de moderação indicando se a rota técnica foi revogada por violação grave dos Termos de Uso.
 3. **Registros de Conexão à Aplicação (MCI Art. 15 — Base Legal Art. 7º, II da LGPD)**:
-   - Registrados na coleção isolada `connectionLogs`: endereço IP de origem, timestamp UTC da requisição, porta lógica de origem (quando fornecida pelo runtime) e nome do endpoint callable acionado.
-   - **Isolamento Absoluto**: Estes registros **NÃO** possuem vínculo com UIDs, fingerprints, mensagens, contatos ou chaves criptográficas, destinando-se exclusivamente ao cumprimento de obrigação legal de segurança da informação.
+   - Registrados na coleção segregada e isolada `accessLogs`: endereço IP de origem, timestamp UTC da requisição, porta lógica de origem e identificador da chamada técnica.
+   - **Regra Absoluta de Isolamento**: Estes registros **NÃO** possuem vínculo com UIDs, fingerprints, mensagens, payloads, contatos, mnemônicos ou chaves criptográficas (zero campos associativos), destinando-se exclusivamente ao cumprimento de obrigação legal de segurança da informação (Art. 15 do Marco Civil da Internet). Retidos pelo prazo estrito de 180 dias com expurgo automático.
 4. **Ciphertext Efêmero da Mensagem**:
    - Texto cifrado através de **AES-256-GCM**. O servidor **não possui** a chave necessária para decifrar este conteúdo, tratando-o unicamente como sequência opaca de bytes.
 5. **DEK Envelopada (*Sealed-Box*)**:
@@ -88,7 +88,7 @@ A infraestrutura de servidores do Raix está alocada na região **`us-central1` 
 |---|---|---|---|
 | **Mensagens e DEKs Envelopadas** | Firestore (`messages`, `messageKeys`) | **Máximo de 24 horas** (ou menos, conforme TTL) | Destruição no consumo (*Vanish-After-Read*) ou purga horária pelo *Crypto-Shredder*. |
 | **Identidade de Roteamento** | Firestore (`identities`) | Enquanto a identidade existir | Exclusão voluntária pelo usuário ou solicitação formal ao Encarregado. |
-| **Registros de Conexão (MCI Art. 15)** | Firestore (`connectionLogs`) | **180 dias** (Art. 15 MCI) | Expurgo automático via política de TTL do banco. |
+| **Registros de Conexão (MCI Art. 15)** | Firestore (`accessLogs`) | **180 dias** (Art. 15 MCI) | Expurgo automático via política de TTL do banco. |
 | **Denúncias com Conteúdo** | Firestore (`abuseReportsWithContent`) | **90 dias** ou conclusão da auditoria | Expurgo programado após análise e eventual revogação da chave ofensora. |
 | **Logs Técnicos de Diagnóstico** | Google Cloud Logging | **30 dias** | Sobrescrita automática padrão do Cloud Logging. |
 | **Contatos e Chaves Privadas** | Dispositivo Local do Usuário | Permanente até remoção local | Controle exclusivo do usuário pelo aplicativo ou botão de Pânico (*Panic Wipe*). |

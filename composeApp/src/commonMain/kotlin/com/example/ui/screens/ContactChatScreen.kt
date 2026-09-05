@@ -572,7 +572,11 @@ fun ContactChatScreen(
                         currentTime = currentTime,
                         onIncinerate = { messages.remove(msg) },
                         onBlockSender = { showBlockConfirmationDialog = true },
-                        onReportSender = { showReportAbuseDialog = true }
+                        onReportSender = {
+                            contentSnippetText = msg.text.take(500)
+                            includeContentSnippet = true
+                            showReportAbuseDialog = true
+                        }
                     )
                 }
             }
@@ -827,7 +831,7 @@ fun ContactChatScreen(
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = "Autorizo expressamente o envio voluntário deste trecho de texto para fins exclusivos de moderação e apuração de ilícitos (LGPD Art. 7º, I).",
+                                text = "Autorizo expressamente o envio voluntário deste trecho mediante descriptografia local apenas da mensagem selecionada, exclusivamente para fins de apuração de ilícitos e moderação pela equipe Raix (LGPD Art. 7º, I).",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = Color(0xFFFFCC80),
                                 fontSize = 11.sp,
